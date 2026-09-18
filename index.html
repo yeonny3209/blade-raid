@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>BLADE RAID - 블레이드 레이드</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+  // 수정 사항이 캐시에 막히지 않도록 매번 새로 불러옴
+  const V = Date.now();
+  ['util', 'input', 'audio', 'rig', 'characters', 'anims', 'fx', 'entity', 'player', 'enemies', 'boss', 'stage', 'ui', 'game']
+    .forEach(n => document.write(`<script src="js/${n}.js?v=${V}"><\/script>`));
+</script>
+</body>
+</html>
