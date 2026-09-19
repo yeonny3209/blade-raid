@@ -16,7 +16,7 @@ class Entity {
     this.trail = []; this.trailOn = false; this.trailCol = '140,200,255';
     this.after = []; this.afterOn = 0; this.afterCol = '80,160,255';
     this.visible = true; this.alpha = 1; this.dead = false;
-    this.dmgStack = 0; this.dmgStackT = -99;
+    this.dmgStack = 0; this.dmgStackT = -99; this.squash = 0;
   }
 
   play(name, blend = 3, speed = 1, force = false) {
@@ -76,6 +76,7 @@ class Entity {
   }
 
   physics() {
+    if (this.squash > 0) this.squash *= 0.8;
     this.x += this.vx; this.y += this.vy;
     if (!this.gravOff && (this.z > 0 || this.vz > 0)) {
       const was = this.z;
@@ -117,7 +118,8 @@ class Entity {
     ctx.save();
     const ox = this.hitstop > 0 && this.shakeHit ? (this.hitstop % 2 ? 1 : -1) * 3.5 : 0;
     ctx.translate(this.x + ox, sy(this.y, this.z));
-    ctx.scale(this.facing * this.scale, this.scale);
+    const sq = (this.squash || 0) * (this.isBoss ? 0.4 : 1);   // 덩치 큰 보스는 과하지 않게
+    ctx.scale(this.facing * this.scale * (1 - sq * 0.14), this.scale * (1 + sq * 0.17));
     ctx.globalAlpha = this.alpha;
     const fl = this.flash > 0;
     R.draw(ctx, this.J, fl ? R.flashPal : R.pal, this, { flash: fl });
@@ -211,9 +213,11 @@ function applyHit(att, tgt, hit, o = {}) {
   if (crit) FX.add('world', new Flash(X, Y, 8, 48, 10, '255,210,90', 0.6));
 
   // --- 사운드 ---
+  // 콤보가 쌓일수록 반음씩 올라가 연타가 기계적으로 들리지 않게 한다
+  const cp = 1 + Math.min(Game.combo.n, 12) * 0.015;
   const snd = hit.sfx || (att.isPlayer ? 'hit' : 'blunt');
-  if (snd !== 'none') Sfx.play(snd, hit.vol || 1);
-  if (crit && att.isPlayer) Sfx.play('crit', 0.8);
+  if (snd !== 'none') Sfx.play(snd, hit.vol || 1, att.isPlayer ? cp : 1);
+  if (crit && att.isPlayer) Sfx.play('crit', 0.8, cp);
 
   // --- 데미지 숫자 ---
   if (Game.frame - tgt.dmgStackT < 22) tgt.dmgStack = Math.min(tgt.dmgStack + 1, 7); else tgt.dmgStack = 0;
@@ -225,7 +229,15 @@ function applyHit(att, tgt, hit, o = {}) {
 
   // --- 반응 ---
   tgt.takeHit(hit, att, dir, dmg, { crit, counter });
+
+  // --- 손맛 연출 ---
+  const power = stop / 5;                                  // 타격 강도 (히트스톱 기준)
+  tgt.squash = Math.min(1.1, 0.45 + power * 0.28);         // 맞는 쪽이 찌그러졌다 펴짐
+  if (att.isPlayer && stop >= 7) att.squash = Math.max(att.squash || 0, 0.3);
   Game.addShake(hit.shake ?? 2);
+  Game.kick(dir * Math.min(12, (hit.shake ?? 2) * 0.9), -Math.min(5, power));
+  if (stop >= 9) Game.freeze(Math.min(4, Math.round(stop / 3)));   // 강타는 화면 전체를 정지
+  if (att.isPlayer) Game.rumble(Math.min(1, 0.25 + power * 0.22), 60 + stop * 8);
   if (att.isPlayer) {
     Game.onPlayerHit(dmg, tgt, hit);
     if (hit.mp) att.mp = Math.min(att.mpMax, att.mp + hit.mp);

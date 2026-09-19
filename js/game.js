@@ -6,7 +6,7 @@ const Game = {
   canvas: null, ctx: null, ps: 1, bgScale: 1.5,
   state: 'title', frame: 0, time: 0,
   player: null, enemies: [], projectiles: [], pickups: [], room: null, roomIdx: 0, boss: null,
-  cam: { x: 0 }, camLook: 0, shakeA: 0, shx: 0, shy: 0, zoom: 1,
+  cam: { x: 0 }, camLook: 0, shakeA: 0, shx: 0, shy: 0, zoom: 1, kickX: 0, kickY: 0, freezeT: 0, rumbleT: 0,
   slowScale: 1, slowMs: 0, dim: 0, dimTarget: 0, dimSpeed: 0.05,
   flash: 0, flashCol: '255,255,255', hurtA: 0, speedT: 0, speedDir: 1,
   combo: { n: 0, t: 0, dmg: 0, pop: 0 },
@@ -115,7 +115,7 @@ const Game = {
     FX.clear();
     this.boss = null; this.target = null; this.targetT = 0; this.cutin = null;
     this.player.reset(110, DEPTH / 2);
-    this.cam.x = 0; this.dim = 0; this.dimTarget = 0; this.zoom = 1; this.hurtA = 0; this.flash = 0; this.speedT = 0;
+    this.cam.x = 0; this.dim = 0; this.dimTarget = 0; this.zoom = 1; this.hurtA = 0; this.flash = 0; this.speedT = 0; this.kickX = 0; this.kickY = 0; this.freezeT = 0;
     this.tokenMax = i >= 2 ? 3 : 2;
     this.room.spawnWave(0, true);
     this.fade = 1; this.fadeDir = -1;
@@ -149,13 +149,17 @@ const Game = {
     if (this.state === 'play' && !this.clearSeq) this.stats.time++;
 
     const p = this.player;
-    p.update();
-    for (const e of this.enemies) e.update();
-    this.enemies = this.enemies.filter(e => !e.dead);
-    this.projectiles = this.projectiles.filter(pr => pr.update() !== false);
-    this.pickups = this.pickups.filter(it => it.update(p) !== false);
+    if (this.freezeT > 0) {
+      this.freezeT--;                 // 강타 순간 : 세상이 멈추고 이펙트만 살아있음
+    } else {
+      p.update();
+      for (const e of this.enemies) e.update();
+      this.enemies = this.enemies.filter(e => !e.dead);
+      this.projectiles = this.projectiles.filter(pr => pr.update() !== false);
+      this.pickups = this.pickups.filter(it => it.update(p) !== false);
+      this.room.update();
+    }
     FX.update();
-    this.room.update();
 
     // 콤보
     if (this.combo.t > 0) { this.combo.t--; if (this.combo.t <= 0) { this.combo.n = 0; this.combo.dmg = 0; } }
@@ -167,7 +171,9 @@ const Game = {
     // 연출 값
     this.dim = approach(this.dim, this.dimTarget, this.dimSpeed);
     this.shakeA *= 0.85; if (this.shakeA < 0.2) this.shakeA = 0;
-    this.shx = (Math.random() - 0.5) * 2 * this.shakeA; this.shy = (Math.random() - 0.5) * 1.4 * this.shakeA;
+    this.kickX *= 0.78; this.kickY *= 0.78;
+    this.shx = (Math.random() - 0.5) * 2 * this.shakeA + this.kickX;
+    this.shy = (Math.random() - 0.5) * 1.4 * this.shakeA + this.kickY;
     this.zoom = lerp(this.zoom, 1, 0.07);
     if (this.speedT > 0) this.speedT--;
     this.updateCamera();
@@ -307,6 +313,19 @@ const Game = {
 
   // ---------------- 연출 API ----------------
   addShake(a) { this.shakeA = Math.min(24, Math.max(this.shakeA, a) + a * 0.25); },
+  // 타격 방향으로 카메라가 한 번 밀렸다 돌아옴 (무작위 흔들림과 달리 방향이 읽힘)
+  kick(x, y) { this.kickX = clamp(this.kickX + x, -16, 16); this.kickY = clamp(this.kickY + y, -10, 10); },
+  freeze(f) { this.freezeT = Math.max(this.freezeT, f); },
+  rumble(strength, ms) {
+    const now = performance.now();
+    if (now - this.rumbleT < 40) return;
+    this.rumbleT = now;
+    try {
+      const gp = navigator.getGamepads && navigator.getGamepads()[0];
+      const act = gp && (gp.vibrationActuator || (gp.hapticActuators && gp.hapticActuators[0]));
+      if (act && act.playEffect) act.playEffect('dual-rumble', { duration: ms, strongMagnitude: strength, weakMagnitude: strength * 0.5 }).catch(() => {});
+    } catch (e) { }
+  },
   slowmo(scale, frames) { this.slowScale = Math.min(this.slowMs > 0 ? this.slowScale : 1, scale); this.slowMs = Math.max(this.slowMs, frames * 16.7); },
   zoomPunch(z) { this.zoom = Math.max(this.zoom, z); },
   flashScreen(a, col) { this.flash = Math.max(this.flash, a); this.flashCol = col || '255,255,255'; },

@@ -1,56 +1,140 @@
 'use strict';
 // ============================================================
 //  오디오 : WebAudio 로 모든 효과음 / BGM 을 실시간 합성
+//
+//  타격음 설계 원칙 (손맛)
+//   1) 트랜지언트  : 0ms 에 최대치로 꽂히는 짧은 노이즈 = "딱" 하는 순간의 날
+//   2) 바디        : 밴드패스 노이즈 = 살/갑옷을 때리는 질감
+//   3) 서브 베이스 : 급강하 사인 + 새추레이션 = 배로 느껴지는 "퍽"
+//   4) 메탈 링     : 비조화 배음 = 칼날의 쇳소리
+//   타격음은 드라이(리버브 없음)로 두어 윤곽이 뭉개지지 않게 한다.
 // ============================================================
+function makeCurve(fn, n = 2048) {
+  const c = new Float32Array(n);
+  for (let i = 0; i < n; i++) c[i] = fn(i * 2 / (n - 1) - 1);
+  return c;
+}
+
 const Sfx = {
-  ctx: null, master: null, sfxBus: null, musicBus: null, verb: null,
-  noiseBuf: null, distCurve: null, muted: false, lastPlay: {},
+  ctx: null, master: null, sfxBus: null, wet: null, musicBus: null, musicDuck: null,
+  verb: null, verbSend: null, noiseBuf: null, distCurve: null, softCurve: null,
+  muted: false, lastPlay: {}, vol: 0.9,
 
   init() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     const ctx = this.ctx = new AC();
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = 5;
-    comp.attack.value = 0.002; comp.release.value = 0.18;
-    this.master = ctx.createGain(); this.master.gain.value = 0.85;
-    this.master.connect(comp); comp.connect(ctx.destination);
-    this.sfxBus = ctx.createGain(); this.sfxBus.gain.value = 0.9; this.sfxBus.connect(this.master);
-    this.musicBus = ctx.createGain(); this.musicBus.gain.value = 0.32; this.musicBus.connect(this.master);
 
-    // 노이즈 버퍼
+    // 노이즈 버퍼 / 왜곡 커브
     const len = ctx.sampleRate * 2;
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     this.noiseBuf = buf;
-    // 디스토션 커브
-    const n = 1024, curve = new Float32Array(n);
-    for (let i = 0; i < n; i++) { const x = i * 2 / n - 1; curve[i] = (3 + 20) * x * 20 * DEG / (Math.PI + 20 * Math.abs(x)); }
-    this.distCurve = curve;
-    // 리버브
-    const rl = ctx.sampleRate * 2.2, ir = ctx.createBuffer(2, rl, ctx.sampleRate);
+    this.distCurve = makeCurve(x => Math.tanh(x * 5));            // 서브 베이스 배음 생성
+    this.softCurve = makeCurve(x => Math.tanh(x * 1.3) * 0.94);   // 마스터 소프트 클립
+
+    // 마스터 : 소프트 클립만 (컴프레서 금지)
+    //  DynamicsCompressor 는 룩어헤드 6ms 지연 + 트랜지언트를 절반으로 깎아
+    //  타격음의 "날"을 통째로 먹어버린다. 소프트 클립은 지연 0ms 이면서
+    //  피크를 눌러주고 배음까지 더해 오히려 더 크게 들린다.
+    const clip = ctx.createWaveShaper(); clip.curve = this.softCurve; clip.oversample = 'none';
+    this.master = ctx.createGain(); this.master.gain.value = this.vol;
+    this.master.connect(clip); clip.connect(ctx.destination);
+
+    // 리버브 (보내는 소리만)
+    const rl = ctx.sampleRate * 1.6, ir = ctx.createBuffer(2, rl, ctx.sampleRate);
     for (let c = 0; c < 2; c++) {
       const ch = ir.getChannelData(c);
-      for (let i = 0; i < rl; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / rl, 3);
+      for (let i = 0; i < rl; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / rl, 3.2);
     }
     this.verb = ctx.createConvolver(); this.verb.buffer = ir;
-    const vg = ctx.createGain(); vg.gain.value = 0.22;
+    const vg = ctx.createGain(); vg.gain.value = 0.3;
     this.verb.connect(vg); vg.connect(this.master);
     this.verbSend = ctx.createGain(); this.verbSend.gain.value = 1; this.verbSend.connect(this.verb);
-    this.sfxBus.connect(this.verbSend);
+
+    // 버스 : sfxBus = 완전 드라이(타격음) / wet = 드라이 + 리버브(공간감 필요한 소리)
+    this.sfxBus = ctx.createGain(); this.sfxBus.gain.value = 1; this.sfxBus.connect(this.master);
+    this.wet = ctx.createGain(); this.wet.gain.value = 1;
+    this.wet.connect(this.master); this.wet.connect(this.verbSend);
+    // 음악 : 타격 시 순간적으로 눌러주는 덕킹 단계를 둔다
+    this.musicDuck = ctx.createGain(); this.musicDuck.gain.value = 1; this.musicDuck.connect(this.master);
+    this.musicBus = ctx.createGain(); this.musicBus.gain.value = 0.3; this.musicBus.connect(this.musicDuck);
   },
 
   toggleMute() {
     this.muted = !this.muted;
-    if (this.master) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.85, this.ctx.currentTime, 0.05);
+    if (this.master) this.master.gain.setTargetAtTime(this.muted ? 0 : this.vol, this.ctx.currentTime, 0.05);
   },
 
+  // 음악 사이드체인 : 큰 타격이 들어간 순간 BGM 을 눌러 타격을 돋보이게
+  duck(depth = 0.4, dur = 0.25) {
+    if (!this.musicDuck) return;
+    const t = this.ctx.currentTime, g = this.musicDuck.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(1 - depth, t + 0.012);
+    g.linearRampToValueAtTime(1, t + dur);
+  },
+
+  // ---------- 기본 레이어 ----------
   env(g, t, gain, attack, dur) {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(gain, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  },
+
+  // 트랜지언트 : 램프 없이 즉시 최대 → 가장 날카로운 어택
+  tick(o) {
+    const ctx = this.ctx, t = ctx.currentTime + (o.at || 0), dur = o.dur || 0.02;
+    const src = ctx.createBufferSource(); src.buffer = this.noiseBuf;
+    const f = ctx.createBiquadFilter();
+    f.type = o.type || 'highpass'; f.frequency.value = o.f || 3000; f.Q.value = o.q || 0.7;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(o.gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(o.dest || this.sfxBus);
+    src.start(t, Math.random() * 1.5); src.stop(t + dur + 0.02);
+  },
+
+  // 서브 베이스 펀치 : 급강하 사인 + 새추레이션
+  //  드라이브(배음 생성)와 출력 레벨을 분리한다. 게인 뒤에 새추레이션을 걸면
+  //  음량을 줄여도 출력이 천장에 붙어버려 강약이 사라진다.
+  sub(o) {
+    const ctx = this.ctx, t = ctx.currentTime + (o.at || 0);
+    const osc = ctx.createOscillator(); osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(o.f0, t);
+    osc.frequency.exponentialRampToValueAtTime(o.f1, t + (o.drop || o.dur * 0.4));
+    const env = ctx.createGain();                       // 엔벨로프는 0..1 로만
+    env.gain.setValueAtTime(1, t);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
+    osc.connect(env);
+    let out = env;
+    if (o.drive) {
+      const ws = ctx.createWaveShaper(); ws.curve = this.distCurve;
+      env.connect(ws); out = ws;
+    }
+    const lvl = ctx.createGain(); lvl.gain.value = o.gain;   // 최종 음량은 새추레이션 뒤에서
+    out.connect(lvl); lvl.connect(o.dest || this.sfxBus);
+    osc.start(t); osc.stop(t + o.dur + 0.02);
+  },
+
+  // 금속 링 : 비조화 배음 (칼날 / 갑옷)
+  metal(o) {
+    const ctx = this.ctx, t = ctx.currentTime + (o.at || 0);
+    const parts = o.parts || [1, 2.74, 5.37, 8.9];
+    for (let i = 0; i < parts.length; i++) {
+      const osc = ctx.createOscillator();
+      osc.type = i === 0 ? 'triangle' : 'sine';
+      osc.frequency.value = o.f * parts[i] * (0.995 + Math.random() * 0.01);
+      const dur = o.dur / (1 + i * 0.45);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(o.gain / (1 + i * 1.3), t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(o.dest || this.sfxBus);
+      osc.start(t); osc.stop(t + dur + 0.02);
+    }
   },
 
   noise(o) {
@@ -63,7 +147,7 @@ const Sfx = {
     f.frequency.setValueAtTime(o.f0 || 1000, t);
     if (o.f1) f.frequency.exponentialRampToValueAtTime(o.f1, t + o.dur);
     const g = ctx.createGain();
-    this.env(g, t, o.gain || 0.3, o.attack || 0.003, o.dur);
+    this.env(g, t, o.gain || 0.3, o.attack ?? 0.001, o.dur);
     src.connect(f); f.connect(g);
     let out = g;
     if (o.dist) { const ws = ctx.createWaveShaper(); ws.curve = this.distCurve; g.connect(ws); out = ws; }
@@ -80,7 +164,7 @@ const Sfx = {
     if (o.f1) osc.frequency.exponentialRampToValueAtTime(o.f1, t + (o.slide || o.dur));
     if (o.detune) osc.detune.value = o.detune;
     const g = ctx.createGain();
-    this.env(g, t, o.gain || 0.3, o.attack || 0.004, o.dur);
+    this.env(g, t, o.gain || 0.3, o.attack ?? 0.002, o.dur);
     let node = osc;
     if (o.lp) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp; osc.connect(f); node = f; }
     node.connect(g);
@@ -92,163 +176,206 @@ const Sfx = {
 
   play(name, vol = 1, pitch = 1) {
     if (!this.ctx || this.muted) return;
-    // 같은 소리 과다 중첩 방지
     const now = performance.now();
-    if (this.lastPlay[name] && now - this.lastPlay[name] < 28) return;
+    if (this.lastPlay[name] && now - this.lastPlay[name] < 26) return;   // 같은 소리 과다 중첩 방지
     this.lastPlay[name] = now;
     const fn = SFX[name];
-    if (fn) fn(this, vol, pitch * rand(0.94, 1.06));
+    if (fn) fn(this, vol * (MIX[name] ?? 0.5), pitch * (0.95 + Math.random() * 0.1));
   },
+};
+
+// 소리별 음량 단계 : 약한 타격 < 평타 < 강타 < 폭발 순으로 확실히 차이나게
+// (소프트 클립 천장이 0.94 라서 개별 레벨을 정리해두지 않으면 전부 같은 크기로 뭉개진다)
+const MIX = {
+  hitLight: 0.33, hit: 0.37, heavy: 0.44, crit: 1, blunt: 0.38, hurt: 0.41,
+  thud: 0.48, land: 0.51, explode: 0.45, quake: 0.49, break: 0.41, cutin: 0.46,
+  ultSlash: 0.3, pillar: 0.4, roar: 0.5, flash: 0.71, counter: 0.64,
+  swing: 2.2, swingBig: 1.19, ring: 1, dash: 1, jump: 1, charge: 1, sheath: 1,
+  magic: 1, throw: 1, enemyDie: 1, spawn: 1, warn: 1, door: 1,
+  coin: 1, potion: 1, ui: 1, select: 1, clear: 1,
 };
 
 // ------------------------------------------------------------
 //  효과음 정의
 // ------------------------------------------------------------
 const SFX = {
-  swing(s, v, p) {
-    s.noise({ type: 'bandpass', f0: 700 * p, f1: 2800 * p, q: 1.4, dur: 0.13, gain: 0.32 * v, attack: 0.01 });
-    s.noise({ type: 'highpass', f0: 5000, dur: 0.06, gain: 0.08 * v, at: 0.03 });
-  },
-  swingBig(s, v, p) {
-    s.noise({ type: 'bandpass', f0: 300 * p, f1: 2000 * p, q: 0.9, dur: 0.26, gain: 0.45 * v, attack: 0.02 });
-    s.tone({ type: 'sine', f0: 180 * p, f1: 60, dur: 0.22, gain: 0.12 * v });
-  },
+  // ---------- 타격 ----------
+  // 평타 : 날카로운 쇳소리 + 살 때리는 바디 + 저음 펀치
   hit(s, v, p) {
-    s.noise({ type: 'bandpass', f0: 3200 * p, f1: 1200, q: 0.8, dur: 0.09, gain: 0.55 * v });
-    s.tone({ type: 'triangle', f0: 320 * p, f1: 70, dur: 0.13, gain: 0.6 * v, dist: true });
-    s.noise({ type: 'lowpass', f0: 1400, f1: 200, q: 0.7, dur: 0.16, gain: 0.5 * v });
+    s.tick({ f: 5200, gain: 0.85 * v, dur: 0.013 });
+    s.tick({ f: 1500, q: 0.9, gain: 0.7 * v, dur: 0.05, at: 0.002 });
+    s.noise({ type: 'bandpass', f0: 2500 * p, f1: 800, q: 1.1, dur: 0.11, gain: 0.75 * v, attack: 0.0004 });
+    s.sub({ f0: 220 * p, f1: 46, dur: 0.17, drop: 0.05, gain: 0.95 * v, drive: true });
+    s.metal({ f: 1950 * p, gain: 0.13 * v, dur: 0.12 });
+    s.duck(0.18, 0.12);
   },
+  // 다단 히트 : 짧고 가볍지만 어택은 동일하게 날카롭게
   hitLight(s, v, p) {
-    s.noise({ type: 'bandpass', f0: 4000 * p, f1: 1800, q: 1, dur: 0.06, gain: 0.35 * v });
-    s.tone({ type: 'triangle', f0: 400 * p, f1: 120, dur: 0.07, gain: 0.3 * v });
+    s.tick({ f: 6000, gain: 0.6 * v, dur: 0.009 });
+    s.noise({ type: 'bandpass', f0: 3400 * p, f1: 1400, q: 1.3, dur: 0.055, gain: 0.5 * v, attack: 0.0004 });
+    s.sub({ f0: 260 * p, f1: 70, dur: 0.08, drop: 0.03, gain: 0.55 * v, drive: true });
+    s.metal({ f: 2700 * p, gain: 0.08 * v, dur: 0.07, parts: [1, 2.74] });
   },
+  // 강타 : 스킬 / 마무리 일격
   heavy(s, v, p) {
-    s.tone({ type: 'sine', f0: 190 * p, f1: 36, dur: 0.38, gain: 0.95 * v, dist: true });
-    s.noise({ type: 'lowpass', f0: 2600, f1: 120, q: 0.6, dur: 0.36, gain: 0.75 * v });
-    s.noise({ type: 'bandpass', f0: 4200 * p, f1: 2000, q: 0.7, dur: 0.08, gain: 0.5 * v });
+    s.tick({ f: 3600, gain: 1.0 * v, dur: 0.022 });
+    s.tick({ f: 800, q: 0.9, gain: 0.85 * v, dur: 0.08, at: 0.004 });
+    s.noise({ type: 'bandpass', f0: 1500 * p, f1: 420, q: 1.5, dur: 0.17, gain: 0.7 * v, attack: 0.0006 });
+    s.noise({ type: 'lowpass', f0: 2400, f1: 170, q: 0.9, dur: 0.36, gain: 0.85 * v, attack: 0.001 });
+    s.sub({ f0: 175 * p, f1: 32, dur: 0.44, drop: 0.13, gain: 1.25 * v, drive: true });
+    s.metal({ f: 1250 * p, gain: 0.17 * v, dur: 0.3 });
+    s.duck(0.45, 0.3);
   },
+  // 크리티컬 : 위에 얹는 밝은 종소리 + 상승 샤악
   crit(s, v, p) {
-    s.tone({ type: 'sine', f0: 2500 * p, dur: 0.28, gain: 0.08 * v });
-    s.tone({ type: 'sine', f0: 3760 * p, dur: 0.2, gain: 0.05 * v });
+    s.metal({ f: 3100 * p, gain: 0.2 * v, dur: 0.42, parts: [1, 2.4, 3.9, 6.2], dest: s.wet });
+    s.noise({ type: 'bandpass', f0: 2800, f1: 9000, q: 3, dur: 0.17, gain: 0.3 * v, attack: 0.003 });
+    s.tone({ type: 'triangle', f0: 1300 * p, f1: 2600 * p, dur: 0.1, gain: 0.1 * v });
   },
-  ring(s, v, p) {
-    s.tone({ type: 'sine', f0: 1850 * p, f1: 1780 * p, dur: 0.55, gain: 0.09 * v });
-    s.tone({ type: 'sine', f0: 2790 * p, dur: 0.4, gain: 0.05 * v });
-    s.tone({ type: 'triangle', f0: 5200 * p, dur: 0.2, gain: 0.03 * v });
-    s.noise({ type: 'highpass', f0: 6000, dur: 0.18, gain: 0.12 * v });
-  },
+  // 둔기 / 몬스터가 플레이어를 때릴 때
   blunt(s, v, p) {
-    s.tone({ type: 'sine', f0: 150 * p, f1: 48, dur: 0.22, gain: 0.8 * v, dist: true });
-    s.noise({ type: 'lowpass', f0: 900, f1: 150, dur: 0.18, gain: 0.5 * v });
+    s.tick({ f: 1100, q: 0.8, gain: 0.8 * v, dur: 0.03 });
+    s.noise({ type: 'lowpass', f0: 1300, f1: 150, q: 0.9, dur: 0.24, gain: 0.8 * v, attack: 0.0006 });
+    s.sub({ f0: 155 * p, f1: 38, dur: 0.28, drop: 0.08, gain: 1.15 * v, drive: true });
+    s.duck(0.3, 0.2);
   },
   hurt(s, v, p) {
-    s.tone({ type: 'square', f0: 330 * p, f1: 140, dur: 0.14, gain: 0.07 * v, lp: 1600 });
-    SFX.blunt(s, v * 0.9, p);
+    SFX.blunt(s, v, p);
+    s.tone({ type: 'square', f0: 340 * p, f1: 150, dur: 0.13, gain: 0.06 * v, lp: 1400 });
   },
-  jump(s, v, p) { s.noise({ type: 'bandpass', f0: 420 * p, f1: 1100, q: 1, dur: 0.12, gain: 0.14 * v }); },
+
+  // ---------- 검 / 이동 ----------
+  swing(s, v, p) {
+    s.noise({ type: 'bandpass', f0: 900 * p, f1: 3400 * p, q: 3.2, dur: 0.12, gain: 0.3 * v, attack: 0.012 });
+    s.noise({ type: 'highpass', f0: 5000, dur: 0.05, gain: 0.07 * v, at: 0.05 });
+  },
+  swingBig(s, v, p) {
+    s.noise({ type: 'bandpass', f0: 380 * p, f1: 2200 * p, q: 2.4, dur: 0.24, gain: 0.42 * v, attack: 0.03 });
+    s.sub({ f0: 150 * p, f1: 60, dur: 0.2, gain: 0.25 * v, at: 0.06 });
+  },
+  ring(s, v, p) {
+    s.metal({ f: 1850 * p, gain: 0.16 * v, dur: 0.6, parts: [1, 2.76, 5.4], dest: s.wet });
+    s.noise({ type: 'highpass', f0: 6500, dur: 0.16, gain: 0.1 * v, attack: 0.004, dest: s.wet });
+  },
+  dash(s, v, p) { s.noise({ type: 'bandpass', f0: 800 * p, f1: 3000, q: 1.2, dur: 0.2, gain: 0.22 * v, attack: 0.02 }); },
+  jump(s, v, p) { s.noise({ type: 'bandpass', f0: 420 * p, f1: 1100, q: 1.4, dur: 0.11, gain: 0.14 * v, attack: 0.006 }); },
   land(s, v, p) {
-    s.noise({ type: 'lowpass', f0: 500, f1: 80, dur: 0.13, gain: 0.3 * v });
-    s.tone({ type: 'sine', f0: 100 * p, f1: 50, dur: 0.1, gain: 0.2 * v });
+    s.tick({ f: 900, gain: 0.35 * v, dur: 0.02 });
+    s.noise({ type: 'lowpass', f0: 600, f1: 90, dur: 0.14, gain: 0.4 * v, attack: 0.0008 });
+    s.sub({ f0: 120 * p, f1: 48, dur: 0.12, gain: 0.5 * v });
   },
+  // 적이 바닥에 처박힐 때
   thud(s, v, p) {
-    s.tone({ type: 'sine', f0: 110 * p, f1: 38, dur: 0.3, gain: 0.7 * v });
-    s.noise({ type: 'lowpass', f0: 420, f1: 90, dur: 0.24, gain: 0.45 * v });
+    s.tick({ f: 700, q: 0.8, gain: 0.7 * v, dur: 0.03 });
+    s.noise({ type: 'lowpass', f0: 800, f1: 90, q: 0.9, dur: 0.3, gain: 0.75 * v, attack: 0.0008 });
+    s.sub({ f0: 130 * p, f1: 30, dur: 0.34, drop: 0.1, gain: 1.2 * v, drive: true });
+    s.duck(0.25, 0.22);
   },
-  dash(s, v, p) { s.noise({ type: 'bandpass', f0: 900 * p, f1: 3600, q: 0.9, dur: 0.22, gain: 0.25 * v, attack: 0.02 }); },
+
+  // ---------- 스킬 ----------
   charge(s, v, p) {
-    s.tone({ type: 'sawtooth', f0: 160 * p, f1: 900 * p, dur: 0.45, gain: 0.06 * v, lp: 2200, attack: 0.1 });
-    s.noise({ type: 'bandpass', f0: 500, f1: 4000, q: 2, dur: 0.45, gain: 0.12 * v, attack: 0.3 });
+    s.tone({ type: 'sawtooth', f0: 150 * p, f1: 900 * p, dur: 0.45, gain: 0.07 * v, lp: 2400, attack: 0.12 });
+    s.noise({ type: 'bandpass', f0: 500, f1: 4200, q: 2.4, dur: 0.45, gain: 0.13 * v, attack: 0.3, dest: s.wet });
   },
   flash(s, v, p) {
-    s.noise({ type: 'highpass', f0: 2500, f1: 9000, dur: 0.18, gain: 0.5 * v });
-    s.tone({ type: 'sine', f0: 3100 * p, dur: 0.9, gain: 0.1 * v });
-    s.tone({ type: 'sine', f0: 4650 * p, dur: 0.6, gain: 0.05 * v });
+    s.tick({ f: 7000, gain: 0.7 * v, dur: 0.03 });
+    s.noise({ type: 'highpass', f0: 2500, f1: 9000, dur: 0.2, gain: 0.45 * v, attack: 0.002 });
+    s.metal({ f: 3100 * p, gain: 0.13 * v, dur: 0.8, parts: [1, 2.4, 4.1], dest: s.wet });
   },
   sheath(s, v, p) {
-    s.noise({ type: 'bandpass', f0: 2500, f1: 5000, q: 3, dur: 0.12, gain: 0.25 * v });
-    s.tone({ type: 'square', f0: 1400 * p, dur: 0.05, gain: 0.08 * v, at: 0.1 });
-    s.tone({ type: 'sine', f0: 2600 * p, dur: 0.3, gain: 0.08 * v, at: 0.1 });
+    s.noise({ type: 'bandpass', f0: 2400, f1: 5200, q: 3.5, dur: 0.12, gain: 0.22 * v, attack: 0.01 });
+    s.tick({ f: 4000, gain: 0.35 * v, dur: 0.02, at: 0.1 });
+    s.metal({ f: 2600 * p, gain: 0.1 * v, dur: 0.45, at: 0.1, dest: s.wet });
   },
   explode(s, v, p) {
-    s.noise({ type: 'lowpass', f0: 3200, f1: 90, q: 0.5, dur: 1.0, gain: 0.95 * v });
-    s.tone({ type: 'sine', f0: 95 * p, f1: 26, dur: 0.9, gain: 1.0 * v, dist: true });
-    s.noise({ type: 'bandpass', f0: 1800, f1: 400, q: 0.6, dur: 0.3, gain: 0.5 * v });
+    s.tick({ f: 2000, gain: 1.0 * v, dur: 0.035 });
+    s.noise({ type: 'lowpass', f0: 4000, f1: 80, q: 0.6, dur: 0.9, gain: 1.0 * v, attack: 0.0008 });
+    s.noise({ type: 'bandpass', f0: 1400, f1: 300, q: 0.8, dur: 0.3, gain: 0.55 * v, attack: 0.001 });
+    s.sub({ f0: 150 * p, f1: 26, dur: 0.85, drop: 0.2, gain: 1.5 * v, drive: true });
+    s.duck(0.6, 0.45);
   },
   quake(s, v, p) {
-    SFX.explode(s, v * 0.8, p * 0.8);
-    s.noise({ type: 'lowpass', f0: 240, f1: 60, q: 1, dur: 1.4, gain: 0.8 * v, attack: 0.05 });
+    SFX.explode(s, v * 0.85, p * 0.85);
+    s.noise({ type: 'lowpass', f0: 260, f1: 60, q: 1, dur: 1.3, gain: 0.8 * v, attack: 0.04 });
   },
-  coin(s, v, p) {
-    s.tone({ type: 'square', f0: 1318 * p, dur: 0.06, gain: 0.04 * v, lp: 5000 });
-    s.tone({ type: 'square', f0: 1760 * p, dur: 0.14, gain: 0.04 * v, at: 0.055, lp: 5000 });
+  pillar(s, v, p) {
+    s.tick({ f: 2600, gain: 0.5 * v, dur: 0.02 });
+    s.noise({ type: 'lowpass', f0: 2400, f1: 160, dur: 0.6, gain: 0.6 * v, attack: 0.001 });
+    s.sub({ f0: 110 * p, f1: 42, dur: 0.5, gain: 0.7 * v, drive: true });
   },
-  potion(s, v, p) {
-    s.tone({ type: 'sine', f0: 380 * p, f1: 980, dur: 0.3, gain: 0.16 * v });
-    s.tone({ type: 'sine', f0: 760 * p, f1: 1600, dur: 0.35, gain: 0.08 * v, at: 0.06 });
+  ultSlash(s, v, p) {
+    s.tick({ f: 6500, gain: 0.55 * v, dur: 0.012 });
+    s.noise({ type: 'bandpass', f0: 4800 * p, f1: 1500, q: 1.2, dur: 0.1, gain: 0.45 * v, attack: 0.0004 });
+    s.sub({ f0: 240 * p, f1: 60, dur: 0.12, drop: 0.04, gain: 0.7 * v, drive: true });
+    s.metal({ f: 2400 * p, gain: 0.07 * v, dur: 0.18, parts: [1, 2.74], dest: s.wet });
   },
   counter(s, v, p) {
-    s.tone({ type: 'square', f0: 1760 * p, f1: 880, dur: 0.1, gain: 0.09 * v, lp: 4000 });
-    s.tone({ type: 'sine', f0: 2640 * p, dur: 0.35, gain: 0.08 * v, at: 0.03 });
+    s.tick({ f: 5000, gain: 0.6 * v, dur: 0.015 });
+    s.tone({ type: 'square', f0: 1760 * p, f1: 880, dur: 0.1, gain: 0.08 * v, lp: 4000 });
+    s.metal({ f: 2640 * p, gain: 0.12 * v, dur: 0.35, parts: [1, 2.4], dest: s.wet });
   },
   break(s, v, p) {
-    for (let i = 0; i < 4; i++) s.noise({ type: 'highpass', f0: 2500 + i * 900, dur: 0.25, gain: 0.35 * v, at: i * 0.045 });
-    s.tone({ type: 'sawtooth', f0: 700 * p, f1: 160, dur: 0.5, gain: 0.1 * v, lp: 3000 });
+    for (let i = 0; i < 4; i++) s.noise({ type: 'highpass', f0: 2400 + i * 900, dur: 0.26, gain: 0.35 * v, at: i * 0.045, attack: 0.001 });
+    s.tone({ type: 'sawtooth', f0: 700 * p, f1: 160, dur: 0.5, gain: 0.09 * v, lp: 3000 });
     SFX.heavy(s, v, p * 0.8);
   },
+  magic(s, v, p) {
+    s.tone({ type: 'sine', f0: 500 * p, f1: 1300 * p, dur: 0.4, gain: 0.09 * v, dest: s.wet });
+    s.tone({ type: 'triangle', f0: 750 * p, f1: 1950 * p, dur: 0.35, gain: 0.05 * v, at: 0.03, dest: s.wet });
+    s.noise({ type: 'bandpass', f0: 3000, f1: 6000, q: 4, dur: 0.35, gain: 0.07 * v, attack: 0.01, dest: s.wet });
+  },
+  throw(s, v, p) { s.noise({ type: 'bandpass', f0: 1200 * p, f1: 500, q: 2, dur: 0.12, gain: 0.14 * v, attack: 0.006 }); },
   roar(s, v, p) {
     const ctx = s.ctx, t = ctx.currentTime;
     const o = ctx.createOscillator(); o.type = 'sawtooth';
     o.frequency.setValueAtTime(110 * p, t); o.frequency.linearRampToValueAtTime(80 * p, t + 1.5);
     const lfo = ctx.createOscillator(); lfo.frequency.value = 22; const lg = ctx.createGain(); lg.gain.value = 18;
     lfo.connect(lg); lg.connect(o.frequency);
-    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 700;
-    const g = ctx.createGain(); s.env(g, t, 0.45 * v, 0.12, 1.6);
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 800;
+    const g = ctx.createGain(); s.env(g, t, 0.5 * v, 0.1, 1.6);
     const ws = ctx.createWaveShaper(); ws.curve = s.distCurve;
-    o.connect(f); f.connect(ws); ws.connect(g); g.connect(s.sfxBus);
+    o.connect(f); f.connect(ws); ws.connect(g); g.connect(s.wet);
     o.start(t); lfo.start(t); o.stop(t + 1.7); lfo.stop(t + 1.7);
-    s.noise({ type: 'bandpass', f0: 380, f1: 250, q: 0.8, dur: 1.5, gain: 0.35 * v, attack: 0.1 });
-  },
-  warn(s, v) {
-    for (let i = 0; i < 3; i++) s.tone({ type: 'square', f0: 620, dur: 0.12, gain: 0.05 * v, at: i * 0.22, lp: 2000 });
-  },
-  enemyDie(s, v, p) {
-    s.tone({ type: 'sawtooth', f0: 320 * p, f1: 55, dur: 0.45, gain: 0.07 * v, lp: 1400 });
-    s.noise({ type: 'bandpass', f0: 1200, f1: 300, dur: 0.4, gain: 0.12 * v });
-  },
-  ui(s, v, p) { s.tone({ type: 'sine', f0: 900 * p, dur: 0.06, gain: 0.08 * v }); },
-  select(s, v, p) {
-    s.tone({ type: 'triangle', f0: 660 * p, dur: 0.1, gain: 0.12 * v });
-    s.tone({ type: 'triangle', f0: 990 * p, dur: 0.18, gain: 0.1 * v, at: 0.07 });
-  },
-  clear(s, v) {
-    [523, 659, 784, 1047, 1319].forEach((f, i) => s.tone({ type: 'triangle', f0: f, dur: 0.5, gain: 0.12 * v, at: i * 0.08 }));
-    s.tone({ type: 'sine', f0: 2093, dur: 0.9, gain: 0.05 * v, at: 0.4 });
+    s.noise({ type: 'bandpass', f0: 380, f1: 250, q: 0.8, dur: 1.5, gain: 0.3 * v, attack: 0.1, dest: s.wet });
+    s.sub({ f0: 70, f1: 45, dur: 1.4, gain: 0.5 * v, drive: true });
+    s.duck(0.35, 1.2);
   },
   cutin(s, v) {
-    s.tone({ type: 'sine', f0: 70, f1: 28, dur: 1.5, gain: 1.0 * v, dist: true });
-    s.noise({ type: 'lowpass', f0: 1600, f1: 60, dur: 1.3, gain: 0.7 * v });
-    s.noise({ type: 'highpass', f0: 3000, f1: 9000, dur: 0.5, gain: 0.25 * v, attack: 0.3 });
-    SFX.ring(s, v * 1.4, 0.8);
+    s.tick({ f: 1500, gain: 0.8 * v, dur: 0.05 });
+    s.sub({ f0: 90, f1: 26, dur: 1.5, drop: 0.4, gain: 1.4 * v, drive: true });
+    s.noise({ type: 'lowpass', f0: 1800, f1: 60, dur: 1.3, gain: 0.7 * v, attack: 0.002 });
+    s.noise({ type: 'highpass', f0: 3000, f1: 9000, dur: 0.5, gain: 0.25 * v, attack: 0.3, dest: s.wet });
+    SFX.ring(s, v * 1.3, 0.8);
+    s.duck(0.7, 1.4);
   },
-  ultSlash(s, v, p) {
-    s.noise({ type: 'bandpass', f0: 5000 * p, f1: 1500, q: 1.2, dur: 0.1, gain: 0.35 * v });
-    s.tone({ type: 'sine', f0: 2200 * p, dur: 0.2, gain: 0.05 * v });
-    s.tone({ type: 'triangle', f0: 260 * p, f1: 80, dur: 0.1, gain: 0.35 * v });
+  enemyDie(s, v, p) {
+    s.tone({ type: 'sawtooth', f0: 320 * p, f1: 55, dur: 0.45, gain: 0.07 * v, lp: 1400, dest: s.wet });
+    s.noise({ type: 'bandpass', f0: 1200, f1: 300, dur: 0.4, gain: 0.12 * v, attack: 0.002 });
   },
-  throw(s, v, p) { s.noise({ type: 'bandpass', f0: 1200 * p, f1: 500, q: 2, dur: 0.12, gain: 0.15 * v }); },
-  magic(s, v, p) {
-    s.tone({ type: 'sine', f0: 500 * p, f1: 1300 * p, dur: 0.4, gain: 0.1 * v });
-    s.tone({ type: 'triangle', f0: 750 * p, f1: 1950 * p, dur: 0.35, gain: 0.05 * v, at: 0.03 });
-    s.noise({ type: 'bandpass', f0: 3000, f1: 6000, q: 4, dur: 0.35, gain: 0.08 * v });
-  },
-  pillar(s, v, p) {
-    s.noise({ type: 'lowpass', f0: 2000, f1: 150, dur: 0.7, gain: 0.55 * v });
-    s.tone({ type: 'sine', f0: 90 * p, f1: 40, dur: 0.5, gain: 0.5 * v });
-  },
-  door(s, v) { s.noise({ type: 'lowpass', f0: 300, f1: 1400, dur: 0.5, gain: 0.3 * v, attack: 0.2 }); },
   spawn(s, v, p) {
-    s.tone({ type: 'sine', f0: 200 * p, f1: 600 * p, dur: 0.35, gain: 0.08 * v });
-    s.noise({ type: 'bandpass', f0: 600, f1: 2400, q: 3, dur: 0.35, gain: 0.1 * v });
+    s.tone({ type: 'sine', f0: 200 * p, f1: 600 * p, dur: 0.35, gain: 0.08 * v, dest: s.wet });
+    s.noise({ type: 'bandpass', f0: 600, f1: 2400, q: 3, dur: 0.35, gain: 0.1 * v, attack: 0.01, dest: s.wet });
+  },
+  warn(s, v) { for (let i = 0; i < 3; i++) s.tone({ type: 'square', f0: 620, dur: 0.12, gain: 0.05 * v, at: i * 0.22, lp: 2000 }); },
+  door(s, v) { s.noise({ type: 'lowpass', f0: 300, f1: 1400, dur: 0.5, gain: 0.25 * v, attack: 0.2, dest: s.wet }); },
+
+  // ---------- UI / 아이템 ----------
+  coin(s, v, p) {
+    s.tone({ type: 'square', f0: 1318 * p, dur: 0.05, gain: 0.04 * v, lp: 5000 });
+    s.tone({ type: 'square', f0: 1760 * p, dur: 0.13, gain: 0.04 * v, at: 0.05, lp: 5000, dest: s.wet });
+  },
+  potion(s, v, p) {
+    s.tone({ type: 'sine', f0: 380 * p, f1: 980, dur: 0.3, gain: 0.14 * v });
+    s.tone({ type: 'sine', f0: 760 * p, f1: 1600, dur: 0.35, gain: 0.07 * v, at: 0.06, dest: s.wet });
+  },
+  ui(s, v, p) { s.tone({ type: 'sine', f0: 900 * p, dur: 0.06, gain: 0.07 * v }); },
+  select(s, v, p) {
+    s.tone({ type: 'triangle', f0: 660 * p, dur: 0.1, gain: 0.11 * v });
+    s.tone({ type: 'triangle', f0: 990 * p, dur: 0.18, gain: 0.09 * v, at: 0.07, dest: s.wet });
+  },
+  clear(s, v) {
+    [523, 659, 784, 1047, 1319].forEach((f, i) => s.tone({ type: 'triangle', f0: f, dur: 0.5, gain: 0.11 * v, at: i * 0.08, dest: s.wet }));
+    s.tone({ type: 'sine', f0: 2093, dur: 0.9, gain: 0.05 * v, at: 0.4, dest: s.wet });
   },
 };
 
