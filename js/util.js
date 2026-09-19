@@ -10,6 +10,10 @@ const DEG = Math.PI / 180, TAU = Math.PI * 2;
 const FONT_T = "'Black Han Sans', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif";
 const FONT_B = "'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif";
 
+// 모바일(터치) 기기 판별 : 해상도 상한과 터치 UI 를 결정
+const IS_MOBILE = (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches)
+  || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
 const rand = (a, b) => a + Math.random() * (b - a);
 const randi = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

@@ -107,7 +107,7 @@ const UI = {
     if (Game.boss && !Game.boss.dead && Game.state !== 'intro') this.drawBossBar(ctx, Game.boss);
     else if (Game.target && Game.targetT > 0 && !Game.target.isBoss) this.drawTargetBar(ctx, Game.target);
     this.drawCombo(ctx);
-    this.drawBottom(ctx, p);
+    if (Touch.on) this.drawMobileBars(ctx, p); else this.drawBottom(ctx, p);
     this.drawGo(ctx);
   },
 
@@ -294,6 +294,23 @@ const UI = {
     this.text(ctx, val, x, y + 10, { size: 13, align: 'center', fill: '#fff', stroke: 3 });
   },
 
+  // 터치 모드 : 스킬은 터치 버튼에 표시되므로 HP/MP 만 상단에 크게
+  drawMobileBars(ctx, p) {
+    const x = 14, w = 280;
+    const bar = (y, h, frac, cols, label, val) => {
+      ctx.fillStyle = 'rgba(6,8,12,0.8)'; roundRect(ctx, x - 2, y - 2, w + 4, h + 4, 4); ctx.fill();
+      ctx.strokeStyle = 'rgba(201,165,92,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+      const g = ctx.createLinearGradient(0, y, 0, y + h);
+      g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1]);
+      ctx.fillStyle = g; ctx.fillRect(x, y, w * clamp(frac, 0, 1), h);
+      ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(x, y, w * clamp(frac, 0, 1), h * 0.4);
+      this.text(ctx, label, x + 8, y + h / 2, { size: h - 6, fill: '#fff', stroke: 3 });
+      this.text(ctx, val, x + w - 8, y + h / 2, { size: h - 6, align: 'right', fill: '#fff', stroke: 3 });
+    };
+    bar(98, 22, p.hp / p.hpMax, ['#ff6a5a', '#8a0c0c'], 'HP', fmt(p.hp));
+    bar(126, 16, p.mp / p.mpMax, ['#6aa8ff', '#0c2a8a'], 'MP', fmt(p.mp));
+  },
+
   drawBottom(ctx, p) {
     const y0 = 646;
     ctx.save();
@@ -449,8 +466,12 @@ const UI = {
     ctx.restore();
     this.text(ctx, '블레이드 레이드  :  바르카스의 둥지', lx + 6, ly + 150, { size: 26, fill: '#e8d6b0', stroke: 5 });
     // 안내
-    if (t % 70 < 50) this.text(ctx, 'PRESS ANY KEY', lx + 6, 470, { size: 30, fill: '#ffe070', stroke: 5, italic: true });
-    const keys = [
+    if (t % 70 < 50) this.text(ctx, Touch.on ? '화면을 터치하세요' : 'PRESS ANY KEY', lx + 6, 470, { size: 30, fill: '#ffe070', stroke: 5, italic: true });
+    const keys = Touch.on ? [
+      ['왼쪽 화면', '드래그해서 이동 ( 같은 방향 두 번 = 대시 )'], ['큰 버튼', '기본 공격 (연타 콤보)'],
+      ['↑ 버튼', '점프 / 다운 중 퀵 리바운드'], ['← 버튼', '백스텝 (무적)'],
+      ['스킬 6종', '오른쪽 스킬 버튼'], ['물약', '오른쪽 끝 빨강 / 파랑'], ['⏸', '오른쪽 위 일시정지'],
+    ] : [
       ['W A S D', '이동  ( AA / DD 대시 )'], ['좌클릭', '기본 공격 (연타 콤보)'], ['Space', '점프 / 다운 중 퀵 리바운드'], ['Z', '백스텝 (무적)'],
       ['Q E T F G', '스킬      R : 각성기'], ['C / V', 'HP / MP 물약'], ['ESC', '일시정지    M : 음소거'],
     ];
@@ -480,7 +501,7 @@ const UI = {
       this.text(ctx, a, 330, 262 + i * 27, { size: 17, fill: '#ffd87a', stroke: 3 });
       this.text(ctx, b, 450, 262 + i * 27, { size: 16, font: FONT_B, weight: 700, fill: '#e8ecf8', stroke: 3 });
     });
-    this.text(ctx, 'ESC 를 눌러 계속', W / 2, 620, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
+    this.text(ctx, Touch.on ? '화면을 터치하면 계속' : 'ESC 를 눌러 계속', W / 2, 620, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
   },
 
   // ---------- 결과 ----------

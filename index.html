@@ -3,22 +3,51 @@
 <head>
 <meta charset="utf-8">
 <title>BLADE RAID - 블레이드 레이드</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="던전앤파이터 스타일 2.5D 벨트스크롤 액션 RPG">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c1018">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BLADE RAID">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet">
 <style>
-  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; user-select: none; -webkit-user-select: none; }
+  html, body {
+    margin: 0; height: 100%; background: #000; overflow: hidden;
+    user-select: none; -webkit-user-select: none;
+    touch-action: none; overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
   canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block; }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <script>
-  // 수정 사항이 캐시에 막히지 않도록 매번 새로 불러옴
-  const V = Date.now();
-  ['util', 'input', 'audio', 'rig', 'characters', 'anims', 'fx', 'entity', 'player', 'enemies', 'boss', 'stage', 'ui', 'game']
-    .forEach(n => document.write(`<script src="js/${n}.js?v=${V}"><\/script>`));
+  // 서비스 워커 : 설치 + 오프라인 실행
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
 </script>
+<script src="js/util.js"></script>
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/rig.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/anims.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/entity.js"></script>
+<script src="js/player.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/boss.js"></script>
+<script src="js/stage.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/touch.js"></script>
+<script src="js/game.js"></script>
 </body>
 </html>

@@ -21,7 +21,8 @@ const Game = {
     addEventListener('resize', () => this.resize());
     Input.init();
     UI.init();
-    this.bgScale = clamp(this.ps, 1, 2);
+    Touch.init();
+    this.bgScale = clamp(this.ps, 1, IS_MOBILE ? 1 : 2);
     this.stats = this.newStats();
     this.titleRoom = new Room(0);
     const tp = this.titleP = new Player();
@@ -41,7 +42,7 @@ const Game = {
 
   resize() {
     const s = Math.min(innerWidth / W, innerHeight / H);
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, IS_MOBILE ? 1.5 : 2);
     this.canvas.style.width = Math.floor(W * s) + 'px';
     this.canvas.style.height = Math.floor(H * s) + 'px';
     this.canvas.width = Math.round(W * s * dpr);
@@ -115,6 +116,7 @@ const Game = {
     FX.clear();
     this.boss = null; this.target = null; this.targetT = 0; this.cutin = null;
     this.player.reset(110, DEPTH / 2);
+    Touch.release();
     this.cam.x = 0; this.dim = 0; this.dimTarget = 0; this.zoom = 1; this.hurtA = 0; this.flash = 0; this.speedT = 0; this.kickX = 0; this.kickY = 0; this.freezeT = 0;
     this.tokenMax = i >= 2 ? 3 : 2;
     this.room.spawnWave(0, true);
@@ -400,6 +402,8 @@ const Game = {
     if (this.state === 'continue') UI.drawContinue(ctx);
     if (this.state === 'gameover') UI.drawGameOver(ctx);
     if (Sfx.muted) UI.text(ctx, '음소거', W - 20, 104, { size: 13, align: 'right', fill: '#aaa', stroke: 3 });
+    Touch.draw(ctx);
+    if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx);
   },
 
   drawSpeedLines(ctx) {
