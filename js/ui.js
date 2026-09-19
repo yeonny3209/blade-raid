@@ -451,7 +451,7 @@ const UI = {
     // 안내
     if (t % 70 < 50) this.text(ctx, 'PRESS ANY KEY', lx + 6, 470, { size: 30, fill: '#ffe070', stroke: 5, italic: true });
     const keys = [
-      ['W A S D', '이동  ( AA / DD 대시 )'], ['J', '기본 공격 (연타 콤보)'], ['K', '점프 / 다운 중 퀵 리바운드'], ['L', '백스텝 (무적)'],
+      ['W A S D', '이동  ( AA / DD 대시 )'], ['좌클릭', '기본 공격 (연타 콤보)'], ['K', '점프 / 다운 중 퀵 리바운드'], ['L', '백스텝 (무적)'],
       ['U I O P H', '스킬      Space : 각성기'], ['1 · 2', 'HP / MP 물약'], ['ESC', '일시정지    M : 음소거'],
     ];
     ctx.save();
@@ -468,10 +468,10 @@ const UI = {
     ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(0, 0, W, H);
     this.text(ctx, 'PAUSE', W / 2, 200, { size: 64, align: 'center', italic: true, fill: '#fff', stroke: 8 });
     const lines = [
-      ['W A S D', '이동, 같은 방향 2번 → 대시  (방향키 + X C Z 도 가능)'], ['J / K / L', '공격 / 점프 / 백스텝'],
+      ['W A S D', '이동, 같은 방향 2번 → 대시  (방향키 + X C Z 도 가능)'], ['좌클릭 / K / L', '공격 / 점프 / 백스텝  (J 도 공격 가능)'],
       ['U', '어퍼 슬래시 - 적을 띄움 (공중 사용 가능)'], ['I', '돌진참 - 적을 끌고 돌진'], ['O', '삼단베기 - 3연속 돌진 베기 (방향 전환 가능)'],
       ['P', '발도 : 섬 - 순간 이동 베기'], ['H', '지진검 - 공중에서도 사용 가능'], ['Space', '극 귀신참 - 각성기'],
-      ['콤보', '평타 ↔ 스킬 서로 캔슬 가능 : J J → U → J J J → I → J ...'],
+      ['콤보', '평타 ↔ 스킬 서로 캔슬 가능 : 클릭 ×2 → U → 클릭 ×3 → I → 클릭 ...'],
       ['팁', '띄운 적은 평타로 계속 저글 · 적 공격 준비 중 타격 시 COUNTER'],
     ];
     lines.forEach(([a, b], i) => {
@@ -529,7 +529,7 @@ const UI = {
     ctx.save(); ctx.translate(W / 2, 360); ctx.scale(s, s);
     this.text(ctx, String(n), 0, 0, { size: 90, align: 'center', italic: true, fill: '#fff', stroke: 8 });
     ctx.restore();
-    this.text(ctx, `J : 부활  (남은 코인 ${Game.coins})`, W / 2, 470, { size: 24, align: 'center', fill: '#ffe070', stroke: 4 });
+    this.text(ctx, `좌클릭 : 부활  (남은 코인 ${Game.coins})`, W / 2, 470, { size: 24, align: 'center', fill: '#ffe070', stroke: 4 });
   },
 
   drawGameOver(ctx) {

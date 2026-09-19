@@ -2,9 +2,10 @@
 // ============================================================
 //  입력 : 키 상태 + 입력 큐(선입력 버퍼용) + 더블탭 대시
 // ============================================================
-// 왼손 WASD 이동 + 오른손 J(공격) K(점프) L(백스텝) / U I O P H Space(스킬)
-// 방향키 + X C Z 조합도 그대로 사용 가능
+// WASD 이동 + 마우스 좌클릭(공격) K(점프) L(백스텝) / U I O P H Space(스킬)
+// J / 방향키 + X C Z 조합도 그대로 사용 가능
 const KEYMAP = {
+  Mouse0: 'attack',   // 마우스 좌클릭 (가상 키코드)
   KeyW: 'up', KeyA: 'left', KeyS: 'down', KeyD: 'right',
   ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down',
   KeyJ: 'attack', KeyK: 'jump', KeyL: 'back',
@@ -26,32 +27,45 @@ const Input = {
 
   init() {
     addEventListener('keydown', e => {
-      const a = KEYMAP[e.code];
-      if (a || e.code.startsWith('Arrow') || e.code === 'Space' || e.code === 'Tab') e.preventDefault();
+      if (KEYMAP[e.code] || e.code.startsWith('Arrow') || e.code === 'Space' || e.code === 'Tab') e.preventDefault();
       if (e.repeat) return;
-      this.any = true;
-      if (!a) { this.queue.push({ a: 'any', t: performance.now() }); return; }
-      const wasHeld = this.held[a];
-      this.down.add(e.code);
-      this.held[a] = true;
-      const now = performance.now();
-      if ((a === 'left' || a === 'right') && !wasHeld) {
-        const d = a === 'left' ? -1 : 1;
-        this.lastDir = d;
-        if (now - this.lastTap[a] < 240) this.queue.push({ a: 'dash', dir: d, t: now });
-        this.lastTap[a] = now;
-      }
-      this.queue.push({ a, t: now });
+      this.press(e.code);
     });
-    addEventListener('keyup', e => {
-      const a = KEYMAP[e.code];
-      this.down.delete(e.code);
-      if (!a) return;
-      this.held[a] = [...this.down].some(c => KEYMAP[c] === a);
-      if (a === 'left' && this.held.right) this.lastDir = 1;
-      if (a === 'right' && this.held.left) this.lastDir = -1;
+    addEventListener('keyup', e => this.release(e.code));
+    // 마우스 좌클릭 = 기본 공격
+    addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      e.preventDefault();          // 드래그로 텍스트/이미지가 선택되지 않게
+      this.press('Mouse0');
     });
+    addEventListener('mouseup', e => { if (e.button === 0) this.release('Mouse0'); });
     addEventListener('blur', () => { this.held = {}; this.down.clear(); });
+  },
+
+  press(code) {
+    const a = KEYMAP[code];
+    this.any = true;
+    if (!a) { this.queue.push({ a: 'any', t: performance.now() }); return; }
+    const wasHeld = this.held[a];
+    this.down.add(code);
+    this.held[a] = true;
+    const now = performance.now();
+    if ((a === 'left' || a === 'right') && !wasHeld) {
+      const d = a === 'left' ? -1 : 1;
+      this.lastDir = d;
+      if (now - this.lastTap[a] < 240) this.queue.push({ a: 'dash', dir: d, t: now });
+      this.lastTap[a] = now;
+    }
+    this.queue.push({ a, t: now });
+  },
+
+  release(code) {
+    const a = KEYMAP[code];
+    this.down.delete(code);
+    if (!a) return;
+    this.held[a] = [...this.down].some(c => KEYMAP[c] === a);
+    if (a === 'left' && this.held.right) this.lastDir = 1;
+    if (a === 'right' && this.held.left) this.lastDir = -1;
   },
 
   axisX() {
