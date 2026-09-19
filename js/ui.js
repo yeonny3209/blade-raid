@@ -317,8 +317,8 @@ const UI = {
       this.slot(ctx, x, sy0, sz, this.icons[s.icon], s.key.replace('s', ''), SKILL_KEY_LABELS[i], p.cd[s.key], s.cd, p.mp < s.mp);
     });
     const px = sx + 6 * (sz + gap) + 16;
-    this.slot(ctx, px, sy0 + 3, 44, this.icons.hpPot, '', '1', p.potCd / 60, 0.5, p.pots.hp <= 0, p.pots.hp);
-    this.slot(ctx, px + 52, sy0 + 3, 44, this.icons.mpPot, '', '2', p.potCd / 60, 0.5, p.pots.mp <= 0, p.pots.mp);
+    this.slot(ctx, px, sy0 + 3, 44, this.icons.hpPot, '', POTION_KEY_LABELS[0], p.potCd / 60, 0.5, p.pots.hp <= 0, p.pots.hp);
+    this.slot(ctx, px + 52, sy0 + 3, 44, this.icons.mpPot, '', POTION_KEY_LABELS[1], p.potCd / 60, 0.5, p.pots.mp <= 0, p.pots.mp);
     ctx.restore();
   },
 
@@ -451,8 +451,8 @@ const UI = {
     // 안내
     if (t % 70 < 50) this.text(ctx, 'PRESS ANY KEY', lx + 6, 470, { size: 30, fill: '#ffe070', stroke: 5, italic: true });
     const keys = [
-      ['W A S D', '이동  ( AA / DD 대시 )'], ['좌클릭', '기본 공격 (연타 콤보)'], ['K', '점프 / 다운 중 퀵 리바운드'], ['L', '백스텝 (무적)'],
-      ['U I O P H', '스킬      Space : 각성기'], ['1 · 2', 'HP / MP 물약'], ['ESC', '일시정지    M : 음소거'],
+      ['W A S D', '이동  ( AA / DD 대시 )'], ['좌클릭', '기본 공격 (연타 콤보)'], ['Space', '점프 / 다운 중 퀵 리바운드'], ['Z', '백스텝 (무적)'],
+      ['Q E T F G', '스킬      R : 각성기'], ['C / V', 'HP / MP 물약'], ['ESC', '일시정지    M : 음소거'],
     ];
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.55)'; roundRect(ctx, lx - 4, 510, 470, 190, 10); ctx.fill();
@@ -468,15 +468,17 @@ const UI = {
     ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(0, 0, W, H);
     this.text(ctx, 'PAUSE', W / 2, 200, { size: 64, align: 'center', italic: true, fill: '#fff', stroke: 8 });
     const lines = [
-      ['W A S D', '이동, 같은 방향 2번 → 대시  (방향키 + X C Z 도 가능)'], ['좌클릭 / K / L', '공격 / 점프 / 백스텝  (J 도 공격 가능)'],
-      ['U', '어퍼 슬래시 - 적을 띄움 (공중 사용 가능)'], ['I', '돌진참 - 적을 끌고 돌진'], ['O', '삼단베기 - 3연속 돌진 베기 (방향 전환 가능)'],
-      ['P', '발도 : 섬 - 순간 이동 베기'], ['H', '지진검 - 공중에서도 사용 가능'], ['Space', '극 귀신참 - 각성기'],
-      ['콤보', '평타 ↔ 스킬 서로 캔슬 가능 : 클릭 ×2 → U → 클릭 ×3 → I → 클릭 ...'],
+      ['W A S D', '이동, 같은 방향 2번 → 대시  (방향키도 가능)'], ['좌클릭', '기본 공격  (J 도 가능)'],
+      ['Space', '점프  /  다운 중 누르면 퀵 리바운드'], ['Z', '백스텝 (무적)  (L 도 가능)'],
+      ['Q', '어퍼 슬래시 - 적을 띄움 (공중 사용 가능)'], ['E', '돌진참 - 적을 끌고 돌진'], ['T', '삼단베기 - 3연속 돌진 베기 (방향 전환 가능)'],
+      ['F', '발도 : 섬 - 순간 이동 베기'], ['G', '지진검 - 공중에서도 사용 가능'], ['R', '극 귀신참 - 각성기'],
+      ['C / V', 'HP / MP 물약  (1 · 2 도 가능)'],
+      ['콤보', '평타 ↔ 스킬 서로 캔슬 가능 : 클릭 ×2 → Q → 클릭 ×3 → E → 클릭 ...'],
       ['팁', '띄운 적은 평타로 계속 저글 · 적 공격 준비 중 타격 시 COUNTER'],
     ];
     lines.forEach(([a, b], i) => {
-      this.text(ctx, a, 330, 270 + i * 31, { size: 17, fill: '#ffd87a', stroke: 3 });
-      this.text(ctx, b, 450, 270 + i * 31, { size: 16, font: FONT_B, weight: 700, fill: '#e8ecf8', stroke: 3 });
+      this.text(ctx, a, 330, 262 + i * 27, { size: 17, fill: '#ffd87a', stroke: 3 });
+      this.text(ctx, b, 450, 262 + i * 27, { size: 16, font: FONT_B, weight: 700, fill: '#e8ecf8', stroke: 3 });
     });
     this.text(ctx, 'ESC 를 눌러 계속', W / 2, 620, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
   },

@@ -2,20 +2,22 @@
 // ============================================================
 //  입력 : 키 상태 + 입력 큐(선입력 버퍼용) + 더블탭 대시
 // ============================================================
-// WASD 이동 + 마우스 좌클릭(공격) K(점프) L(백스텝) / U I O P H Space(스킬)
-// J / 방향키 + X C Z 조합도 그대로 사용 가능
+// WASD 이동 + 마우스 좌클릭(공격) + Space(점프) + Z(백스텝)
+// 스킬 Q E T F G / 각성기 R / 물약 C V  (J·X 공격, L 백스텝, 방향키, 1·2 물약도 그대로 사용 가능)
 const KEYMAP = {
   Mouse0: 'attack',   // 마우스 좌클릭 (가상 키코드)
   KeyW: 'up', KeyA: 'left', KeyS: 'down', KeyD: 'right',
   ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down',
-  KeyJ: 'attack', KeyK: 'jump', KeyL: 'back',
-  KeyX: 'attack', KeyC: 'jump', KeyZ: 'back',
-  KeyU: 's1', KeyI: 's2', KeyO: 's3', KeyP: 's4', KeyH: 's5', Space: 's6',
-  Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
+  KeyJ: 'attack', KeyX: 'attack',
+  Space: 'jump',
+  KeyZ: 'back', KeyL: 'back',
+  KeyQ: 's1', KeyE: 's2', KeyT: 's3', KeyF: 's4', KeyG: 's5', KeyR: 's6',
+  KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
   Escape: 'pause', KeyM: 'mute', Enter: 'confirm', NumpadEnter: 'confirm',
   F2: 'debug',
 };
-const SKILL_KEY_LABELS = ['U', 'I', 'O', 'P', 'H', 'SPC'];
+const SKILL_KEY_LABELS = ['Q', 'E', 'T', 'F', 'G', 'R'];
+const POTION_KEY_LABELS = ['C', 'V'];
 
 const Input = {
   held: {},
@@ -27,6 +29,7 @@ const Input = {
 
   init() {
     addEventListener('keydown', e => {
+      if (e.ctrlKey || e.metaKey) return;   // Ctrl+R 새로고침 등 브라우저 단축키는 그대로 둠
       if (KEYMAP[e.code] || e.code.startsWith('Arrow') || e.code === 'Space' || e.code === 'Tab') e.preventDefault();
       if (e.repeat) return;
       this.press(e.code);
