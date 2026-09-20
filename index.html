@@ -13,10 +13,13 @@
 <meta name="apple-mobile-web-app-title" content="BLADE RAID">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet">
 <style>
+  /* 제목·데미지 숫자용 글꼴을 앱에 내장 (오프라인/앱에서도 동일한 모양) */
+  @font-face {
+    font-family: 'Black Han Sans';
+    src: url('fonts/BlackHanSans-Regular.ttf') format('truetype');
+    font-weight: 400; font-style: normal; font-display: block;
+  }
   html, body {
     margin: 0; height: 100%; background: #000; overflow: hidden;
     user-select: none; -webkit-user-select: none;

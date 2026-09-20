@@ -8,7 +8,7 @@ const DEPTH = 228;           // 이동 가능한 깊이 범위
 const DEG = Math.PI / 180, TAU = Math.PI * 2;
 
 const FONT_T = "'Black Han Sans', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif";
-const FONT_B = "'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif";
+const FONT_B = "'Noto Sans KR', 'Noto Sans CJK KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif";
 
 // 모바일(터치) 기기 판별 : 해상도 상한과 터치 UI 를 결정
 const IS_MOBILE = (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches)

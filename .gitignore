@@ -2,3 +2,8 @@
 Thumbs.db
 node_modules/
 *.log
+
+# 안드로이드 빌드 산출물 / 서명 키 (키는 공개 저장소에 올리지 않음)
+android/build/
+android/release.keystore
+dist/*.idsig

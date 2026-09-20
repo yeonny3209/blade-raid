@@ -1,10 +1,11 @@
 // 오프라인 캐시 : 한 번 실행하면 인터넷 없이도 플레이 가능
-const CACHE = 'blade-raid-v2';
+const CACHE = 'blade-raid-v3';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './js/util.js', './js/input.js', './js/audio.js', './js/rig.js', './js/characters.js',
   './js/anims.js', './js/fx.js', './js/entity.js', './js/player.js', './js/enemies.js',
   './js/boss.js', './js/stage.js', './js/ui.js', './js/touch.js', './js/game.js',
+  './fonts/BlackHanSans-Regular.ttf',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/icon-180.png',
 ];
 
