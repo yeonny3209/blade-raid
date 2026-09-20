@@ -37,20 +37,11 @@
     addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 </script>
-<script src="js/util.js"></script>
-<script src="js/input.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/rig.js"></script>
-<script src="js/characters.js"></script>
-<script src="js/anims.js"></script>
-<script src="js/fx.js"></script>
-<script src="js/entity.js"></script>
-<script src="js/player.js"></script>
-<script src="js/enemies.js"></script>
-<script src="js/boss.js"></script>
-<script src="js/stage.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/touch.js"></script>
-<script src="js/game.js"></script>
+<script>
+  // 파일이 섞이지 않도록 한 번에 같은 버전으로 로드
+  const BUILD = '20260920d';
+  ['util', 'input', 'audio', 'rig', 'characters', 'anims', 'fx', 'entity', 'player', 'enemies', 'boss', 'themes', 'stage', 'dungeons', 'ui', 'touch', 'lobby', 'game']
+    .forEach(n => document.write(`<script src="js/${n}.js?v=${BUILD}"><\/script>`));
+</script>
 </body>
 </html>

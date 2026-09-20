@@ -1,10 +1,12 @@
 // 오프라인 캐시 : 한 번 실행하면 인터넷 없이도 플레이 가능
-const CACHE = 'blade-raid-v3';
+const CACHE = 'blade-raid-v6';
+const BUILD = '20260920d';
 const ASSETS = [
   './', './index.html', './manifest.json',
-  './js/util.js', './js/input.js', './js/audio.js', './js/rig.js', './js/characters.js',
-  './js/anims.js', './js/fx.js', './js/entity.js', './js/player.js', './js/enemies.js',
-  './js/boss.js', './js/stage.js', './js/ui.js', './js/touch.js', './js/game.js',
+  './js/util.js?v=' + BUILD, './js/input.js?v=' + BUILD, './js/audio.js?v=' + BUILD, './js/rig.js?v=' + BUILD, './js/characters.js?v=' + BUILD,
+  './js/anims.js?v=' + BUILD, './js/fx.js?v=' + BUILD, './js/entity.js?v=' + BUILD, './js/player.js?v=' + BUILD, './js/enemies.js?v=' + BUILD,
+  './js/boss.js?v=' + BUILD, './js/themes.js?v=' + BUILD, './js/stage.js?v=' + BUILD, './js/dungeons.js?v=' + BUILD,
+  './js/ui.js?v=' + BUILD, './js/touch.js?v=' + BUILD, './js/lobby.js?v=' + BUILD, './js/game.js?v=' + BUILD,
   './fonts/BlackHanSans-Regular.ttf',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/icon-180.png',
 ];
@@ -29,19 +31,32 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // 문서는 네트워크 우선 : 새 버전이 나오면 바로 반영되게
+  if (req.mode === 'navigate') {
+    e.respondWith((async () => {
+      try {
+        const res = await fetch(req);
+        const c = await caches.open(CACHE); c.put('./index.html', res.clone()).catch(() => { });
+        return res;
+      } catch (err) {
+        return (await caches.match('./index.html')) || Response.error();
+      }
+    })());
+    return;
+  }
+  // 나머지는 캐시 우선 (주소에 ?v= 버전이 붙으므로 정확히 일치할 때만 재사용)
   e.respondWith((async () => {
-    const hit = await caches.match(req, { ignoreSearch: true });
+    const hit = await caches.match(req);
     if (hit) return hit;
     try {
       const res = await fetch(req);
-      // 폰트 등 외부 자원도 받아두면 다음부터 오프라인에서 뜸
       if (res && (res.ok || res.type === 'opaque')) {
         const c = await caches.open(CACHE);
         c.put(req, res.clone()).catch(() => { });
       }
       return res;
     } catch (err) {
-      return caches.match('./index.html');
+      return (await caches.match(req, { ignoreSearch: true })) || Response.error();
     }
   })());
 });

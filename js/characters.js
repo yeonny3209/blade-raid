@@ -574,8 +574,9 @@ function drawBoss(ctx, J, pal, ent, opt) {
   limb(ctx, J.hip, J.knee1, J.foot1, 13, 10.5, 8.5, pal.fur, pal.fur, ol, ow);
   footShape(ctx, J.knee1, J.foot1, pal.hoof, ol, 11, 6.5, ow);
   circleOl(ctx, J.knee1.x, J.knee1.y, 8, pal.armor[1], ol, 1.3);
-  // 머리
-  bossHead(ctx, J, pal, ow, ent, opt);
+  // 머리 (보스마다 다름)
+  const HD2 = { skull: bossHeadSkull, eye: bossHeadEye }[(ent.rig && ent.rig.head) || 'bull'] || bossHead;
+  HD2(ctx, J, pal, ow, ent, opt);
   if (!J.wb) bossAxe(ctx, J, pal, ent, opt);
   // 앞팔
   limb(ctx, J.sh1, J.elbow1, J.hand1, 11, 9.5, 8.5, pal.skin, pal.skin, ol, ow);
@@ -667,6 +668,109 @@ function bossAxe(ctx, J, pal, ent, opt) {
     ctx.globalCompositeOperation = 'source-over';
   }
   ctx.restore();
+}
+
+// 보스 머리 변형 : 해골형
+function bossHeadSkull(ctx, J, pal, ow, ent, opt) {
+  const ol = pal.ol, h = J.head;
+  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(J.headRot);
+  // 뒤로 뻗은 뿔
+  olPoly(ctx, [-8, -10, -22, -20, -34, -40, -26, -58, -18, -64, -22, -48, -14, -30, -2, -18], pal.horn[0], ol, ow);
+  olPoly(ctx, [2, -12, 12, -26, 20, -46, 34, -60, 44, -62, 32, -48, 24, -30, 16, -14], pal.horn[1], ol, ow);
+  // 두개골
+  olPoly(ctx, [-16, -8, -10, -18, 6, -19, 18, -12, 26, -2, 28, 10, 20, 18, 4, 20, -8, 17, -16, 6], pal.horn[1], ol, ow);
+  ctx.fillStyle = pal.horn[0];
+  ctx.beginPath(); polyPath(ctx, [-16, -8, -8, -16, -6, 18, -8, 17, -16, 6]); ctx.fill();
+  // 눈구멍 (빛남)
+  ctx.fillStyle = '#080404';
+  ctx.beginPath(); polyPath(ctx, [4, -8, 18, -6, 17, 3, 5, 1]); ctx.fill();
+  ctx.beginPath(); polyPath(ctx, [-6, -9, 1, -8, 1, 0, -6, -1]); ctx.fill();
+  ctx.fillStyle = ent.enraged ? '#ff4020' : pal.eye[1];
+  ctx.beginPath(); ctx.ellipse(11, -2, 4, 3, 0, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-2, -4, 2.6, 2.4, 0, 0, TAU); ctx.fill();
+  if (!opt.flash && !opt.ghost) {
+    ctx.globalCompositeOperation = 'lighter';
+    drawGlow(ctx, 11, -2, 16, ent.enraged ? '255,60,20' : (pal.eyeGlow || '255,190,40'), 0.85);
+    drawGlow(ctx, -2, -4, 11, ent.enraged ? '255,60,20' : (pal.eyeGlow || '255,190,40'), 0.7);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  // 이빨
+  ctx.fillStyle = pal.horn[2];
+  for (let i = 0; i < 5; i++) { ctx.beginPath(); polyPath(ctx, [6 + i * 4, 13, 8 + i * 4, 21, 10 + i * 4, 13]); ctx.fill(); }
+  ctx.strokeStyle = ol; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(4, 13); ctx.lineTo(27, 11); ctx.stroke();
+  ctx.restore();
+}
+
+// 보스 머리 변형 : 외눈 괴물
+function bossHeadEye(ctx, J, pal, ow, ent, opt) {
+  const ol = pal.ol, h = J.head;
+  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(J.headRot);
+  // 촉수 갈기
+  ctx.strokeStyle = pal.fur[1]; ctx.lineCap = 'round';
+  for (let i = 0; i < 6; i++) {
+    const a = -2.6 + i * 0.32, L = 26 + (i % 3) * 12;
+    ctx.lineWidth = 7 - (i % 3);
+    ctx.beginPath(); ctx.moveTo(-6, -4);
+    ctx.quadraticCurveTo(-6 + Math.cos(a) * L * 0.7, -4 + Math.sin(a) * L * 0.7 + Math.sin(Game.time * 0.04 + i) * 5,
+      -6 + Math.cos(a) * L, -4 + Math.sin(a) * L);
+    ctx.stroke();
+  }
+  // 머리 덩어리
+  olPoly(ctx, [-16, -6, -6, -18, 10, -20, 24, -12, 30, 0, 26, 14, 10, 20, -6, 18, -16, 8], pal.skin[1], ol, ow);
+  ctx.fillStyle = pal.skin[0];
+  ctx.beginPath(); polyPath(ctx, [-16, -6, -6, -16, -4, 18, -6, 18, -16, 8]); ctx.fill();
+  // 커다란 외눈
+  circleOl(ctx, 10, -1, 12, '#f0e8d8', ol, ow);
+  ctx.fillStyle = ent.enraged ? '#ff3010' : (pal.eye[0] || '#ffb31a');
+  ctx.beginPath(); ctx.arc(13, -1, 7.5, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#100808';
+  ctx.beginPath(); ctx.ellipse(14, -1, 3, 6.5, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath(); ctx.arc(8, -6, 3, 0, TAU); ctx.fill();
+  if (!opt.flash && !opt.ghost) {
+    ctx.globalCompositeOperation = 'lighter';
+    drawGlow(ctx, 13, -1, 26, ent.enraged ? '255,60,20' : (pal.eyeGlow || '255,190,40'), 0.7);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  // 아래턱 이빨
+  ctx.fillStyle = pal.horn[2];
+  for (let i = 0; i < 4; i++) { ctx.beginPath(); polyPath(ctx, [2 + i * 6, 16, 4 + i * 6, 23, 7 + i * 6, 16]); ctx.fill(); }
+  ctx.restore();
+}
+
+// 보스 종류별 팔레트 / 머리 (dungeons.js 의 BOSS_DEFS 를 적용)
+function makeBossRig(def) {
+  const pal = Object.assign({}, RIG_BOSS.pal);
+  if (def.skin) pal.skin = def.skin;
+  if (def.armor) pal.armor = def.armor;
+  if (def.horn) pal.horn = def.horn;
+  if (def.elem) { pal.rune = ['#ffffff', 'rgb(' + def.elem + ')', '#ffffff']; pal.eyeGlow = def.elem; }
+  const rig = Object.assign({}, RIG_BOSS, {
+    scale: def.scale || RIG_BOSS.scale,
+    pal,
+    head: def.head || 'bull',
+    draw(ctx, J, p2, ent, opt) { drawBoss(ctx, J, p2, ent, opt); },
+  });
+  rig.flashPal = mapPal(pal, c => (typeof c === 'string' && c[0] === '#' ? mixHex(c, '#ffffff', 0.72) : c));
+  rig.flashPal.ol = mixHex(pal.ol, '#ffffff', 0.35);
+  rig._ghost = {};
+  rig.ghostPal = rgb => rig._ghost[rgb] || (rig._ghost[rgb] = mapPal(pal, () => `rgb(${rgb})`));
+  return rig;
+}
+
+// 몬스터 색 변형 : 테마에 맞게 팔레트를 물들인다
+function tintRig(base, tint, amt, keep) {
+  const hex = c => typeof c === 'string' && c[0] === '#';
+  const pal = mapPal(base.pal, c => (hex(c) ? mixHex(c, tint, amt) : c));
+  // 눈·보석처럼 색을 유지할 항목만 되돌린다 (없는 키는 건드리지 않음)
+  if (keep) for (const k of keep) if (base.pal[k] !== undefined) pal[k] = base.pal[k];
+  const rig = Object.assign({}, base, { pal });
+  rig.flashPal = mapPal(pal, c => (hex(c) ? mixHex(c, '#ffffff', 0.72) : c));
+  rig.flashPal.ol = base.flashPal.ol;
+  rig._ghost = {};
+  rig.ghostPal = rgb => rig._ghost[rgb] || (rig._ghost[rgb] = mapPal(pal, () => `rgb(${rgb})`));
+  return rig;
 }
 
 RIG_PLAYER.draw = drawPlayer;

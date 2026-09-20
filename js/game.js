@@ -12,7 +12,7 @@ const Game = {
   combo: { n: 0, t: 0, dmg: 0, pop: 0 },
   stats: null, target: null, targetT: 0, tokenMax: 2,
   notices: [], big: null, cutin: null, fade: 0, fadeDir: 0,
-  debug: false, debugBoxes: [], coins: 3, bgCache: {},
+  debug: false, debugBoxes: [], coins: 3, bgCache: {}, dungeon: null,
 
   init() {
     this.canvas = document.getElementById('game');
@@ -22,8 +22,10 @@ const Game = {
     Input.init();
     UI.init();
     Touch.init();
+    Save.load();
     this.bgScale = clamp(this.ps, 1, IS_MOBILE ? 1 : 2);
     this.stats = this.newStats();
+    this.dungeon = buildDungeon(DUNGEONS[0]);
     this.titleRoom = new Room(0);
     const tp = this.titleP = new Player();
     tp.scale = 2.5; tp.x = 930; tp.y = 600 - GROUND_Y; tp.facing = -1;
@@ -77,9 +79,10 @@ const Game = {
     if (Input.take('debug')) this.debug = !this.debug;
     switch (this.state) {
       case 'title': this.updateTitle(); break;
+      case 'lobby': Lobby.update(); break;
       case 'paused': if (Input.take('pause')) { this.state = this.pausedFrom; Sfx.play('ui'); } Input.queue = Input.queue.filter(q => q.a === 'pause'); break;
-      case 'result': this.resT++; if (this.resT > 120 && (Input.take('confirm') || Input.take('attack'))) { Sfx.play('select'); this.startDungeon(); } Input.clear(); break;
-      case 'gameover': if (Input.take('confirm') || Input.take('attack')) { Sfx.play('select'); this.coins = 3; this.startDungeon(); } Input.clear(); break;
+      case 'result': this.resT++; if (this.resT > 100 && (Input.take('confirm') || Input.take('attack'))) { Sfx.play('select'); this.toLobby(); } Input.clear(); break;
+      case 'gameover': if (Input.take('confirm') || Input.take('attack')) { Sfx.play('select'); this.coins = 3; this.toLobby(); } Input.clear(); break;
       case 'continue': this.updateContinue(); break;
       default:
         if (Input.take('pause') && !this.cutin && this.state === 'play') { this.pausedFrom = this.state; this.state = 'paused'; Sfx.play('ui'); return; }
@@ -98,14 +101,30 @@ const Game = {
       Sfx.init();
       Sfx.play('select');
       this.coins = 3;
-      this.startDungeon();
+      this.toLobby();
     }
   },
 
-  startDungeon() {
+  // 로비로 (던전 선택 화면)
+  toLobby() {
+    this.state = 'lobby';
+    if (!this.player) this.player = new Player();
+    this.enemies = []; this.projectiles = []; this.pickups = [];
+    this.boss = null; this.target = null; this.cutin = null; this.clearSeq = null;
+    this.fade = 0; this.fadeDir = 0; this.dim = 0; this.dimTarget = 0; this.zoom = 1;
+    this.hurtA = 0; this.flash = 0; this.speedT = 0; this.kickX = 0; this.kickY = 0; this.freezeT = 0;
+    FX.clear(); Touch.release(); Input.clear();
+    Lobby.enter();
+  },
+
+  startDungeon(id) {
+    const d = DUNGEON_BY_ID[id] || DUNGEONS[0];
+    this.dungeon = buildDungeon(d);
+    this.bgCache = {};                      // 던전마다 배경이 다르므로 캐시 초기화
     this.stats = this.newStats();
     this.player = new Player();
     this.combo = { n: 0, t: 0, dmg: 0, pop: 0 };
+    this.coins = 3;
     this.loadRoom(0);
   },
 
@@ -299,6 +318,7 @@ const Game = {
 
   showResult() {
     const s = this.stats, sec = s.time / 60 | 0;
+    const dun = this.dungeon.def;
     let score = 0;
     score += clamp(100 - Math.max(0, sec - 180) / 3, 20, 100) * 40;
     score += Math.min(s.maxCombo, 150) * 20;
@@ -309,6 +329,9 @@ const Game = {
       timeStr: `${String(sec / 60 | 0).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`,
       maxCombo: s.maxCombo, kills: s.kills, hits: s.hitsTaken, dmg: s.dmg, gold: s.gold, score: Math.round(score * 10), rank,
     };
+    this.result.dungeon = dun.name;
+    Save.record(dun.id, rank, this.result.score, s.gold);
+    this.result.unlockedNew = Save.data.unlocked;
     this.state = 'result'; this.resT = 0;
     Input.clear();
   },
@@ -349,6 +372,7 @@ const Game = {
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
     if (this.state === 'title') { UI.drawTitle(ctx); return; }
+    if (this.state === 'lobby') { Lobby.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     const r = this.room, p = this.player, camX = Math.round(this.cam.x * 2) / 2;
 
     ctx.save();

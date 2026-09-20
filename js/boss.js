@@ -3,7 +3,7 @@
 //  보스 : 뿔의 군주 바르카스
 // ============================================================
 ENEMY_TYPES.boss = {
-  name: '뿔의 군주 바르카스', lv: 70, rig: RIG_BOSS, anims: ANIM_BOSS, hpMax: 1250000, atk: 5000, speed: 2.1,
+  hitMat: 'beast', name: '뿔의 군주 바르카스', lv: 70, rig: RIG_BOSS, anims: ANIM_BOSS, hpMax: 1250000, atk: 5000, speed: 2.1,
   w: 38, d: 22, h: 292, weight: 3, range: 200, gold: [40, 60], lines: 62,
 };
 
@@ -17,8 +17,29 @@ const BH = {
 };
 
 class Boss extends Enemy {
-  constructor(x, y) {
+  constructor(x, y, def) {
     super('boss', x, y);
+    // 던전별 보스 정의 적용 (색 / 크기 / 머리 / 패턴 / 속성)
+    const B = def || BOSS_DEFS.varkas;
+    this.def = B;
+    this.rig = makeBossRig(B);
+    this.scale = this.rig.scale;
+    this.name = B.name; this.title = B.title || '';
+    this.hitMat = B.hitMat || 'beast';
+    this.elem = B.elem || '255,110,30';
+    this.auraCol = B.aura || '255,40,20';
+    this.patterns = B.patterns || ['swing', 'charge', 'leap', 'erupt'];
+    this.eruptCount = B.eruptCount || 6;
+    this.h = Math.round(292 * (this.scale / 1.78));
+    this.w = Math.round(38 * (this.scale / 1.78));
+    const D = Game.dungeon && Game.dungeon.def;
+    if (D) {
+      this.lv = D.lv + 4;
+      this.hpMax = this.hp = Math.round(1250000 * D.mul);
+      this.atk = Math.round(5000 * Math.pow(D.mul, 0.62));
+      this.lines = Math.max(20, Math.round(62 * Math.pow(D.mul, 0.3)));
+      this.gold = [Math.round(40 * D.mul), Math.round(60 * D.mul)];
+    }
     this.isBoss = true; this.heavy = true; this.noLaunch = true;
     this.brkMax = 100; this.brk = 100; this.breakT = 0;
     this.cds = { swing: 60, charge: 200, leap: 260, erupt: 330 };
@@ -110,11 +131,11 @@ class Boss extends Enemy {
       if (adx > 260) this.moveTo(p.x - want * 200, p.y, this.speed * 0.8); else { this.vx *= 0.8; this.vy *= 0.8; this.play('idle', 8); }
       return;
     }
-    const c = this.cds, faceOK = want === this.facing;
-    if (adx < 240 && Math.abs(dy) < 50 && faceOK && c.swing <= 0) { this.startAttack('swing'); c.swing = this.enraged ? 60 : 90; return; }
-    if (adx > 330 && Math.abs(dy) < 70 && c.charge <= 0 && chance(0.6)) { this.facing = want; this.startAttack('charge'); c.charge = this.enraged ? 280 : 380; return; }
-    if (c.leap <= 0 && chance(0.4)) { this.startAttack('leap'); c.leap = this.enraged ? 320 : 440; return; }
-    if (c.erupt <= 0 && chance(0.5)) { this.startAttack('erupt'); c.erupt = this.enraged ? 360 : 500; return; }
+    const c = this.cds, faceOK = want === this.facing, has = k => this.patterns.includes(k);
+    if (has('swing') && adx < 240 && Math.abs(dy) < 50 && faceOK && c.swing <= 0) { this.startAttack('swing'); c.swing = this.enraged ? 60 : 90; return; }
+    if (has('charge') && adx > 330 && Math.abs(dy) < 70 && c.charge <= 0 && chance(0.6)) { this.facing = want; this.startAttack('charge'); c.charge = this.enraged ? 280 : 380; return; }
+    if (has('leap') && c.leap <= 0 && chance(0.4)) { this.startAttack('leap'); c.leap = this.enraged ? 320 : 440; return; }
+    if (has('erupt') && c.erupt <= 0 && chance(0.5)) { this.startAttack('erupt'); c.erupt = this.enraged ? 360 : 500; return; }
     const arrived = this.moveTo(p.x - want * 180, clamp(p.y, 0, DEPTH), this.speed * (this.enraged ? 1.25 : 1));
     if (!faceOK) this.facing = this.facing; // 천천히 돌아섬
     this.facing = this.turnT > 0 ? this.facing : want;
@@ -142,7 +163,7 @@ class Boss extends Enemy {
   draw(ctx) {
     if (this.visible && this.alpha > 0 && (this.enraged || this.state === 'break')) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      const col = this.state === 'break' ? '255,220,120' : '255,40,20';
+      const col = this.state === 'break' ? '255,220,120' : this.auraCol;
       drawGlow(ctx, this.x, sy(this.y, this.z + this.h * 0.45), 190 + Math.sin(Game.time * 0.15) * 14, col, 0.28 * this.alpha, 0.8, 1.2);
       ctx.restore();
     }
@@ -269,13 +290,13 @@ const BOSS_ACTS = {
       }
       if (f === 24) {
         Sfx.play('magic', 0.8, 0.5);
-        const p = Game.player, n = e.enraged ? 9 : 6;
+        const p = Game.player, n = (e.eruptCount || 6) + (e.enraged ? 3 : 0);
         for (let i = 0; i < n; i++) {
           const tx = clamp(p.x + (i === 0 ? 0 : rand(-300, 300)), Game.room.minX + 30, Game.room.maxX - 30);
           const ty = clamp(p.y + (i === 0 ? 0 : rand(-90, 90)), 0, DEPTH);
           FX.add('ground', new Telegraph(tx, ty, 66, 24, 44 + i * 7, {
-            col: '255,110,20', onEnd: tg => {
-              FX.add('world', new Pillar(tg.x, tg.y, 56, 340, 36, '255,110,30', '255,235,180'));
+            col: e.elem, onEnd: tg => {
+              FX.add('world', new Pillar(tg.x, tg.y, 56, 340, 36, e.elem, '255,240,220'));
               for (let k = 0; k < 6; k++) FX.add('world', new Debris(tg.x, tg.y, 2, { vx: rand(-3, 3), vz: rand(6, 11), s: rand(2, 4), glow: '255,140,60' }));
               Sfx.play('pillar', 0.7); Game.addShake(3);
               const pl = Game.player;

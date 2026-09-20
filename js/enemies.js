@@ -3,18 +3,37 @@
 //  몬스터 : 기본 클래스 + 종류별 AI
 // ============================================================
 const ENEMY_TYPES = {
-  goblin: { name: '고블린 전사', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 16000, atk: 1700, speed: 2.4, w: 15, d: 12, h: 92, weight: 1, range: 70, gear: 'helm', gold: [3, 6] },
-  thrower: { name: '고블린 투척병', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 11000, atk: 1500, speed: 2.2, w: 15, d: 12, h: 92, weight: 1, range: 320, gear: 'band', gold: [3, 6] },
-  orc: { name: '오크 광전사', lv: 64, rig: RIG_ORC, anims: ANIM_ORC, hpMax: 64000, atk: 4200, speed: 1.8, w: 26, d: 16, h: 156, weight: 1.55, range: 118, elite: true, gold: [8, 14] },
-  mage: { name: '암흑 술사', lv: 63, rig: RIG_MAGE, anims: ANIM_MAGE, hpMax: 24000, atk: 2400, speed: 2.0, w: 15, d: 12, h: 126, weight: 1.1, range: 380, gold: [5, 9] },
+  goblin: { hitMat: 'flesh', name: '고블린 전사', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 16000, atk: 1700, speed: 2.4, w: 15, d: 12, h: 92, weight: 1, range: 70, gear: 'helm', gold: [3, 6] },
+  thrower: { hitMat: 'flesh', name: '고블린 투척병', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 11000, atk: 1500, speed: 2.2, w: 15, d: 12, h: 92, weight: 1, range: 320, gear: 'band', gold: [3, 6] },
+  orc: { hitMat: 'armor', name: '오크 광전사', lv: 64, rig: RIG_ORC, anims: ANIM_ORC, hpMax: 64000, atk: 4200, speed: 1.8, w: 26, d: 16, h: 156, weight: 1.55, range: 118, elite: true, gold: [8, 14] },
+  mage: { hitMat: 'magic', name: '암흑 술사', lv: 63, rig: RIG_MAGE, anims: ANIM_MAGE, hpMax: 24000, atk: 2400, speed: 2.0, w: 15, d: 12, h: 126, weight: 1.1, range: 380, gold: [5, 9] },
 };
+
+// 테마별로 물들인 리그를 만들어 재사용
+const TINTED = {};
+function themedRig(base, theme) {
+  const sk = SKINS[theme];
+  if (!sk) return base;
+  const key = theme + ':' + (base.key || base.wlen);
+  return TINTED[key] || (TINTED[key] = tintRig(base, sk.tint, sk.amt, ['eye', 'pupil', 'orb', 'teeth']));
+}
 
 class Enemy extends Entity {
   constructor(type, x, y) {
     const T = ENEMY_TYPES[type] || {};
     super(T.rig, T.anims);
     Object.assign(this, T);
-    this.kind = type; this.team = 1; this.hp = this.hpMax;
+    this.kind = type; this.team = 1;
+    // 던전 테마에 맞춰 색과 이름, 강함을 바꾼다
+    const D = Game.dungeon && Game.dungeon.def;
+    if (D) {
+      const sk = SKINS[D.theme];
+      if (sk) { this.rig = themedRig(T.rig, D.theme); this.name = sk.pre + T.name; }
+      this.lv = D.lv;
+      this.hpMax = Math.round(T.hpMax * D.mul);
+      this.atk = Math.round(T.atk * Math.pow(D.mul, 0.62));
+    }
+    this.hp = this.hpMax;
     this.x = this.px = x; this.y = y; this.facing = -1;
     this.state = 'idle'; this.stT = 0; this.aiWait = randi(20, 60); this.atkCd = randi(30, 80);
     this.yOff = rand(-18, 18); this.hang = rand(0, 60);

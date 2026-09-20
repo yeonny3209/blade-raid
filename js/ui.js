@@ -128,7 +128,7 @@ const UI = {
       g.restore();
       g.strokeStyle = '#c9a55c'; g.lineWidth = 2.5; g.beginPath(); g.arc(34, 34, 31, 0, TAU); g.stroke();
     }), x - 34, y - 34, 68, 68);
-    this.text(ctx, 'Lv.70', 92, 30, { size: 15, fill: '#ffd87a', stroke: 3 });
+    this.text(ctx, 'Lv.' + (p.lv || 70), 92, 30, { size: 15, fill: '#ffd87a', stroke: 3 });
     this.text(ctx, '검귀 카엘', 140, 30, { size: 18, stroke: 3 });
     // 골드
     ctx.fillStyle = '#f5c542'; ctx.beginPath(); ctx.arc(100, 58, 7, 0, TAU); ctx.fill();
@@ -142,7 +142,7 @@ const UI = {
   },
 
   drawMinimap(ctx) {
-    const rooms = DUNGEON.rooms, n = rooms.length, cw = 30, ch = 22, gap = 10;
+    const rooms = Game.dungeon.rooms, n = rooms.length, cw = Math.min(30, 200 / n | 0), ch = 22, gap = 6;
     const tw = n * cw + (n - 1) * gap, x0 = W - 20 - tw, y0 = 22;
     ctx.save();
     ctx.fillStyle = 'rgba(8,8,14,0.72)'; roundRect(ctx, x0 - 12, y0 - 10, tw + 24, ch + 38, 8); ctx.fill();
@@ -160,7 +160,7 @@ const UI = {
         ctx.fillStyle = '#300'; ctx.beginPath(); ctx.arc(x + cw / 2 - 2.2, y0 + ch / 2 - 1, 1.6, 0, TAU); ctx.arc(x + cw / 2 + 2.2, y0 + ch / 2 - 1, 1.6, 0, TAU); ctx.fill();
       }
     }
-    this.text(ctx, DUNGEON.name, x0 + tw / 2, y0 + ch + 14, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: '#c9b48a' });
+    this.text(ctx, Game.dungeon.name, x0 + tw / 2, y0 + ch + 14, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: '#c9b48a' });
     ctx.restore();
   },
 
@@ -515,7 +515,7 @@ const UI = {
     ctx.fillStyle = pg; roundRect(ctx, 290, 110, 700, 510, 14); ctx.fill();
     ctx.strokeStyle = '#c9a55c'; ctx.lineWidth = 2; ctx.stroke();
     this.text(ctx, 'DUNGEON CLEAR', W / 2, 160, { size: 46, align: 'center', italic: true, fill: '#ffe9a6', stroke: 6 });
-    this.text(ctx, DUNGEON.name, W / 2, 202, { size: 18, align: 'center', font: FONT_B, weight: 700, fill: '#b8a888' });
+    this.text(ctx, R.dungeon || '', W / 2, 202, { size: 18, align: 'center', font: FONT_B, weight: 700, fill: '#b8a888' });
     const rows = [
       ['클리어 타임', R.timeStr], ['최대 콤보', fmt(R.maxCombo)], ['처치한 몬스터', fmt(R.kills)],
       ['피격 횟수', fmt(R.hits)], ['누적 데미지', fmt(R.dmg)], ['획득 골드', fmt(R.gold)],

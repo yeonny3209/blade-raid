@@ -40,9 +40,23 @@ const DUNGEON = {
   ],
 };
 
+// 테마별 떠다니는 입자 (반딧불 / 눈 / 재 / 포자 …)
+const AMBIENT = {
+  forest: { n: 26, cols: ['200,255,120', '140,230,255'], vx: [-0.3, 0.3], vy: [-0.25, 0.1], r: [5, 9], blink: true },
+  ruins: { n: 30, cols: ['255,230,190'], vx: [-0.15, 0.25], vy: [-0.1, 0.15], r: [3, 6] },
+  lair: { n: 46, cols: ['255,120,40', '255,200,90'], vx: [-0.4, 0.4], vy: [-1.4, -0.4], r: [4, 8], y0: 250, y1: 720 },
+  frost: { n: 70, rate: 0.6, cols: ['235,248,255', '190,225,255'], vx: [-0.9, 0.3], vy: [0.5, 1.6], r: [3, 7], y0: -20, y1: 400 },
+  mine: { n: 26, cols: ['255,190,110', '150,220,255'], vx: [-0.2, 0.2], vy: [-0.3, 0.1], r: [3, 6] },
+  desert: { n: 40, rate: 0.5, cols: ['240,200,140', '255,225,170'], vx: [0.8, 2.2], vy: [-0.3, 0.3], r: [4, 9] },
+  swamp: { n: 34, cols: ['150,255,140', '200,255,120'], vx: [-0.2, 0.2], vy: [-0.5, -0.1], r: [5, 10], blink: true },
+  factory: { n: 30, cols: ['255,170,80', '200,210,230'], vx: [-0.3, 0.5], vy: [-0.9, -0.2], r: [3, 7] },
+  sky: { n: 34, cols: ['255,250,220', '200,230,255'], vx: [-0.25, 0.25], vy: [-0.35, 0.05], r: [4, 9], blink: true },
+  abyss: { n: 44, cols: ['190,110,255', '120,200,255'], vx: [-0.3, 0.3], vy: [-0.8, -0.15], r: [4, 9], blink: true },
+};
+
 class Room {
   constructor(idx) {
-    const def = DUNGEON.rooms[idx];
+    const def = Game.dungeon.rooms[idx];
     this.def = def; this.idx = idx; this.width = def.width;
     this.minX = 40; this.maxX = def.width - 40;
     this.wave = -1; this.cleared = false; this.clearT = 0; this.waveDelay = 0;
@@ -56,7 +70,7 @@ class Room {
     this.wave = i;
     const list = this.def.waves[i];
     list.forEach(([k, x, y], j) => {
-      const e = k === 'boss' ? new Boss(x, y) : new Enemy(k, x, y);
+      const e = k === 'boss' ? new Boss(x, y, BOSS_DEFS[Game.dungeon.def.boss]) : new Enemy(k, x, y);
       if (!pre) e.spawnIn(j * 8);
       else { e.aiWait = randi(40, 90) + j * 10; }
       Game.enemies.push(e);
@@ -80,12 +94,11 @@ class Room {
 
   updateAmbient() {
     const th = this.def.theme, cam = Game.cam.x;
-    const want = th === 'forest' ? 26 : th === 'ruins' ? 30 : 46;
-    if (this.ambient.length < want && chance(0.3)) {
-      const a = { x: cam + rand(-50, W + 50), y: rand(40, H - 60), t: 0, life: randi(160, 320), ph: rand(0, TAU) };
-      if (th === 'forest') { a.vx = rand(-0.3, 0.3); a.vy = rand(-0.25, 0.1); a.col = chance(0.7) ? '200,255,120' : '140,230,255'; a.r = rand(5, 9); a.blink = true; }
-      else if (th === 'ruins') { a.vx = rand(-0.15, 0.25); a.vy = rand(-0.1, 0.15); a.col = '255,230,190'; a.r = rand(3, 6); }
-      else { a.y = rand(250, H); a.vx = rand(-0.4, 0.4); a.vy = rand(-1.4, -0.4); a.col = chance(0.8) ? '255,120,40' : '255,200,90'; a.r = rand(4, 8); }
+    const C = AMBIENT[th] || AMBIENT.lair;
+    if (this.ambient.length < C.n && chance(C.rate ?? 0.3)) {
+      const a = { x: cam + rand(-50, W + 50), y: rand(C.y0 ?? 40, C.y1 ?? H - 60), t: 0, life: randi(160, 320), ph: rand(0, TAU) };
+      a.vx = rand(C.vx[0], C.vx[1]); a.vy = rand(C.vy[0], C.vy[1]);
+      a.col = choose(C.cols); a.r = rand(C.r[0], C.r[1]); a.blink = !!C.blink;
       this.ambient.push(a);
     }
     for (const a of this.ambient) { a.t++; a.x += a.vx + Math.sin((a.t + a.ph * 50) * 0.02) * 0.3; a.y += a.vy; }
@@ -148,6 +161,28 @@ class Room {
       } else if (L.type === 'eye') {
         const g = 0.6 + Math.sin(t * 0.06) * 0.3;
         drawGlow(ctx, x, L.y, 26, '255,40,20', g);
+      } else if (L.type === 'crystal') {
+        const g2 = 0.5 + Math.sin(t * 0.05 + L.x * 0.01) * 0.25;
+        drawGlow(ctx, x, L.y, L.r, L.col || '150,220,255', 0.3 * g2);
+      } else if (L.type === 'gear') {
+        ctx.save(); ctx.globalCompositeOperation = 'source-over';
+        ctx.translate(x, L.y); ctx.rotate(t * L.spd);
+        ctx.fillStyle = '#39404f';
+        ctx.beginPath(); ctx.arc(0, 0, L.r * 0.72, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#4a5364';
+        for (let i = 0; i < 10; i++) {
+          const a = i / 10 * TAU;
+          ctx.save(); ctx.rotate(a); ctx.fillRect(L.r * 0.66, -L.r * 0.13, L.r * 0.3, L.r * 0.26); ctx.restore();
+        }
+        ctx.beginPath(); ctx.arc(0, 0, L.r * 0.66, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#20252f'; ctx.beginPath(); ctx.arc(0, 0, L.r * 0.22, 0, TAU); ctx.fill();
+        ctx.restore();
+        ctx.globalCompositeOperation = 'lighter';
+      } else if (L.type === 'steam') {
+        for (let i = 0; i < 3; i++) {
+          const ph = (t * 1.4 + i * 90) % 270;
+          drawGlow(ctx, x + Math.sin(ph * 0.03 + i) * 14, L.y - ph, 26 + ph * 0.16, '210,225,245', 0.16 * (1 - ph / 270));
+        }
       } else if (L.type === 'shaft') {
         ctx.globalAlpha = 0.07 + Math.sin(t * 0.01 + L.x) * 0.03;
         ctx.fillStyle = '#cfefff';
@@ -197,9 +232,11 @@ function buildBackground(def, S) {
   const fg = makeCanvas((W + (w - W) * 1.18 + 60) * S, 180 * S);
   const ctxs = [far, mid, gnd, fg].map(c => { const g = c.getContext('2d'); g.scale(S, S); return g; });
   const bg = { far, mid, ground: gnd, fg, scale: S, lights: [], glow: null };
-  const T = def.theme;
-  if (T === 'forest') buildForest(bg, ctxs, farW, midW, w, rnd, def);
-  else if (T === 'ruins') buildRuins(bg, ctxs, farW, midW, w, rnd, def);
+  const B = {
+    forest: buildForest, ruins: buildRuins, frost: buildFrost, mine: buildMine,
+    desert: buildDesert, swamp: buildSwamp, factory: buildFactory, sky: buildSky, abyss: buildAbyss,
+  }[def.theme];
+  if (B) B(bg, ctxs, farW, midW, w, rnd, def);
   else buildLair(bg, ctxs, farW, midW, w, rnd, def, S);
   return bg;
 }

@@ -215,9 +215,17 @@ function applyHit(att, tgt, hit, o = {}) {
   // --- 사운드 ---
   // 콤보가 쌓일수록 반음씩 올라가 연타가 기계적으로 들리지 않게 한다
   const cp = 1 + Math.min(Game.combo.n, 12) * 0.015;
-  const snd = hit.sfx || (att.isPlayer ? 'hit' : 'blunt');
-  if (snd !== 'none') Sfx.play(snd, hit.vol || 1, att.isPlayer ? cp : 1);
-  if (crit && att.isPlayer) Sfx.play('crit', 0.8, cp);
+  if (att.isPlayer) {
+    // 맞는 대상의 재질 + 타격 강도로 즉석 합성 (같은 적도 매번 음색이 다름)
+    if (hit.sfx === 'none') { /* 스킬이 직접 소리를 냄 */ }
+    else {
+      const pw = hit.power2 ?? (stop >= 12 ? 3 : stop >= 8 ? 2 : stop <= 2 ? 0 : 1);
+      Sfx.impact(tgt.hitMat || 'flesh', pw, { vol: hit.vol || 1, pitch: cp, crit });
+    }
+  } else {
+    const snd = hit.sfx && hit.sfx !== 'none' ? hit.sfx : 'blunt';
+    if (snd !== 'none') Sfx.play(snd, hit.vol || 1);
+  }
 
   // --- 데미지 숫자 ---
   if (Game.frame - tgt.dmgStackT < 22) tgt.dmgStack = Math.min(tgt.dmgStack + 1, 7); else tgt.dmgStack = 0;

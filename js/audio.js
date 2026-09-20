@@ -174,6 +174,17 @@ const Sfx = {
     osc.start(t); osc.stop(t + o.dur + 0.05);
   },
 
+  // 재질 × 강도 타격음 (게임 쪽에서 쓰는 진입점)
+  impact(mat, power, o = {}) {
+    if (!this.ctx || this.muted) return;
+    const now = performance.now();
+    const key = 'imp' + power;
+    if (this.lastPlay[key] && now - this.lastPlay[key] < 22) return;
+    this.lastPlay[key] = now;
+    const pitch = (o.pitch || 1) * (0.95 + Math.random() * 0.1);
+    SFX.impact(this, (o.vol || 1) * (MIX.impact ?? 0.37) * (power >= 2 ? 1.18 : 1), pitch, mat, power, !!o.crit);
+  },
+
   play(name, vol = 1, pitch = 1) {
     if (!this.ctx || this.muted) return;
     const now = performance.now();
@@ -187,7 +198,7 @@ const Sfx = {
 // 소리별 음량 단계 : 약한 타격 < 평타 < 강타 < 폭발 순으로 확실히 차이나게
 // (소프트 클립 천장이 0.94 라서 개별 레벨을 정리해두지 않으면 전부 같은 크기로 뭉개진다)
 const MIX = {
-  hitLight: 0.33, hit: 0.37, heavy: 0.44, crit: 1, blunt: 0.38, hurt: 0.41,
+  impact: 0.37, hitLight: 0.33, hit: 0.37, heavy: 0.44, crit: 1, blunt: 0.38, hurt: 0.41,
   thud: 0.48, land: 0.51, explode: 0.45, quake: 0.49, break: 0.41, cutin: 0.46,
   ultSlash: 0.3, pillar: 0.4, roar: 0.5, flash: 0.71, counter: 0.64,
   swing: 2.2, swingBig: 1.19, ring: 1, dash: 1, jump: 1, charge: 1, sheath: 1,
@@ -198,41 +209,72 @@ const MIX = {
 // ------------------------------------------------------------
 //  효과음 정의
 // ------------------------------------------------------------
+// 재질별 타격 음색표
+//   tick  : 트랜지언트 주파수 / 세기      body : 밴드패스 중심 → 끝, Q, 길이
+//   sub   : 저음 시작 → 끝, 길이, 세기    metal: 금속 링 주파수 / 세기 / 길이
+//   grit  : 자갈·뼈 부서지는 잡음량
+const MATS = {
+  flesh: { tick: [4200, 0.5], body: [1700, 650, 1.0, 0.10], sub: [205, 44, 0.17, 0.95], metal: null, grit: 0 },
+  armor: { tick: [6200, 0.8], body: [2700, 1150, 1.3, 0.09], sub: [195, 42, 0.15, 0.8], metal: [1950, 0.2, 0.16], grit: 0.15 },
+  bone: { tick: [5400, 0.7], body: [3100, 950, 2.1, 0.07], sub: [235, 62, 0.10, 0.55], metal: [2700, 0.09, 0.07], grit: 0.6 },
+  magic: { tick: [7200, 0.45], body: [3600, 1500, 1.5, 0.10], sub: [265, 72, 0.12, 0.5], metal: [3200, 0.24, 0.42], grit: 0 },
+  stone: { tick: [2300, 0.7], body: [880, 300, 0.9, 0.15], sub: [150, 34, 0.24, 1.1], metal: null, grit: 0.85 },
+  beast: { tick: [1600, 0.75], body: [1150, 420, 0.85, 0.18], sub: [148, 30, 0.3, 1.2], metal: null, grit: 0.3 },
+  ice: { tick: [7600, 0.6], body: [3300, 1200, 1.8, 0.08], sub: [240, 58, 0.12, 0.6], metal: [3400, 0.2, 0.3], grit: 0.55 },
+  metal: { tick: [6800, 0.9], body: [3000, 1300, 1.6, 0.10], sub: [180, 40, 0.16, 0.8], metal: [1500, 0.3, 0.34], grit: 0.1 },
+};
+
+// 타격 강도 단계 : 0 다단히트 / 1 평타 / 2 강타 / 3 필살
+const POWER = [
+  { g: 0.62, dur: 0.6, subG: 0.55, duck: 0 },
+  { g: 1.0, dur: 1.0, subG: 1.0, duck: 0.18 },
+  { g: 1.25, dur: 1.9, subG: 1.45, duck: 0.45 },
+  { g: 1.45, dur: 2.9, subG: 1.8, duck: 0.65 },
+];
+
 const SFX = {
   // ---------- 타격 ----------
-  // 평타 : 날카로운 쇳소리 + 살 때리는 바디 + 저음 펀치
-  hit(s, v, p) {
-    s.tick({ f: 5200, gain: 0.85 * v, dur: 0.013 });
-    s.tick({ f: 1500, q: 0.9, gain: 0.7 * v, dur: 0.05, at: 0.002 });
-    s.noise({ type: 'bandpass', f0: 2500 * p, f1: 800, q: 1.1, dur: 0.11, gain: 0.75 * v, attack: 0.0004 });
-    s.sub({ f0: 220 * p, f1: 46, dur: 0.17, drop: 0.05, gain: 0.95 * v, drive: true });
-    s.metal({ f: 1950 * p, gain: 0.13 * v, dur: 0.12 });
-    s.duck(0.18, 0.12);
+  // 재질 × 강도로 즉석 합성한다. 같은 적을 때려도 매번 음색이 조금씩 달라진다.
+  impact(s, v, p, mat, pw, crit) {
+    const M = MATS[mat] || MATS.flesh, P = POWER[clamp(pw | 0, 0, 3)];
+    const r = () => 0.88 + Math.random() * 0.24;             // 레이어별 흔들림
+    const g = v * P.g, d = P.dur;
+
+    // 1) 트랜지언트 : 0ms 에 꽂히는 날
+    s.tick({ f: M.tick[0] * r() * p, gain: M.tick[1] * g * 1.05, dur: 0.012 * (1 + d * 0.3) });
+    s.tick({ f: 1100 * r(), q: 0.9, gain: M.tick[1] * g * 0.75, dur: 0.045 * d, at: 0.002 });
+
+    // 2) 바디 : 재질의 질감
+    const B = M.body;
+    s.noise({ type: 'bandpass', f0: B[0] * r() * p, f1: B[1], q: B[2], dur: B[3] * (0.7 + d * 0.5), gain: 0.72 * g, attack: 0.0005 });
+    if (pw >= 2) s.noise({ type: 'lowpass', f0: 2300, f1: 170, q: 0.9, dur: 0.16 * d, gain: 0.75 * g, attack: 0.001 });
+
+    // 3) 서브 베이스 : 배로 느껴지는 무게
+    const S2 = M.sub;
+    s.sub({ f0: S2[0] * p * r(), f1: S2[1], dur: S2[2] * (0.8 + d * 0.6), drop: S2[2] * 0.3, gain: S2[3] * g * P.subG, drive: true });
+
+    // 4) 금속 링 / 자갈
+    if (M.metal) s.metal({ f: M.metal[0] * p * r(), gain: M.metal[1] * g, dur: M.metal[2] * (0.8 + d * 0.4) });
+    if (M.grit) s.noise({ type: 'highpass', f0: 2600 * r(), dur: 0.09 * d, gain: 0.35 * M.grit * g, attack: 0.001, at: 0.008 });
+
+    // 5) 크리티컬 : 위에 얹는 밝은 종
+    if (crit) {
+      s.metal({ f: 3100 * p * r(), gain: 0.2 * v, dur: 0.42, parts: [1, 2.4, 3.9, 6.2], dest: s.wet });
+      s.noise({ type: 'bandpass', f0: 2800, f1: 9000, q: 3, dur: 0.17, gain: 0.28 * v, attack: 0.003 });
+    }
+    if (P.duck) s.duck(P.duck, 0.12 + d * 0.1);
   },
-  // 다단 히트 : 짧고 가볍지만 어택은 동일하게 날카롭게
-  hitLight(s, v, p) {
-    s.tick({ f: 6000, gain: 0.6 * v, dur: 0.009 });
-    s.noise({ type: 'bandpass', f0: 3400 * p, f1: 1400, q: 1.3, dur: 0.055, gain: 0.5 * v, attack: 0.0004 });
-    s.sub({ f0: 260 * p, f1: 70, dur: 0.08, drop: 0.03, gain: 0.55 * v, drive: true });
-    s.metal({ f: 2700 * p, gain: 0.08 * v, dur: 0.07, parts: [1, 2.74] });
-  },
-  // 강타 : 스킬 / 마무리 일격
-  heavy(s, v, p) {
-    s.tick({ f: 3600, gain: 1.0 * v, dur: 0.022 });
-    s.tick({ f: 800, q: 0.9, gain: 0.85 * v, dur: 0.08, at: 0.004 });
-    s.noise({ type: 'bandpass', f0: 1500 * p, f1: 420, q: 1.5, dur: 0.17, gain: 0.7 * v, attack: 0.0006 });
-    s.noise({ type: 'lowpass', f0: 2400, f1: 170, q: 0.9, dur: 0.36, gain: 0.85 * v, attack: 0.001 });
-    s.sub({ f0: 175 * p, f1: 32, dur: 0.44, drop: 0.13, gain: 1.25 * v, drive: true });
-    s.metal({ f: 1250 * p, gain: 0.17 * v, dur: 0.3 });
-    s.duck(0.45, 0.3);
-  },
-  // 크리티컬 : 위에 얹는 밝은 종소리 + 상승 샤악
+
+  // 아래 이름들은 기존 호출부 호환용 (재질 기본값 = 살)
+  hit(s, v, p) { SFX.impact(s, v, p, 'flesh', 1, false); },
+  hitLight(s, v, p) { SFX.impact(s, v, p, 'flesh', 0, false); },
+  heavy(s, v, p) { SFX.impact(s, v, p, 'armor', 2, false); },
   crit(s, v, p) {
     s.metal({ f: 3100 * p, gain: 0.2 * v, dur: 0.42, parts: [1, 2.4, 3.9, 6.2], dest: s.wet });
     s.noise({ type: 'bandpass', f0: 2800, f1: 9000, q: 3, dur: 0.17, gain: 0.3 * v, attack: 0.003 });
     s.tone({ type: 'triangle', f0: 1300 * p, f1: 2600 * p, dur: 0.1, gain: 0.1 * v });
   },
-  // 둔기 / 몬스터가 플레이어를 때릴 때
+  // 몬스터가 플레이어를 때릴 때 (둔탁하게)
   blunt(s, v, p) {
     s.tick({ f: 1100, q: 0.8, gain: 0.8 * v, dur: 0.03 });
     s.noise({ type: 'lowpass', f0: 1300, f1: 150, q: 0.9, dur: 0.24, gain: 0.8 * v, attack: 0.0006 });

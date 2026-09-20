@@ -366,8 +366,13 @@ class Player extends Entity {
   constructor() {
     super(RIG_PLAYER, ANIM_P);
     this.isPlayer = true; this.w = 16; this.d = 11; this.h = 134;
-    this.hpMax = 34000; this.hp = this.hpMax; this.mpMax = 1500; this.mp = this.mpMax; this.mpRegen = 42;
-    this.atk = 3000; this.critRate = 0.2;
+    // 클리어 기록에 따라 강해진다 (공격력은 난이도 배율과 같은 곡선)
+    const P = typeof playerPower === 'function' ? playerPower() : 1;
+    this.power = P;
+    this.lv = typeof playerLevel === 'function' ? playerLevel() : 70;
+    this.hpMax = Math.round(34000 * (1 + (P - 1) * 0.35)); this.hp = this.hpMax;
+    this.mpMax = 1500; this.mp = this.mpMax; this.mpRegen = 42;
+    this.atk = Math.round(3000 * P); this.critRate = 0.2;
     this.state = 'ground'; this.running = false; this.act = null; this.af = 0; this.stT = 0;
     this.buf = {}; this.dashDir = 0;
     this.cd = {}; for (const s of SKILLS) this.cd[s.key] = 0;

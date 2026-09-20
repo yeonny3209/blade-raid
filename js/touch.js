@@ -68,6 +68,7 @@ const Touch = {
     if (this.playing() || Game.state === 'paused') {
       if (Math.hypot(x - pb.x, y - pb.y) < pb.r * 1.4) { pb.ptr = e.pointerId; pb.glow = 1; Input.press('T_pause'); return; }
     }
+    if (Game.state === 'lobby') { this.menuPtr = e.pointerId; Lobby.touchAt(x, y); return; }   // 로비 : 카드 직접 선택
     if (Game.state === 'paused') { this.menuPtr = e.pointerId; Input.press('T_pause'); return; }  // 아무 데나 터치 = 계속
     if (!this.playing()) {                                             // 타이틀 / 결과 / 컨티뉴
       this.menuPtr = e.pointerId;
