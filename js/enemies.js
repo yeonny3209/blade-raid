@@ -3,10 +3,10 @@
 //  몬스터 : 기본 클래스 + 종류별 AI
 // ============================================================
 const ENEMY_TYPES = {
-  goblin: { hitMat: 'flesh', name: '고블린 전사', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 16000, atk: 1700, speed: 2.4, w: 15, d: 12, h: 92, weight: 1, range: 70, gear: 'helm', gold: [3, 6] },
-  thrower: { hitMat: 'flesh', name: '고블린 투척병', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 11000, atk: 1500, speed: 2.2, w: 15, d: 12, h: 92, weight: 1, range: 320, gear: 'band', gold: [3, 6] },
-  orc: { hitMat: 'armor', name: '오크 광전사', lv: 64, rig: RIG_ORC, anims: ANIM_ORC, hpMax: 64000, atk: 4200, speed: 1.8, w: 26, d: 16, h: 156, weight: 1.55, range: 118, elite: true, gold: [8, 14] },
-  mage: { hitMat: 'magic', name: '암흑 술사', lv: 63, rig: RIG_MAGE, anims: ANIM_MAGE, hpMax: 24000, atk: 2400, speed: 2.0, w: 15, d: 12, h: 126, weight: 1.1, range: 380, gold: [5, 9] },
+  goblin: { hitMat: 'flesh', voice: 'goblin', bloodCol: ['#3f8a22', '#7ccf46'], name: '고블린 전사', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 16000, atk: 1700, speed: 2.4, w: 15, d: 12, h: 92, weight: 1, range: 70, gear: 'helm', gold: [3, 6] },
+  thrower: { hitMat: 'flesh', voice: 'goblin', bloodCol: ['#3f8a22', '#7ccf46'], name: '고블린 투척병', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 11000, atk: 1500, speed: 2.2, w: 15, d: 12, h: 92, weight: 1, range: 320, gear: 'band', gold: [3, 6] },
+  orc: { hitMat: 'armor', voice: 'orc', name: '오크 광전사', lv: 64, rig: RIG_ORC, anims: ANIM_ORC, hpMax: 64000, atk: 4200, speed: 1.8, w: 26, d: 16, h: 156, weight: 1.55, range: 118, elite: true, gold: [8, 14] },
+  mage: { hitMat: 'magic', voice: 'mage', name: '암흑 술사', lv: 63, rig: RIG_MAGE, anims: ANIM_MAGE, hpMax: 24000, atk: 2400, speed: 2.0, w: 15, d: 12, h: 126, weight: 1.1, range: 380, gold: [5, 9] },
 };
 
 // 테마별로 물들인 리그를 만들어 재사용
@@ -63,6 +63,8 @@ class Enemy extends Entity {
     this.stT++;
     if (this.invul > 0) this.invul--;
     if (this.atkCd > 0) this.atkCd--;
+    if (this.gruntCd > 0) this.gruntCd--;
+    if (this.wallCd > 0) this.wallCd--;
     this.castGlow = Math.max(0, (this.castGlow || 0) - 0.03);
 
     if (this.suspend > 0) {
@@ -86,6 +88,9 @@ class Enemy extends Entity {
     }
     if (this.carryT > 0) { this.carryT--; }
     this.physics();
+    // 맞고 밀려나는 동안 바닥에 끌리는 먼지
+    if ((this.state === 'hurt' || (this.state === 'down' && this.stT < 10)) && this.z <= 0 && Math.abs(this.vx) > 2 && Game.frame % 3 === 0)
+      Hitfx.dust(this.x - sign(this.vx) * 8, sy(this.y, 0), 1, 5);
     this.stepAnim();
     if (this.cape) this.updateCape();
     this.updateTrailAfter();
@@ -179,6 +184,39 @@ class Enemy extends Entity {
     this.facing = -dir;
   }
 
+  // 맞았을 때 내는 소리 (강타는 항상, 평타는 가끔)
+  grunt(pw) {
+    if (!this.voice || this.gruntCd > 0 || pw < 1) return;
+    if (pw < 2 && Math.random() > 0.42) return;
+    this.gruntCd = pw >= 2 ? 16 : 34;
+    Sfx.voice(this.voice, 'hit');
+  }
+
+  // 벽에 세게 부딪히면 튕겨나오고 추가 피해를 입는다
+  onWall(side, vx) {
+    if (this.wallCd > 0 || this.isBoss || this.dead) return;
+    if (!(this.state === 'air' || this.state === 'hurt' || this.state === 'dying')) return;
+    if (Math.abs(vx) < 3.6) return;
+    this.wallCd = 24;
+    this.vx = -vx * 0.42;
+    if (this.state === 'hurt') { this.setState('air'); this.bounced = true; this.play('air', 2, 1, true); }
+    if (this.state === 'air' || this.state === 'dying') this.vz = Math.max(this.vz, 3 + Math.abs(vx) * 0.35);
+    const gy = sy(this.y, 0), X = this.x + side * this.w, Yc = sy(this.y, Math.max(30, this.z + this.h * 0.45));
+    FX.add('world', new Flash(X, Yc, 12, 80, 12, '255,235,200', 0.8));
+    FX.add('world', new Burst(X, Yc, { n: 10, r0: 12, r1: 70, life: 9 }));
+    FX.add('ground', new Ring(X, gy, 10, 90, 16, { col: '255,220,170', w: 7 }));
+    for (let i = 0; i < 6; i++) FX.add('world', new Debris(this.x + side * this.w, this.y, Math.max(20, this.z + 30), { vx: -side * rand(1, 5), vz: rand(3, 9), s: rand(2, 5) }));
+    Hitfx.dust(X, gy, 5, 16);
+    Sfx.impact('stone', 2, { vol: 0.95 }); Sfx.play('thud', 0.7);
+    Game.addShake(7); Game.freeze(2); Game.kick(-side * 6, 0);
+    this.hitstop = Math.max(this.hitstop, 4); this.squash = 1;
+    FX.add('top', new Label(this.x, sy(this.y, this.z + this.h) - 34, 'WALL HIT', { col: ['#fffbe0', '#ffb84a'], size: 20 }));
+    const dmg = Math.max(1, Math.round((this.lastHitDmg || 1000) * 0.18));
+    this.hp -= dmg; Game.stats.dmg += dmg;
+    FX.add('top', new DmgText(this.x, sy(this.y, this.z + this.h) - 8, dmg, 'n', 1));
+    if (this.hp <= 0 && !this.dying) this.die({ kx: 3, kz: 4 }, -side);
+  }
+
   interrupt() {
     if (this.act && this.act.cancel) this.act.cancel(this);
     this.act = null; this.trailOn = false; this.holdRock = false;
@@ -192,7 +230,11 @@ class Enemy extends Entity {
     this.vx = dir * Math.max(4, (hit.kx || 4)) / Math.max(1, this.weight * 0.8);
     this.facing = -dir;
     this.play('air', 2, 1, true);
-    Sfx.play('enemyDie', 0.8);
+    Sfx.play('kill', 1, this.isBoss ? 0.7 : 1);
+    if (this.voice) Sfx.voice(this.voice, 'die');
+    Sfx.play('enemyDie', this.voice ? 0.35 : 0.8);
+    Hitfx.kill(this, dir);                                  // 몸이 터지는 폭발
+    Game.freeze(3); this.hitstop = Math.max(this.hitstop, 6);
     Game.onEnemyKilled(this);
   }
 

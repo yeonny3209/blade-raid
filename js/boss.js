@@ -3,7 +3,7 @@
 //  보스 : 뿔의 군주 바르카스
 // ============================================================
 ENEMY_TYPES.boss = {
-  hitMat: 'beast', name: '뿔의 군주 바르카스', lv: 70, rig: RIG_BOSS, anims: ANIM_BOSS, hpMax: 1250000, atk: 5000, speed: 2.1,
+  hitMat: 'beast', voice: 'boss', name: '뿔의 군주 바르카스', lv: 70, rig: RIG_BOSS, anims: ANIM_BOSS, hpMax: 1250000, atk: 5000, speed: 2.1,
   w: 38, d: 22, h: 292, weight: 3, range: 200, gold: [40, 60], lines: 62,
 };
 
@@ -26,6 +26,7 @@ class Boss extends Enemy {
     this.scale = this.rig.scale;
     this.name = B.name; this.title = B.title || '';
     this.hitMat = B.hitMat || 'beast';
+    if (B.blood) this.bloodCol = B.blood;
     this.elem = B.elem || '255,110,30';
     this.auraCol = B.aura || '255,40,20';
     this.patterns = B.patterns || ['swing', 'charge', 'leap', 'erupt'];

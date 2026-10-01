@@ -16,9 +16,9 @@ function makeCurve(fn, n = 2048) {
 }
 
 const Sfx = {
-  ctx: null, master: null, sfxBus: null, wet: null, musicBus: null, musicDuck: null,
+  ctx: null, master: null, sfxBus: null, wet: null, musicBus: null, musicDuck: null, musicLP: null,
   verb: null, verbSend: null, noiseBuf: null, distCurve: null, softCurve: null,
-  muted: false, lastPlay: {}, vol: 0.9,
+  muted: false, lastPlay: {}, vol: 0.9, voiceOn: true, voiceVol: 1,
 
   init() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
@@ -60,7 +60,10 @@ const Sfx = {
     this.wet.connect(this.master); this.wet.connect(this.verbSend);
     // 음악 : 타격 시 순간적으로 눌러주는 덕킹 단계를 둔다
     this.musicDuck = ctx.createGain(); this.musicDuck.gain.value = 1; this.musicDuck.connect(this.master);
-    this.musicBus = ctx.createGain(); this.musicBus.gain.value = 0.3; this.musicBus.connect(this.musicDuck);
+    // 로우패스 : 평소엔 20kHz(=무영향), 강타 순간에만 잠깐 닫혀 "귀가 먹먹한" 느낌을 낸다
+    this.musicLP = ctx.createBiquadFilter(); this.musicLP.type = 'lowpass';
+    this.musicLP.frequency.value = 20000; this.musicLP.Q.value = 0.7; this.musicLP.connect(this.musicDuck);
+    this.musicBus = ctx.createGain(); this.musicBus.gain.value = 0.3; this.musicBus.connect(this.musicLP);
   },
 
   toggleMute() {
@@ -76,6 +79,16 @@ const Sfx = {
     g.setValueAtTime(g.value, t);
     g.linearRampToValueAtTime(1 - depth, t + 0.012);
     g.linearRampToValueAtTime(1, t + dur);
+  },
+
+  // 강타 순간 BGM 을 먹먹하게 (depth 0..1 : 1 이면 400Hz 까지 닫힘)
+  muffle(depth = 0.7, dur = 0.18) {
+    if (!this.musicLP) return;
+    const t = this.ctx.currentTime, f = this.musicLP.frequency;
+    f.cancelScheduledValues(t);
+    f.setValueAtTime(clamp(f.value, 300, 20000), t);
+    f.exponentialRampToValueAtTime(Math.max(350, 20000 * Math.pow(0.02, clamp(depth, 0, 1))), t + 0.01);
+    f.exponentialRampToValueAtTime(20000, t + 0.01 + dur);
   },
 
   // ---------- 기본 레이어 ----------
@@ -137,6 +150,40 @@ const Sfx = {
     }
   },
 
+  // 포먼트 음성 : 성대(톱니파) → 병렬 밴드패스(모음) → 엔벨로프
+  //   o.f0→f1 음높이, o.forms=[[F시작,F끝,Q,이득],..] 모음, o.grow=[Hz,깊이] 떨림, o.dist 거칠기, o.breath 숨소리
+  formant(o) {
+    const ctx = this.ctx, t = ctx.currentTime + (o.at || 0), dur = o.dur;
+    const dest = o.dest || this.sfxBus;
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(o.f0, t);
+    osc.frequency.exponentialRampToValueAtTime(o.f1, t + dur);
+    let node = osc;
+    if (o.dist) { const ws = ctx.createWaveShaper(); ws.curve = this.distCurve; node.connect(ws); node = ws; }
+    // 그로울 : 진폭을 빠르게 떨어 목이 갈라지는 소리
+    const am = ctx.createGain(); am.gain.value = 1;
+    if (o.grow) {
+      am.gain.value = 1 - o.grow[1] / 2;
+      const lfo = ctx.createOscillator(); lfo.frequency.value = o.grow[0];
+      const lg = ctx.createGain(); lg.gain.value = o.grow[1] / 2;
+      lfo.connect(lg); lg.connect(am.gain); lfo.start(t); lfo.stop(t + dur + 0.05);
+    }
+    node.connect(am);
+    const mix = ctx.createGain(); mix.gain.value = 1;
+    for (const [fa, fb, q, gn] of o.forms) {
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = q;
+      bp.frequency.setValueAtTime(fa, t);
+      if (fb && fb !== fa) bp.frequency.exponentialRampToValueAtTime(fb, t + dur);
+      const g = ctx.createGain(); g.gain.value = gn;
+      am.connect(bp); bp.connect(g); g.connect(mix);
+    }
+    const env = ctx.createGain();
+    this.env(env, t, o.gain, o.attack ?? 0.008, dur);
+    mix.connect(env); env.connect(dest);
+    osc.start(t); osc.stop(t + dur + 0.05);
+    if (o.breath) this.noise({ type: 'bandpass', f0: 2600, f1: 1400, q: 0.8, dur: dur * 0.8, gain: o.breath, attack: 0.006, at: o.at || 0, dest });
+  },
+
   noise(o) {
     const ctx = this.ctx, t = ctx.currentTime + (o.at || 0);
     const src = ctx.createBufferSource();
@@ -182,7 +229,16 @@ const Sfx = {
     if (this.lastPlay[key] && now - this.lastPlay[key] < 22) return;
     this.lastPlay[key] = now;
     const pitch = (o.pitch || 1) * (0.95 + Math.random() * 0.1);
-    SFX.impact(this, (o.vol || 1) * (MIX.impact ?? 0.37) * (power >= 2 ? 1.18 : 1), pitch, mat, power, !!o.crit);
+    SFX.impact(this, (o.vol || 1) * (MIX.impact ?? 0.37) * (power >= 2 ? 1.18 : 1), pitch, mat, power, !!o.crit, o.combo | 0);
+  },
+
+  // 몬스터 목소리 (kind: goblin/orc/mage/boss, mode: hit/die)
+  voice(kind, mode = 'hit') {
+    if (!this.ctx || this.muted || !this.voiceOn) return;
+    const now = performance.now(), key = 'vox' + kind;
+    if (this.lastPlay[key] && now - this.lastPlay[key] < 90) return;
+    this.lastPlay[key] = now;
+    SFX.vox(this, this.voiceVol, 0.92 + Math.random() * 0.16, kind, mode);
   },
 
   play(name, vol = 1, pitch = 1) {
@@ -198,7 +254,7 @@ const Sfx = {
 // 소리별 음량 단계 : 약한 타격 < 평타 < 강타 < 폭발 순으로 확실히 차이나게
 // (소프트 클립 천장이 0.94 라서 개별 레벨을 정리해두지 않으면 전부 같은 크기로 뭉개진다)
 const MIX = {
-  impact: 0.37, hitLight: 0.33, hit: 0.37, heavy: 0.44, crit: 1, blunt: 0.38, hurt: 0.41,
+  kill: 0.32, combo: 0.42, impact: 0.37, hitLight: 0.33, hit: 0.37, heavy: 0.44, crit: 1, blunt: 0.38, hurt: 0.41,
   thud: 0.48, land: 0.51, explode: 0.45, quake: 0.49, break: 0.41, cutin: 0.46,
   ultSlash: 0.3, pillar: 0.4, roar: 0.5, flash: 0.71, counter: 0.64,
   swing: 2.2, swingBig: 1.19, ring: 1, dash: 1, jump: 1, charge: 1, sheath: 1,
@@ -235,7 +291,7 @@ const POWER = [
 const SFX = {
   // ---------- 타격 ----------
   // 재질 × 강도로 즉석 합성한다. 같은 적을 때려도 매번 음색이 조금씩 달라진다.
-  impact(s, v, p, mat, pw, crit) {
+  impact(s, v, p, mat, pw, crit, cmb = 0) {
     const M = MATS[mat] || MATS.flesh, P = POWER[clamp(pw | 0, 0, 3)];
     const r = () => 0.88 + Math.random() * 0.24;             // 레이어별 흔들림
     const g = v * P.g, d = P.dur;
@@ -262,7 +318,14 @@ const SFX = {
       s.metal({ f: 3100 * p * r(), gain: 0.2 * v, dur: 0.42, parts: [1, 2.4, 3.9, 6.2], dest: s.wet });
       s.noise({ type: 'bandpass', f0: 2800, f1: 9000, q: 3, dur: 0.17, gain: 0.28 * v, attack: 0.003 });
     }
+    // 6) 콤보 보상음 : 콤보가 쌓일수록 밝고 높은 "딩" 이 얹힌다 (맞출수록 기분 좋게)
+    if (cmb >= 6) {
+      const c = Math.min(cmb, 80) / 80;
+      s.tone({ type: 'sine', f0: (1500 + 1900 * c) * p, dur: 0.06, gain: 0.2 * v, attack: 0.0008 });
+      if (cmb >= 30) s.tone({ type: 'sine', f0: (2250 + 2850 * c) * p, dur: 0.05, gain: 0.12 * v, attack: 0.0008, at: 0.012 });
+    }
     if (P.duck) s.duck(P.duck, 0.12 + d * 0.1);
+    if (pw >= 2) s.muffle(0.32 + pw * 0.16, 0.12 + d * 0.07);       // 강타 : 순간 귀가 먹먹
   },
 
   // 아래 이름들은 기존 호출부 호환용 (재질 기본값 = 살)
@@ -390,6 +453,51 @@ const SFX = {
     SFX.ring(s, v * 1.3, 0.8);
     s.duck(0.7, 1.4);
   },
+  // 처치 : 몸이 터지듯 "퍽" + 영혼이 빠져나가는 반짝임
+  kill(s, v, p) {
+    s.tick({ f: 3200, gain: 0.55 * v, dur: 0.02 });
+    s.noise({ type: 'bandpass', f0: 2600 * p, f1: 480, q: 1.1, dur: 0.24, gain: 0.7 * v, attack: 0.0005 });
+    s.sub({ f0: 330 * p, f1: 38, dur: 0.32, drop: 0.09, gain: 1.15 * v, drive: true });
+    s.metal({ f: 2300 * p, gain: 0.15 * v, dur: 0.55, dest: s.wet });
+    s.tone({ type: 'sine', f0: 600 * p, f1: 2600 * p, dur: 0.26, gain: 0.07 * v, dest: s.wet });
+    s.duck(0.5, 0.35); s.muffle(0.65, 0.22);
+  },
+  // 콤보 달성 (10 / 25 / 50 / 100 …) : 티어가 높을수록 음이 올라감
+  combo(s, v, p) {
+    s.sub({ f0: 150 * p, f1: 46, dur: 0.4, drop: 0.1, gain: 1.0 * v, drive: true });
+    s.tone({ type: 'sawtooth', f0: 320 * p, f1: 1300 * p, dur: 0.22, gain: 0.08 * v, lp: 3600, attack: 0.02 });
+    s.metal({ f: 1760 * p, gain: 0.2 * v, dur: 0.6, dest: s.wet });
+    s.tone({ type: 'triangle', f0: 880 * p, dur: 0.13, gain: 0.11 * v, at: 0.06 });
+    s.tone({ type: 'triangle', f0: 1320 * p, dur: 0.22, gain: 0.11 * v, at: 0.12, dest: s.wet });
+    s.duck(0.35, 0.3);
+  },
+  // 몬스터 목소리 : 종류 × (맞을 때 / 죽을 때)
+  vox(s, v, p, kind, mode) {
+    // 목소리는 타격음 위에 얹히므로 종류별로 눌러서 타격음을 가리지 않게 한다 ([맞을 때, 죽을 때])
+    v *= ({ goblin: [1, 0.55], orc: [0.4, 0.5], mage: [0.5, 0.6], boss: [0.42, 0.5] }[kind] || [1, 1])[mode === 'hit' ? 0 : 1];
+    const VF = { a: [820, 1250], o: [520, 900], i: [320, 2350], u: [360, 820] };   // 모음 포먼트
+    const F = (vw, q, g) => [[VF[vw][0], 0, q, g], [VF[vw][1], 0, q + 2, g * 0.7]];
+    if (kind === 'goblin') {
+      if (mode === 'hit') s.formant({ f0: 640 * p, f1: 360 * p, dur: 0.13, gain: 0.7 * v, forms: F('i', 6, 4), breath: 0.05 * v });
+      else s.formant({ f0: 720 * p, f1: 130 * p, dur: 0.44, gain: 0.7 * v, forms: [[900, 380, 6, 4], [1900, 900, 8, 2.5]], breath: 0.06 * v, grow: [26, 0.35] });
+    } else if (kind === 'orc') {
+      if (mode === 'hit') s.formant({ f0: 125 * p, f1: 82 * p, dur: 0.24, gain: 0.85 * v, forms: F('o', 5, 4.5), dist: true, grow: [38, 0.55], breath: 0.06 * v });
+      else s.formant({ f0: 150 * p, f1: 44 * p, dur: 0.75, gain: 0.9 * v, forms: [[760, 480, 5, 4.5], [1200, 800, 7, 3]], dist: true, grow: [30, 0.6], breath: 0.08 * v });
+    } else if (kind === 'mage') {
+      // 속삭임 + 텅 빈 울림 (리버브를 태워 유령처럼)
+      if (mode === 'hit') {
+        s.noise({ type: 'bandpass', f0: 2000 * p, f1: 800, q: 2.5, dur: 0.3, gain: 0.34 * v, attack: 0.02, dest: s.wet });
+        s.formant({ f0: 420 * p, f1: 300 * p, dur: 0.3, gain: 0.5 * v, forms: F('u', 8, 3.5), dest: s.wet });
+      } else {
+        s.noise({ type: 'bandpass', f0: 2600 * p, f1: 500, q: 2, dur: 0.8, gain: 0.34 * v, attack: 0.04, dest: s.wet });
+        s.formant({ f0: 520 * p, f1: 95 * p, dur: 0.85, gain: 0.55 * v, forms: [[420, 320, 7, 4], [900, 600, 8, 2.5]], grow: [9, 0.4], dest: s.wet });
+      }
+    } else if (kind === 'boss') {
+      if (mode === 'hit') { s.formant({ f0: 72 * p, f1: 54 * p, dur: 0.34, gain: 1.0 * v, forms: F('o', 4, 5), dist: true, grow: [30, 0.5], dest: s.wet }); s.sub({ f0: 64 * p, f1: 42, dur: 0.3, gain: 0.5 * v }); }
+      else { s.formant({ f0: 86 * p, f1: 34 * p, dur: 1.2, gain: 1.1 * v, forms: [[460, 300, 4, 5], [820, 500, 6, 3]], dist: true, grow: [24, 0.6], dest: s.wet }); s.sub({ f0: 60 * p, f1: 30, dur: 1.1, gain: 0.7 * v }); }
+    }
+  },
+
   enemyDie(s, v, p) {
     s.tone({ type: 'sawtooth', f0: 320 * p, f1: 55, dur: 0.45, gain: 0.07 * v, lp: 1400, dest: s.wet });
     s.noise({ type: 'bandpass', f0: 1200, f1: 300, dur: 0.4, gain: 0.12 * v, attack: 0.002 });

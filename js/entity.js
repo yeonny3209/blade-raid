@@ -86,7 +86,11 @@ class Entity {
     } else if (this.gravOff) { this.z = Math.max(0, this.z + this.vz); }
     this.y = clamp(this.y, 0, DEPTH);
     const r = Game.room;
-    if (r) this.x = clamp(this.x, r.minX, this.isPlayer ? r.playerMaxX() : r.maxX);
+    if (r) {
+      const hi = this.isPlayer ? r.playerMaxX() : r.maxX;
+      if ((this.x < r.minX || this.x > hi) && this.onWall) this.onWall(this.x < r.minX ? -1 : 1, this.vx);
+      this.x = clamp(this.x, r.minX, hi);
+    }
   }
   onLand() { }
 
@@ -187,6 +191,8 @@ function applyHit(att, tgt, hit, o = {}) {
   // --- 히트스톱 ---
   let stop = hit.stop ?? 5;
   if (counter) stop += 3;
+  if (crit && att.isPlayer) stop += 2;               // 크리티컬은 한 박자 더 멈춘다
+  tgt.lastHitDmg = dmg;
   if (!o.noStopAtt) att.hitstop = Math.max(att.hitstop, stop);
   tgt.hitstop = Math.max(tgt.hitstop, stop + (hit.stopT ?? 1));
   tgt.shakeHit = true;
@@ -215,13 +221,15 @@ function applyHit(att, tgt, hit, o = {}) {
   // --- 사운드 ---
   // 콤보가 쌓일수록 반음씩 올라가 연타가 기계적으로 들리지 않게 한다
   const cp = 1 + Math.min(Game.combo.n, 12) * 0.015;
+  const ipw = hit.power2 ?? (stop >= 12 ? 3 : stop >= 8 ? 2 : stop <= 2 ? 0 : 1);     // 타격 강도 0~3
   if (att.isPlayer) {
     // 맞는 대상의 재질 + 타격 강도로 즉석 합성 (같은 적도 매번 음색이 다름)
-    if (hit.sfx === 'none') { /* 스킬이 직접 소리를 냄 */ }
-    else {
-      const pw = hit.power2 ?? (stop >= 12 ? 3 : stop >= 8 ? 2 : stop <= 2 ? 0 : 1);
-      Sfx.impact(tgt.hitMat || 'flesh', pw, { vol: hit.vol || 1, pitch: cp, crit });
-    }
+    if (hit.sfx !== 'none') Sfx.impact(tgt.hitMat || 'flesh', ipw, { vol: hit.vol || 1, pitch: cp, crit, combo: Game.combo.n });
+    if (tgt.grunt) tgt.grunt(ipw);                                                    // 몬스터가 비명을 지른다
+    // 재질별 파편 (살=체액, 갑옷=불꽃, 뼈=조각, 마법=빛알갱이 …)
+    if (tgt.hitMat && hit.fx !== 'none') Hitfx.material(tgt.hitMat, tgt.x - dir * tgt.w * 0.3, tgt.y, hz, dir, ipw, tgt);
+    // 강타·크리티컬 : 방사형 충격선
+    if (ipw >= 2 || crit) FX.add('world', new Burst(X, Y, { n: 9 + ipw * 3, r0: 14, r1: 60 + ipw * 26, life: 9, col: crit ? '255,220,120' : '255,255,255' }));
   } else {
     const snd = hit.sfx && hit.sfx !== 'none' ? hit.sfx : 'blunt';
     if (snd !== 'none') Sfx.play(snd, hit.vol || 1);
@@ -245,6 +253,7 @@ function applyHit(att, tgt, hit, o = {}) {
   Game.addShake(hit.shake ?? 2);
   Game.kick(dir * Math.min(12, (hit.shake ?? 2) * 0.9), -Math.min(5, power));
   if (stop >= 9) Game.freeze(Math.min(4, Math.round(stop / 3)));   // 강타는 화면 전체를 정지
+  if (att.isPlayer && ipw >= 2) Game.zoomPunch(1 + 0.012 * ipw);   // 강타일수록 화면이 살짝 파고든다
   if (att.isPlayer) Game.rumble(Math.min(1, 0.25 + power * 0.22), 60 + stop * 8);
   if (att.isPlayer) {
     Game.onPlayerHit(dmg, tgt, hit);

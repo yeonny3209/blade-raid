@@ -276,6 +276,19 @@ const Game = {
     c.n++; c.t = 150; c.dmg += dmg; c.pop = 1;
     this.stats.maxCombo = Math.max(this.stats.maxCombo, c.n);
     this.stats.dmg += dmg;
+    const tier = { 10: 1, 25: 2, 50: 3, 75: 3.5, 100: 4, 150: 4.5, 200: 5 }[c.n];
+    if (tier) this.comboMilestone(c.n, tier);
+  },
+  // 콤보 달성 보상 : 문구 + 충격파 + 화면 반짝 + 음
+  comboMilestone(n, tier) {
+    const p = this.player;
+    const cols = [['#ffffff', '#7fd4ff'], ['#fffbe0', '#ffb020'], ['#ffffff', '#ff5a3a'], ['#ffffff', '#ff4ad8']][Math.min(3, Math.floor(tier) - 1)];
+    FX.add('top', new Label(p.x, sy(p.y, p.z) - 200, `${n} HIT!`, { col: cols, size: 30 + tier * 6, life: 62, vy: -0.6 }));
+    FX.add('ground', new Ring(p.x, sy(p.y, 0), 20, 160 + tier * 30, 20, { col: '255,230,160', w: 8 }));
+    Sfx.play('combo', 1, 1 + tier * 0.16);
+    this.flashScreen(0.1 + tier * 0.02, '255,240,200');
+    this.zoomPunch(1 + 0.012 * tier);
+    this.rumble(0.6, 90);
   },
   onPlayerDamaged() {
     this.stats.hitsTaken++;
@@ -345,6 +358,8 @@ const Game = {
     const now = performance.now();
     if (now - this.rumbleT < 40) return;
     this.rumbleT = now;
+    // 폰·태블릿 : 짧은 진동 (강도 → 길이)
+    try { if (Touch.on && navigator.vibrate) navigator.vibrate(Math.round(8 + strength * 34)); } catch (e) { }
     try {
       const gp = navigator.getGamepads && navigator.getGamepads()[0];
       const act = gp && (gp.vibrationActuator || (gp.hapticActuators && gp.hapticActuators[0]));

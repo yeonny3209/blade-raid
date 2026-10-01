@@ -35,7 +35,7 @@ const BOSS_DEFS = {
   plaguefen: {
     name: '역병의 모태 펜라', title: '늪의 어머니', head: 'eye', scale: 1.88,
     skin: ['#1e3a1c', '#4a7a32', '#86b055'], armor: ['#24301a', '#495c30', '#7d9350'],
-    aura: '150,255,120', elem: '140,255,110', hitMat: 'flesh',
+    aura: '150,255,120', elem: '140,255,110', hitMat: 'flesh', blood: ['#3f8a22', '#9be060'],
     patterns: ['swing', 'leap', 'erupt'], eruptCount: 10,
   },
   ironwarden: {

@@ -160,6 +160,70 @@ class Debris {
   }
 }
 
+// ---------- 체액 방울 (월드 좌표, 중력, 착지하면 바닥에 자국) ----------
+class Drop {
+  constructor(x, y, z, o = {}) {
+    Object.assign(this, { x, y, z, t: 0 });
+    this.vx = o.vx ?? rand(-3, 3); this.vy = o.vy ?? 0; this.vz = o.vz ?? rand(2, 8);
+    this.r = o.r || 2.4; this.col = o.col || '#b02020'; this.life = o.life || 70; this.splat = !!o.splat;
+  }
+  update() {
+    this.t++;
+    this.x += this.vx; this.y += this.vy; this.z += this.vz; this.vz -= 0.55; this.vx *= 0.985;
+    if (this.z <= 0) {
+      if (this.splat && FX.ground.length < 90) FX.add('ground', new Splat(this.x, this.y, this.r * rand(2.2, 3.6), this.col));
+      return false;
+    }
+    return this.t < this.life;
+  }
+  draw(ctx) {
+    // 속도 방향으로 길쭉하게 늘어나는 물방울
+    const sp = Math.hypot(this.vx, this.vz), a = Math.atan2(-this.vz, this.vx);
+    ctx.save(); ctx.translate(this.x, sy(this.y, this.z)); ctx.rotate(a);
+    ctx.fillStyle = this.col;
+    ctx.beginPath(); ctx.ellipse(0, 0, this.r * (1 + Math.min(1.7, sp * 0.13)), this.r * 0.85, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ---------- 바닥에 남는 체액 자국 ----------
+class Splat {
+  constructor(x, y, r, col) { Object.assign(this, { x, y, r, col, t: 0, life: 170 }); }
+  update() { return ++this.t < this.life; }
+  draw(ctx) {
+    const u = this.t / this.life;
+    ctx.globalAlpha = 0.6 * (1 - u * u);
+    ctx.fillStyle = this.col;
+    ctx.beginPath(); ctx.ellipse(this.x, sy(this.y, 0), this.r, this.r * 0.38, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ---------- 방사형 충격선 (만화 "임팩트 프레임") ----------
+class Burst {
+  constructor(x, y, o = {}) {
+    Object.assign(this, { x, y, t: 0, add: true });
+    this.n = o.n || 12; this.r0 = o.r0 || 12; this.r1 = o.r1 || 80; this.life = o.life || 10; this.col = o.col || '255,255,255';
+    const rot = rand(0, TAU); this.ang = []; this.len = [];
+    for (let i = 0; i < this.n; i++) { this.ang.push(rot + i / this.n * TAU + rand(-0.14, 0.14)); this.len.push(rand(0.55, 1)); }
+  }
+  update() { return ++this.t < this.life; }
+  draw(ctx) {
+    const u = this.t / this.life, e = E.out3(u);
+    ctx.fillStyle = `rgba(${this.col},${0.9 * (1 - u)})`;
+    const w = 2.8 * (1 - u) + 0.4;
+    for (let i = 0; i < this.n; i++) {
+      const a = this.ang[i], c = Math.cos(a), sn = Math.sin(a);
+      const ri = lerp(this.r0, this.r0 * 2.4, e), ro = lerp(this.r0, this.r1 * this.len[i], e);
+      ctx.beginPath();                                        // 밑변(폭 w)에서 뾰족한 끝으로 뻗는 삼각형
+      ctx.moveTo(this.x + c * ri - sn * w, this.y + sn * ri + c * w);
+      ctx.lineTo(this.x + c * ro, this.y + sn * ro);
+      ctx.lineTo(this.x + c * ri + sn * w, this.y + sn * ri - c * w);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+}
+
 // ---------- 빛 입자 (상승/수렴 등) ----------
 class Mote {
   constructor(x, y, vx, vy, o = {}) {
@@ -335,6 +399,63 @@ const Hitfx = {
   },
   dust(x, y, n = 6, spread = 30, col) {
     for (let i = 0; i < n; i++) FX.add('ground', new Dust(x + rand(-spread, spread), y + rand(-4, 4), rand(-2.5, 2.5), rand(-0.8, 0.1), rand(10, 20), { col, life: randi(22, 40) }));
+  },
+
+  // 재질별 파편 : 살=체액 / 갑옷·금속=불꽃 / 뼈=조각 / 마법=빛알갱이 / 돌=돌조각 / 얼음=결정 / 야수=체액+불씨
+  //   x,y,z = 월드 좌표(가로, 깊이, 높이)   pw = 타격 강도 0~3
+  material(mat, x, y, z, dir, pw, tgt) {
+    const B = FX.world.length > 260 ? 0.4 : FX.world.length > 170 ? 0.7 : 1;       // 이펙트가 너무 많으면 줄임
+    const k = (0.8 + pw * 0.75) * B;
+    const cnt = a => Math.max(1, Math.round(a * k));
+    const Y = sy(y, z), out = () => dir * rand(1.2, 7) + rand(-1.5, 1.5);
+    const chips = (cols, n, o = {}) => {
+      for (let i = 0; i < cnt(n); i++) FX.add('world', new Debris(x + rand(-6, 6), y + rand(-6, 6), z + rand(-10, 10), {
+        vx: out() * (o.spd ?? 1), vy: rand(-1.5, 1.5), vz: rand(3, 10), s: rand(o.s0 ?? 2, o.s1 ?? 4.5), col: cols, glow: o.glow, life: o.life ?? 55,
+      }));
+    };
+    switch (mat) {
+      case 'flesh': case 'beast': {
+        const cols = (tgt && tgt.bloodCol) || (mat === 'beast' ? ['#7a1010', '#c02a1a'] : ['#a01c1c', '#e04444']);
+        for (let i = 0; i < cnt(7); i++) FX.add('world', new Drop(x + rand(-5, 5), y + rand(-6, 6), z + rand(-8, 8), {
+          vx: out() * 1.25, vy: rand(-1.4, 1.4), vz: rand(1.5, 9), r: rand(1.8, 3.8), col: choose(cols), splat: true,
+        }));
+        if (mat === 'beast') this.sparks(x, Y, dir, cnt(5), { col: '255,150,70', min: 5, max: 14, spread: 1.5 });
+        break;
+      }
+      case 'armor': case 'metal':
+        this.sparks(x, Y, dir, cnt(11), { min: 8, max: 22, spread: 1.5 });
+        chips(['#3a3f48', '#727b8a', '#b3bcc9'], 3, { s0: 2, s1: 4 });
+        break;
+      case 'bone':
+        chips(['#b7aa88', '#efe4c6', '#ffffff'], 6, { s0: 2, s1: 5 });
+        this.dust(x, sy(y, 0), 2, 12, '215,205,180');
+        break;
+      case 'magic':
+        for (let i = 0; i < cnt(9); i++) {
+          const a = rand(0, TAU), sp = rand(2, 7);
+          FX.add('world', new Mote(x, Y, Math.cos(a) * sp, Math.sin(a) * sp, { col: choose(['200,110,255', '160,90,255', '240,200,255']), life: randi(20, 34), r: rand(6, 11), grav: 0, drag: 0.9 }));
+        }
+        FX.add('world', new Ring(x, Y, 6, 46 + pw * 14, 12, { col: '200,120,255', w: 4, ry: 1 }));
+        break;
+      case 'stone':
+        chips(['#5a5048', '#3a332d', '#7a6e62'], 7, { s0: 3, s1: 7, life: 60 });
+        this.dust(x, sy(y, 0), 3, 20, '160,150,130');
+        break;
+      case 'ice':
+        chips(['#5aa0cc', '#bfe6ff', '#ffffff'], 8, { s0: 2, s1: 5, glow: '160,225,255' });
+        this.sparks(x, Y, dir, cnt(6), { col: '190,235,255', min: 4, max: 13, spread: 1.6 });
+        break;
+    }
+  },
+
+  // 처치 : 몸이 터지는 큰 폭발
+  kill(e, dir) {
+    const mat = e.hitMat || 'flesh', sc = e.isBoss ? 2 : 1, z = Math.max(24, e.z + e.h * 0.5);
+    this.material(mat, e.x, e.y, z, dir, 3, e);
+    const X = e.x, Y = sy(e.y, z);
+    FX.add('world', new Flash(X, Y, 20 * sc, 130 * sc, 16, mat === 'magic' ? '210,140,255' : mat === 'ice' ? '170,225,255' : '255,240,220', 0.9));
+    FX.add('world', new Ring(X, Y, 10, 110 * sc, 14, { col: '255,230,190', w: 6, ry: 1 }));
+    FX.add('world', new Burst(X, Y, { n: 14, r0: 16, r1: 110 * sc, life: 12 }));
   },
 };
 
