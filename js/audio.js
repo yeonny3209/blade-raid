@@ -232,6 +232,26 @@ const Sfx = {
     SFX.impact(this, (o.vol || 1) * (MIX.impact ?? 0.37) * (power >= 2 ? 1.18 : 1), pitch, mat, power, !!o.crit, o.combo | 0);
   },
 
+  // 검 고유 음색 한 겹 (applyHit 에서 재질 타격음 뒤에 호출)
+  wlayer(kind, power, crit) {
+    if (!this.ctx || this.muted || !kind) return;
+    const now = performance.now(), key = 'wl' + power;
+    if (this.lastPlay[key] && now - this.lastPlay[key] < 22) return;
+    this.lastPlay[key] = now;
+    SFX.wlayer(this, MIX.wl, 0.95 + Math.random() * 0.1, kind, power, crit);
+  },
+  // 플레이어 검 휘두르는 소리 : 기본 휘두름 + 장착한 검의 색을 입힌다
+  pplay(name, vol = 1, pitch = 1) {
+    const W = typeof Gear !== 'undefined' ? Gear.w() : null;
+    this.play(name, vol, pitch * ((W && W.swingPitch) || 1));
+    if (W && W.snd && this.ctx && !this.muted) {
+      const now = performance.now(), key = 'ws' + name;
+      if (this.lastPlay[key] && now - this.lastPlay[key] < 60) return;
+      this.lastPlay[key] = now;
+      SFX.wlayer(this, MIX.wl * (name === 'swingBig' ? 0.55 : 0.4), pitch, W.snd, name === 'swingBig' ? 1 : 0, false);
+    }
+  },
+
   // 몬스터 목소리 (kind: goblin/orc/mage/boss, mode: hit/die)
   voice(kind, mode = 'hit') {
     if (!this.ctx || this.muted || !this.voiceOn) return;
@@ -254,7 +274,7 @@ const Sfx = {
 // 소리별 음량 단계 : 약한 타격 < 평타 < 강타 < 폭발 순으로 확실히 차이나게
 // (소프트 클립 천장이 0.94 라서 개별 레벨을 정리해두지 않으면 전부 같은 크기로 뭉개진다)
 const MIX = {
-  kill: 0.32, combo: 0.42, impact: 0.37, hitLight: 0.33, hit: 0.37, heavy: 0.44, crit: 1, blunt: 0.38, hurt: 0.41,
+  kill: 0.32, combo: 0.42, wl: 0.42, impact: 0.37, hitLight: 0.33, hit: 0.37, heavy: 0.44, crit: 1, blunt: 0.38, hurt: 0.41,
   thud: 0.48, land: 0.51, explode: 0.45, quake: 0.49, break: 0.41, cutin: 0.46,
   ultSlash: 0.3, pillar: 0.4, roar: 0.5, flash: 0.71, counter: 0.64,
   swing: 2.2, swingBig: 1.19, ring: 1, dash: 1, jump: 1, charge: 1, sheath: 1,
@@ -326,6 +346,102 @@ const SFX = {
     }
     if (P.duck) s.duck(P.duck, 0.12 + d * 0.1);
     if (pw >= 2) s.muffle(0.32 + pw * 0.16, 0.12 + d * 0.07);       // 강타 : 순간 귀가 먹먹
+  },
+
+  // ---------- 검마다 다른 타격 음색 ----------
+  //  재질 타격음 위에 한 겹 더 얹는다 (불=파직, 얼음=쨍, 번개=지직 …). pw : 0~3 타격 강도
+  wlayer(s, v, p, kind, pw = 1, crit = false) {
+    // 음색마다 원래 음량이 달라서(노이즈 위주는 작고 서브베이스 위주는 큼) 측정값으로 맞춘 보정치
+    const KG = { fire: 2.8, ice: 1.55, elec: 1.4, blood: 1.15, quake: 0.9, wind: 5.5, poison: 1.45, holy: 2.1, void: 1.1, magma: 0.9, clock: 2.9, exec: 0.82, moon: 1.9, star: 3.1, shadow: 3.1, wing: 3.2, chaos: 1.75 };
+    const g = v * (0.72 + pw * 0.2) * (KG[kind] || 1), r = () => 0.9 + Math.random() * 0.2;
+    switch (kind) {
+      case 'fire':
+        for (let i = 0; i < 4; i++) s.tick({ f: 2600 + Math.random() * 3000, gain: 0.3 * g, dur: 0.012, at: i * 0.028 + Math.random() * 0.02 });
+        s.noise({ type: 'bandpass', f0: 900, f1: 3200 * p, q: 1.4, dur: 0.26, gain: 0.34 * g, attack: 0.004 });
+        s.noise({ type: 'lowpass', f0: 1700, f1: 240, q: 0.8, dur: 0.22, gain: 0.4 * g });
+        break;
+      case 'ice':
+        s.metal({ f: 3300 * p * r(), gain: 0.2 * g, dur: 0.5, parts: [1, 2.9, 5.1, 7.4], dest: s.wet });
+        s.noise({ type: 'highpass', f0: 6500, dur: 0.12, gain: 0.3 * g, attack: 0.001 });
+        s.tone({ type: 'sine', f0: 2600 * p, f1: 1300, dur: 0.08, gain: 0.12 * g });
+        break;
+      case 'elec':
+        s.tone({ type: 'sawtooth', f0: 2000 * p, f1: 260, slide: 0.09, dur: 0.11, gain: 0.16 * g, dist: true, lp: 5000 });
+        for (let i = 0; i < 3; i++) s.noise({ type: 'highpass', f0: 3800, dur: 0.02, gain: 0.34 * g, attack: 0.0005, at: i * 0.024 });
+        s.tone({ type: 'square', f0: 118, f1: 90, dur: 0.12, gain: 0.1 * g, lp: 700 });
+        break;
+      case 'blood':
+        s.noise({ type: 'bandpass', f0: 520, f1: 190, q: 0.8, dur: 0.2, gain: 0.5 * g, attack: 0.002 });
+        s.sub({ f0: 120 * p, f1: 48, dur: 0.17, gain: 0.7 * g, drive: true });
+        s.tone({ type: 'sine', f0: 720 * p, f1: 240, dur: 0.09, gain: 0.12 * g });
+        break;
+      case 'quake':
+        s.sub({ f0: 84 * p, f1: 26, dur: 0.6, drop: 0.16, gain: 1.15 * g, drive: true });
+        s.noise({ type: 'lowpass', f0: 700, f1: 60, q: 1, dur: 0.5, gain: 0.7 * g, attack: 0.002 });
+        s.noise({ type: 'highpass', f0: 1800, dur: 0.18, gain: 0.3 * g, at: 0.01 });
+        break;
+      case 'wind':
+        s.noise({ type: 'bandpass', f0: 2200, f1: 7000, q: 4, dur: 0.17, gain: 0.26 * g, attack: 0.02 });
+        s.noise({ type: 'bandpass', f0: 6500, f1: 1800, q: 3, dur: 0.14, gain: 0.2 * g, attack: 0.012, at: 0.04 });
+        s.tone({ type: 'sine', f0: 1900 * p, f1: 2700 * p, dur: 0.1, gain: 0.07 * g, attack: 0.03 });
+        break;
+      case 'poison':
+        for (let i = 0; i < 3; i++) s.tone({ type: 'sine', f0: (300 + i * 60) * p, f1: (680 + i * 80) * p, dur: 0.07, gain: 0.16 * g, at: i * 0.05 });
+        s.noise({ type: 'bandpass', f0: 1400, f1: 500, q: 1.6, dur: 0.16, gain: 0.25 * g });
+        s.sub({ f0: 140 * p, f1: 66, dur: 0.14, gain: 0.55 * g, drive: true });
+        break;
+      case 'holy':
+        s.metal({ f: 1760 * p, gain: 0.24 * g, dur: 0.85, parts: [1, 2, 3, 4.2], dest: s.wet });
+        s.tone({ type: 'triangle', f0: 880 * p, f1: 1320 * p, dur: 0.22, gain: 0.1 * g, dest: s.wet });
+        s.noise({ type: 'highpass', f0: 9000, dur: 0.1, gain: 0.16 * g });
+        break;
+      case 'void':
+        s.noise({ type: 'bandpass', f0: 280, f1: 1300, q: 1.2, dur: 0.26, gain: 0.4 * g, attack: 0.1, dest: s.wet });
+        s.sub({ f0: 70 * p, f1: 38, dur: 0.5, gain: 0.8 * g, drive: true });
+        s.tone({ type: 'sawtooth', f0: 520 * p, f1: 70, dur: 0.22, gain: 0.07 * g, lp: 900, dist: true });
+        break;
+      case 'magma':
+        s.sub({ f0: 100 * p, f1: 30, dur: 0.5, drop: 0.12, gain: 1.05 * g, drive: true });
+        s.noise({ type: 'lowpass', f0: 3200, f1: 150, q: 0.7, dur: 0.46, gain: 0.7 * g, attack: 0.001 });
+        for (let i = 0; i < 3; i++) s.tick({ f: 2200 + Math.random() * 2000, gain: 0.26 * g, dur: 0.012, at: 0.03 + i * 0.04 });
+        break;
+      case 'clock':
+        s.tone({ type: 'square', f0: 1250, dur: 0.018, gain: 0.14 * g, lp: 5000, attack: 0.0004 });
+        s.tone({ type: 'square', f0: 1800, dur: 0.018, gain: 0.12 * g, lp: 5000, attack: 0.0004, at: 0.07 });
+        s.metal({ f: 2400 * p, gain: 0.14 * g, dur: 0.35, parts: [1, 3.1, 5.6], dest: s.wet, at: 0.07 });
+        break;
+      case 'exec':
+        s.tick({ f: 2000, gain: 0.5 * g, dur: 0.02 });
+        s.sub({ f0: 74 * p, f1: 30, dur: 0.48, drop: 0.12, gain: 1.2 * g, drive: true });
+        s.noise({ type: 'lowpass', f0: 950, f1: 110, q: 0.9, dur: 0.3, gain: 0.7 * g, attack: 0.001 });
+        s.metal({ f: 210 * p, gain: 0.2 * g, dur: 0.6, parts: [1, 2.3, 3.8], dest: s.wet });
+        break;
+      case 'moon':
+        s.metal({ f: 2640 * p * r(), gain: 0.2 * g, dur: 0.9, parts: [1, 2.4, 4.1, 6], dest: s.wet });
+        s.tone({ type: 'sine', f0: 3520 * p, dur: 0.3, gain: 0.09 * g, at: 0.02, dest: s.wet });
+        s.noise({ type: 'highpass', f0: 8000, dur: 0.14, gain: 0.2 * g });
+        break;
+      case 'star':
+        [1568, 2093, 2637, 3136].forEach((f, i) => s.tone({ type: 'sine', f0: f * p, dur: 0.13, gain: 0.13 * g, at: i * 0.035, dest: s.wet }));
+        s.noise({ type: 'highpass', f0: 9500, dur: 0.18, gain: 0.18 * g });
+        break;
+      case 'shadow':
+        s.noise({ type: 'bandpass', f0: 1300, f1: 280, q: 2, dur: 0.15, gain: 0.36 * g, attack: 0.002 });
+        s.tone({ type: 'sine', f0: 230 * p, f1: 85, dur: 0.22, gain: 0.26 * g, lp: 600 });
+        s.noise({ type: 'highpass', f0: 7000, dur: 0.05, gain: 0.1 * g, at: 0.02 });
+        break;
+      case 'wing':
+        s.noise({ type: 'bandpass', f0: 3000, f1: 8000, q: 1.5, dur: 0.3, gain: 0.16 * g, attack: 0.04, dest: s.wet });
+        s.tone({ type: 'triangle', f0: 1175 * p, f1: 1760 * p, dur: 0.26, gain: 0.1 * g, dest: s.wet });
+        s.metal({ f: 1320 * p, gain: 0.12 * g, dur: 0.6, parts: [1, 2.01, 3.02], dest: s.wet });
+        break;
+      case 'chaos':
+        s.tone({ type: 'sawtooth', f0: 90 * p, f1: 640 * p, dur: 0.16, gain: 0.1 * g, dist: true, lp: 3000 });
+        s.noise({ type: 'bandpass', f0: 4200, f1: 600, q: 2.4, dur: 0.2, gain: 0.3 * g });
+        s.metal({ f: 1500 * p * r(), gain: 0.14 * g, dur: 0.5, parts: [1, 1.41, 2.73], dest: s.wet });
+        break;
+    }
+    if (crit) s.tone({ type: 'sine', f0: 2200 * p, f1: 3300 * p, dur: 0.1, gain: 0.07 * g });
   },
 
   // 아래 이름들은 기존 호출부 호환용 (재질 기본값 = 살)

@@ -58,6 +58,7 @@ function drawPlayer(ctx, J, pal, ent, opt) {
   if (J.wb) drawPlayerBlade(ctx, J, pal, ent, opt);
 
   // --- 뒷팔 (귀수) ---
+  gearDeco(ctx, J, pal, ent, opt, 'back');
   limb(ctx, J.sh2, J.elbow2, J.hand2, 6, 5.3, 4.7, pal.coat, pal.ghost, ol, ow);
   if (!ghost) {
     ctx.strokeStyle = pal.bandage[1]; ctx.lineWidth = 1.4;
@@ -111,6 +112,7 @@ function drawPlayer(ctx, J, pal, ent, opt) {
   ctx.fillStyle = pal.sash[2];
   ctx.beginPath(); polyPath(ctx, [...tp(Hh, F, -6, 5), ...tp(Hh, F, 10, 5), ...tp(Hh, F, 10.5, 7), ...tp(Hh, F, -6, 7)]); ctx.fill();
   olPoly(ctx, [...tp(Hh, F, -12, 6), ...tp(Hh, F, -15, -6), ...tp(Hh, F, -19, -12), ...tp(Hh, F, -14, -4), ...tp(Hh, F, -11, 2)], pal.sash[0], ol, 1.2);
+  gearDeco(ctx, J, pal, ent, opt, 'body');
 
   // --- 앞다리 ---
   limb(ctx, J.hip, J.knee1, J.foot1, 9, 7.4, 6.1, pal.pants, pal.boots, ol, ow);
@@ -121,6 +123,11 @@ function drawPlayer(ctx, J, pal, ent, opt) {
   // --- 머리 ---
   if (!ghost && ent.ribbon) drawRibbon(ctx, ent, ent.ribbon, 2.6, 1.2, pal.band[1], ol, 1.2);
   drawPlayerHead(ctx, J, pal, ow, opt);
+  if (ent.adef && ent.adef.look && ent.adef.look.deco && !ghost) {
+    ctx.save(); ctx.translate(J.head.x, J.head.y); ctx.rotate(J.headRot); ctx.scale(1.1, 1.1);
+    gearDeco(ctx, J, pal, ent, opt, 'head');
+    ctx.restore();
+  }
 
   // --- 검 ---
   if (!J.wb) drawPlayerBlade(ctx, J, pal, ent, opt);
@@ -137,6 +144,7 @@ function drawPlayer(ctx, J, pal, ent, opt) {
     ctx.strokeStyle = pal.trim[1]; ctx.lineWidth = 1.3;
     ctx.beginPath(); ctx.ellipse(cx, cy, 7.4, 5.6, a, 0.2, Math.PI - 0.2); ctx.stroke();
   }
+  gearDeco(ctx, J, pal, ent, opt, 'top');
   circleOl(ctx, J.hand1.x, J.hand1.y, 5.2, pal.bracer[1], ol, ow);
 }
 
@@ -184,40 +192,223 @@ function drawPlayerHead(ctx, J, pal, ow, opt) {
   ctx.restore();
 }
 
+// 검 외형 : 길이 / 폭 / 칼끝 / 날 모양 / 코등이 / 색 / 룬 빛을 장착한 검(ent.wlook)에서 읽는다
+function bladeShape(Lk, len) {
+  const hw = Lk.hw || 3.8, x0 = 12, tipL = { point: 16, cleave: 2, curve: 14, spike: 26, round: 8 }[Lk.tip || 'point'];
+  const xt = len - tipL, n = { plain: 1, saw: 8, wave: 9, flame: 8, notch: 6, crystal: 6 }[Lk.edge || 'plain'];
+  const top = [], bot = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, x = x0 + (xt - x0) * u;
+    let tw = hw * (1 - u * (Lk.taper ?? 0.06)), bw = tw;
+    switch (Lk.edge) {
+      case 'saw': bw += (i % 2 ? 2.8 : 0); break;
+      case 'wave': bw += Math.sin(u * Math.PI * 4) * 2.1 + 1.7; break;
+      case 'flame': bw += (Math.sin(u * Math.PI * 3.5) * 0.5 + 0.5) * 5.2; tw += (Math.sin(u * 9) * 0.5 + 0.5) * 1.4; break;
+      case 'notch': bw += (i % 2 ? 0 : 3); break;
+      case 'crystal': bw += (i % 2 ? 3.4 : 0); tw += (i % 2 ? 0 : 1.8); break;
+    }
+    top.push([x, -tw]); bot.push([x, bw]);
+  }
+  const tw1 = top[top.length - 1][1], bw1 = bot[bot.length - 1][1];
+  let tip;
+  switch (Lk.tip) {
+    case 'cleave': tip = [[len - 1, tw1], [len, bw1 * 0.7]]; break;
+    case 'curve': tip = [[len - 5, tw1 * 0.5], [len + 4, 1.6]]; break;
+    case 'spike': tip = [[len, 0.3]]; break;
+    case 'round': tip = [[len - 3, tw1 * 0.85], [len, 0.2], [len - 3.5, bw1 * 0.85]]; break;
+    default: tip = [[len, 0.5]];
+  }
+  const outer = [];
+  top.forEach(p => outer.push(p[0], p[1]));
+  tip.forEach(p => outer.push(p[0], p[1]));
+  for (let i = bot.length - 1; i >= 0; i--) outer.push(bot[i][0], bot[i][1]);
+  // 안쪽 면 (중앙 선 기준으로 줄인 다각형)
+  const inner = [];
+  top.forEach(p => inner.push(p[0] + 1, p[1] * 0.45));
+  inner.push(len - tipL * 0.35, 0.4);
+  for (let i = bot.length - 1; i >= 0; i--) inner.push(bot[i][0] + 1, bot[i][1] * 0.62);
+  return { outer, inner, bot, top, len };
+}
+
+function hslRgb(h, s, l) {
+  const a = s * Math.min(l, 1 - l), f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+  return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+}
+
 function drawPlayerBlade(ctx, J, pal, ent, opt) {
-  const ol = pal.ol, L = RIG_PLAYER.wlen;
+  const ol = pal.ol, Lk = ent.wlook || {};
+  const plain = opt.ghost || opt.flash;
+  let c = pal.blade, hilt = pal.hilt, trim = pal.trim, glow = '120,190,255', rune = null;
+  if (!plain) {
+    if (Lk.c) { c = Lk.c; if (Lk.hilt) hilt = Lk.hilt; if (Lk.trim) trim = Lk.trim; glow = Lk.glow || glow; rune = Lk.rune; }
+    if (Lk.dyn) {                                   // 혼돈의 검 : 색이 계속 변한다
+      const h = (Game.time * 2.2) % 360, a = hslRgb(h, 0.7, 0.25), b = hslRgb(h, 0.8, 0.55), d = hslRgb(h, 0.9, 0.86);
+      c = [`rgb(${a})`, `rgb(${b})`, `rgb(${d})`]; glow = rune = b.join(',');
+    }
+  }
+  const len = RIG_PLAYER.wlen * (Lk.L || 1);
   weaponFrame(ctx, J.hand1, J.wAng);
   // 칼자루
-  olPoly(ctx, [-15, -2.7, 8, -2.7, 8, 2.7, -15, 2.7], pal.hilt[1], ol, 1.5);
-  ctx.strokeStyle = pal.hilt[2]; ctx.lineWidth = 1;
+  olPoly(ctx, [-15, -2.7, 8, -2.7, 8, 2.7, -15, 2.7], hilt[1], ol, 1.5);
+  ctx.strokeStyle = hilt[2]; ctx.lineWidth = 1;
   ctx.beginPath();
   for (let x = -13; x < 7; x += 4) { ctx.moveTo(x, -2.4); ctx.lineTo(x + 2, 2.4); ctx.moveTo(x + 2, -2.4); ctx.lineTo(x, 2.4); }
   ctx.stroke();
-  circleOl(ctx, -16, 0, 2.6, pal.trim[1], ol, 1.3);
+  circleOl(ctx, -16, 0, 2.6, trim[1], ol, 1.3);
   // 코등이
-  ctx.beginPath(); ctx.ellipse(9.5, 0, 3.2, 8, 0, 0, TAU); ctx.fillStyle = ol; ctx.fill();
-  ctx.beginPath(); ctx.ellipse(9.5, 0, 2, 6.8, 0, 0, TAU); ctx.fillStyle = pal.trim[1]; ctx.fill();
+  switch (Lk.guard || 'oval') {
+    case 'cross': olPoly(ctx, [7, -10.5, 12, -10.5, 12, 10.5, 7, 10.5], trim[1], ol, 1.3); break;
+    case 'wing':
+      olPoly(ctx, [7, 0, 16, -4, 15, -14, 6, -7], trim[1], ol, 1.2);
+      olPoly(ctx, [7, 0, 16, 4, 15, 14, 6, 7], trim[1], ol, 1.2); break;
+    case 'ring': ctx.beginPath(); ctx.arc(10, 0, 8, 0, TAU); ctx.lineWidth = 4.6; ctx.strokeStyle = ol; ctx.stroke(); ctx.lineWidth = 2.6; ctx.strokeStyle = trim[1]; ctx.stroke(); break;
+    case 'claw':
+      olPoly(ctx, [6, -2, 14, -6, 18, -13, 10, -11, 5, -6], trim[1], ol, 1.2);
+      olPoly(ctx, [6, 2, 14, 6, 18, 13, 10, 11, 5, 6], trim[1], ol, 1.2); break;
+    case 'none': break;
+    default:
+      ctx.beginPath(); ctx.ellipse(9.5, 0, 3.2, 8, 0, 0, TAU); ctx.fillStyle = ol; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(9.5, 0, 2, 6.8, 0, 0, TAU); ctx.fillStyle = trim[1]; ctx.fill();
+  }
   // 칼날
-  const blade = [12, -3.8, L - 16, -3.6, L, 0.4, L - 9, 4, 12, 4];
-  olPoly(ctx, blade, pal.blade[0], ol, 1.6);
-  ctx.fillStyle = pal.blade[1];
-  ctx.beginPath(); polyPath(ctx, [12, -1.2, L - 14, -1.2, L - 2, 0.6, L - 9, 3.2, 12, 3.2]); ctx.fill();
-  ctx.strokeStyle = pal.blade[2]; ctx.lineWidth = 1.3;
-  ctx.beginPath(); ctx.moveTo(13, 3.1); ctx.lineTo(L - 9, 3.1); ctx.lineTo(L - 1, 0.6); ctx.stroke();
-  ctx.strokeStyle = pal.blade[0]; ctx.lineWidth = 0.9;
-  ctx.beginPath(); ctx.moveTo(14, -0.6); ctx.lineTo(L - 20, -0.6); ctx.stroke();
+  const S = bladeShape(Lk, len);
+  olPoly(ctx, S.outer, c[0], ol, 1.6);
+  ctx.fillStyle = c[1]; ctx.beginPath(); polyPath(ctx, S.inner); ctx.fill();
+  ctx.strokeStyle = c[2]; ctx.lineWidth = 1.3; ctx.lineJoin = 'round';
+  ctx.beginPath(); S.bot.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.lineTo(len - 1, 0.5); ctx.stroke();
+  ctx.strokeStyle = c[0]; ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.moveTo(14, -0.4); ctx.lineTo(len - 22, -0.4); ctx.stroke();
+  // 룬 빛 (칼날 중앙선이 은은하게 발광)
+  if (rune && !opt.flash && !opt.ghost) {
+    ctx.globalCompositeOperation = 'lighter';
+    const pu = 0.55 + Math.sin(Game.time * 0.12 + (ent.id || 0)) * 0.25;
+    ctx.strokeStyle = `rgba(${rune},${0.85 * pu})`; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(len - 14, 0.2); ctx.stroke();
+    drawGlow(ctx, len * 0.55, 0, len * 0.5, rune, 0.14 * pu, 1, 0.22);
+    ctx.globalCompositeOperation = 'source-over';
+  }
   // 기 발산
   const g = ent.bladeGlow || 0;
   if (g > 0 && !opt.flash && !opt.ghost) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = Math.min(1, g) * 0.9;
-    ctx.fillStyle = 'rgba(120,190,255,0.55)';
-    ctx.beginPath(); polyPath(ctx, [10, -7, L - 14, -7, L + 8, 0, L - 10, 8, 10, 8]); ctx.fill();
-    for (let i = 0; i < 5; i++) drawGlow(ctx, 18 + i * (L - 20) / 4, 0, 16, '110,180,255', 0.35);
+    ctx.fillStyle = `rgba(${glow},0.55)`;
+    ctx.beginPath(); polyPath(ctx, [10, -7, len - 14, -7, len + 8, 0, len - 10, 8, 10, 8]); ctx.fill();
+    for (let i = 0; i < 5; i++) drawGlow(ctx, 18 + i * (len - 20) / 4, 0, 16, glow, 0.35);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
   }
   ctx.restore();
+}
+
+// ============================================================
+//  방어구 외형 : 팔레트 교체 + 장식(갑옷 판 / 가시 / 날개 / 뿔 / 후광 …)
+// ============================================================
+const GEAR_RIGS = {};
+function gearRig(a) {
+  if (!a || !a.look || !a.look.coat) return RIG_PLAYER;
+  if (GEAR_RIGS[a.id]) return GEAR_RIGS[a.id];
+  const L = a.look, pal = Object.assign({}, RIG_PLAYER.pal);
+  pal.coat = L.coat; pal.metal = L.metal || pal.metal;
+  if (L.trim) pal.trim = L.trim;
+  pal.deco = L.dc || L.metal || pal.metal;
+  const rig = Object.assign({}, RIG_PLAYER, { pal });
+  rig.flashPal = mapPal(pal, c => mixHex(c, '#ffffff', 0.72));
+  rig.flashPal.ol = mixHex(pal.ol, '#ffffff', 0.35);
+  rig._ghost = {};
+  rig.ghostPal = rgb => rig._ghost[rgb] || (rig._ghost[rgb] = mapPal(pal, () => `rgb(${rgb})`));
+  return (GEAR_RIGS[a.id] = rig);
+}
+
+function gearDeco(ctx, J, pal, ent, opt, layer) {
+  const a = ent.adef;
+  if (!a || !a.look || !a.look.deco || opt.ghost || !pal.deco) return;
+  const k = a.look.deco, d = pal.deco, ol = pal.ol, tr = pal.trim;
+  const F = torsoFrame(J), Hh = J.hip, L = F.L, glow = a.look.glow, fx = !opt.flash;
+  const chest = (a0) => [...tp(Hh, F, -12.8, L * a0), ...tp(Hh, F, 11.8, L * a0), ...tp(Hh, F, 13.6, L * 0.62), ...tp(Hh, F, 14.2, L - 1), ...tp(Hh, F, 6.5, L + 3.8), ...tp(Hh, F, -6.5, L + 3.8), ...tp(Hh, F, -14.2, L - 1), ...tp(Hh, F, -13.4, L * 0.62)];
+  const shine = (a0) => { ctx.fillStyle = d[2]; ctx.beginPath(); polyPath(ctx, [...tp(Hh, F, 2.5, L * a0), ...tp(Hh, F, 5.5, L * a0), ...tp(Hh, F, 6.5, L), ...tp(Hh, F, 3, L + 1.5)]); ctx.fill(); };
+  const rivets = (rows) => { ctx.fillStyle = tr[2]; for (const [f, u] of rows) { const p = tp(Hh, F, f, L * u); ctx.beginPath(); ctx.arc(p[0], p[1], 1.2, 0, TAU); ctx.fill(); } };
+  const spike = (x, y, ang, len, w, col) => {
+    const c = Math.cos(ang), s = Math.sin(ang);
+    olPoly(ctx, [x - s * w, y + c * w, x + c * len, y + s * len, x + s * w, y - c * w], col, ol, 1);
+  };
+
+  if (layer === 'back') {
+    if (k === 'cloak' && ent.tail) drawRibbon(ctx, ent, ent.tail, 16, 8, d[1], ol, 1.7);
+    if (k === 'wings' || k === 'halo') {
+      const sc = k === 'halo' ? 1.15 : 1, base = tp(Hh, F, -7, L * 0.9), flap = Math.sin(Game.time * 0.09) * 0.07;
+      for (let i = 0; i < 5; i++) {
+        const ang = Math.PI + (-0.35 - i * 0.2) + flap * (1 + i * 0.25), len = (46 - i * 4) * sc, w = 7.5 * sc;
+        const c = Math.cos(ang), s = Math.sin(ang);
+        olPoly(ctx, [base[0] - s * w * 0.5, base[1] + c * w * 0.5, base[0] + c * len * 0.6 - s * w, base[1] + s * len * 0.6 + c * w, base[0] + c * len, base[1] + s * len, base[0] + c * len * 0.6 + s * w, base[1] + s * len * 0.6 - c * w, base[0] + s * w * 0.5, base[1] - c * w * 0.5], d[i % 2 ? 1 : 2], ol, 1.1);
+      }
+      if (fx && glow) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, base[0] - 22 * sc, base[1] - 18 * sc, 46 * sc, glow, 0.22); ctx.globalCompositeOperation = 'source-over'; }
+    }
+    if (k === 'robe') {
+      const m = [(J.knee1.x + J.knee2.x) / 2, (J.knee1.y + J.knee2.y) / 2];
+      olPoly(ctx, [...tp(Hh, F, -13, -2), ...tp(Hh, F, 13, -2), m[0] + 11, m[1] + 8, m[0] - 11, m[1] + 8], d[1], ol, 1.4);
+    }
+    return;
+  }
+  if (layer === 'body') {
+    switch (k) {
+      case 'plate': olPoly(ctx, chest(0.1), d[1], ol, 1.4); shine(0.2); rivets([[-9, 0.45], [9, 0.45], [-9, 0.85], [9, 0.85]]);
+        ctx.strokeStyle = tr[1]; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, 0, L * 0.12)); ctx.lineTo(...tp(Hh, F, 0, L + 3)); ctx.stroke(); break;
+      case 'leather': olPoly(ctx, chest(0.3), d[1], ol, 1.3);
+        ctx.strokeStyle = d[0]; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -11, L * 0.4)); ctx.lineTo(...tp(Hh, F, 9, L + 2)); ctx.moveTo(...tp(Hh, F, 11, L * 0.4)); ctx.lineTo(...tp(Hh, F, -9, L + 2)); ctx.stroke();
+        rivets([[0, 0.7]]); break;
+      case 'chain': olPoly(ctx, chest(0.15), d[1], ol, 1.3);
+        ctx.strokeStyle = d[2]; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.7;
+        for (let u = L * 0.2; u < L + 2; u += 4.4) for (let f = -11; f < 12; f += 4.4) { const p = tp(Hh, F, f + ((u / 4.4 | 0) % 2) * 2.2, u); ctx.beginPath(); ctx.arc(p[0], p[1], 1.9, 0, TAU); ctx.stroke(); }
+        ctx.globalAlpha = 1; break;
+      case 'spikes': olPoly(ctx, chest(0.2), d[1], ol, 1.4); shine(0.3);
+        for (let i = 0; i < 3; i++) { const p = tp(Hh, F, 8 - i * 7, L * (0.5 + i * 0.12)); spike(p[0], p[1], -0.4 - i * 0.3, 8, 2.4, d[2]); } break;
+      case 'robe': olPoly(ctx, chest(0.0), d[1], ol, 1.3);
+        olPoly(ctx, [...tp(Hh, F, 3, L * 0.5), ...tp(Hh, F, 12, L * 0.5), ...tp(Hh, F, 6, L + 3.5)], d[2], ol, 0.8);
+        if (fx && glow) { const p = tp(Hh, F, 2, L * 0.62); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 12 + Math.sin(Game.time * 0.1) * 2, glow, 0.8); ctx.globalCompositeOperation = 'source-over'; } break;
+      case 'cloak': olPoly(ctx, [...tp(Hh, F, -11, L * 0.9), ...tp(Hh, F, 12, L * 0.9), ...tp(Hh, F, 9, L + 4.5), ...tp(Hh, F, -9, L + 4.5)], d[2], ol, 1.2); break;
+      case 'wings': case 'halo': olPoly(ctx, chest(0.2), d[1], ol, 1.4); shine(0.3);
+        ctx.strokeStyle = tr[1]; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -10, L * 0.3)); ctx.lineTo(...tp(Hh, F, 0, L * 0.12)); ctx.lineTo(...tp(Hh, F, 10, L * 0.3)); ctx.stroke(); break;
+      case 'scales': olPoly(ctx, chest(0.12), d[1], ol, 1.4);
+        ctx.strokeStyle = d[2]; ctx.lineWidth = 1.1;
+        for (let r = 0; r < 5; r++) for (let f = -10 + (r % 2) * 3.5; f < 12; f += 7) { const p = tp(Hh, F, f, L * (0.2 + r * 0.17)); ctx.beginPath(); ctx.arc(p[0], p[1], 3.4, 0.4, Math.PI - 0.4); ctx.stroke(); } break;
+      case 'obsidian': olPoly(ctx, chest(0.1), d[1], ol, 1.4);
+        if (fx && glow) {
+          ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${glow},${0.55 + Math.sin(Game.time * 0.1) * 0.25})`; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -6, L * 0.2)); ctx.lineTo(...tp(Hh, F, -1, L * 0.5)); ctx.lineTo(...tp(Hh, F, -6, L * 0.8)); ctx.moveTo(...tp(Hh, F, 6, L * 0.3)); ctx.lineTo(...tp(Hh, F, 2, L * 0.62)); ctx.lineTo(...tp(Hh, F, 7, L * 0.95)); ctx.stroke();
+          ctx.globalCompositeOperation = 'source-over';
+        } break;
+      case 'horns': olPoly(ctx, chest(0.05), d[1], ol, 1.4); shine(0.25);
+        olPoly(ctx, [...tp(Hh, F, -12, -4), ...tp(Hh, F, 12, -4), ...tp(Hh, F, 8, -18), ...tp(Hh, F, 0, -12), ...tp(Hh, F, -8, -18)], d[1], ol, 1.2);
+        if (fx && glow) { const p = tp(Hh, F, 0, L * 0.55); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 14, glow, 0.7 + Math.sin(Game.time * 0.12) * 0.2); ctx.globalCompositeOperation = 'source-over'; } break;
+    }
+    return;
+  }
+  if (layer === 'top') {          // 앞 견갑 위
+    const s = J.sh1;
+    switch (k) {
+      case 'spikes': for (let i = 0; i < 4; i++) spike(s.x, s.y, -2.4 + i * 0.55, 15 - (i % 2) * 3, 3, d[2]); break;
+      case 'plate': case 'wings': case 'halo': ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 12, 9, -0.2, 0, TAU); ctx.fillStyle = ol; ctx.fill(); ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 10.6, 7.6, -0.2, 0, TAU); ctx.fillStyle = d[1]; ctx.fill(); ctx.strokeStyle = tr[1]; ctx.lineWidth = 1.3; ctx.stroke(); break;
+      case 'scales': case 'obsidian': case 'horns':
+        for (let i = 0; i < 3; i++) spike(s.x, s.y, -2.2 + i * 0.6, 12 + (i === 1 ? 5 : 0), 3.2, d[2]);
+        if (fx && glow && k !== 'scales') { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, s.x, s.y, 14, glow, 0.35); ctx.globalCompositeOperation = 'source-over'; } break;
+    }
+    return;
+  }
+  if (layer === 'head') {         // 머리 위 (head 좌표계로 이동한 뒤 호출)
+    if (k === 'horns') {
+      olPoly(ctx, [-6, -13, -17, -34, -2, -17], d[2], ol, 1.2);
+      olPoly(ctx, [3, -14, 12, -33, 9, -13], d[2], ol, 1.2);
+    } else if (k === 'halo') {
+      if (fx) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 0, -27, 30, glow || '255,240,170', 0.35); ctx.globalCompositeOperation = 'source-over'; }
+      ctx.strokeStyle = ol; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(0, -26, 12, 4, 0, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = '#ffe9a0'; ctx.lineWidth = 2.6; ctx.stroke();
+    } else if (k === 'robe') {
+      olPoly(ctx, [-16, 4, -17, -10, -6, -18, 4, -16, -2, -8, -3, 6], d[1], ol, 1.2);
+    } else if (k === 'cloak') {
+      olPoly(ctx, [-17, 8, -18, -8, -8, -17, 5, -16, 0, -8, -2, 8], d[1], ol, 1.2);
+    }
+  }
 }
 
 // ============================================================

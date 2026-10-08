@@ -59,6 +59,14 @@ class Enemy extends Entity {
     this.px = this.x; this.pz = this.z;
     if (this.flash > 0) this.flash--;
     if (this.hitstop > 0) { this.hitstop--; return; }
+    // 상태이상 : 화상·독·출혈·둔화, 빙결·감전은 아예 멈춘다
+    if (this.st) Status.step(this); else this.slowMul = 1;
+    if (this.holdT > 0) {
+      if (--this.holdT <= 0) Status.release(this);
+      this.vx = 0; this.vy = 0; this.physics();
+      return;
+    }
+    if (this.slowMul < 1) { this.slowAcc = (this.slowAcc || 0) + this.slowMul; if (this.slowAcc < 1) return; this.slowAcc -= 1; }
     this.shakeHit = false;
     this.stT++;
     if (this.invul > 0) this.invul--;

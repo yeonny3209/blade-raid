@@ -5,15 +5,17 @@
 //   - 클리어한 던전의 최고 랭크와 잠금 상태를 표시
 // ============================================================
 const Lobby = {
-  sel: 0, scroll: 0, t: 0, bg: null, enterT: 0, msg: 0,
+  sel: 0, page: 0, scroll: 0, t: 0, bg: null, enterT: 0, msg: 0, msgText: '',
 
   enter() {
     this.t = 0; this.enterT = 0;
     const p = Game.player;
-    p.reset(300, DEPTH * 0.62);
+    p.setGear();                                  // 상점에서 바꾼 장비 반영
+    p.reset(190, DEPTH * 0.62);
     p.setState('cine'); p.play('idle', 0, 1, true);
     // 잠금 해제된 마지막 던전을 기본 선택
     this.sel = clamp((Save.data.unlocked || 1) - 1, 0, DUNGEONS.length - 1);
+    this.page = (this.sel / 10) | 0;
     this.scroll = 0;
     if (!this.bg) this.bg = this.build();
     Music.play('title');
@@ -88,11 +90,14 @@ const Lobby = {
       return;
     }
     // 입력
-    for (const q of Input.drain()) {
+    const evs = Input.drain();
+    for (let i = 0; i < evs.length; i++) {
+      const q = evs[i];
       if (q.a === 'left') this.move(-1);
       else if (q.a === 'right') this.move(1);
-      else if (q.a === 'up') this.move(-1);
-      else if (q.a === 'down') this.move(1);
+      else if (q.a === 'up') this.setPage(0);
+      else if (q.a === 'down') this.setPage(1);
+      else if (q.a === 'shop') { Sfx.play('select'); Game.toShop(); Input.queue.push(...evs.slice(i + 1)); return; }
       else if (q.a === 'attack' || q.a === 'confirm' || q.a === 'jump') this.choose();
     }
     // 캐릭터 대기 동작
@@ -103,11 +108,21 @@ const Lobby = {
   move(d) {
     const n = DUNGEONS.length;
     this.sel = (this.sel + d + n) % n;
+    this.page = (this.sel / 10) | 0;
     Sfx.play('ui', 0.7, 1 + d * 0.05);
+  },
+  setPage(pg) {
+    if (pg === this.page) return;
+    this.page = pg; this.sel = pg * 10 + Math.min(this.sel % 10, 9);
+    Sfx.play('ui', 0.7, 1 + pg * 0.2);
   },
 
   choose() {
-    if (!Save.isUnlocked(this.sel)) { Sfx.play('ui', 0.6, 0.5); this.msg = 90; return; }
+    if (!Save.isUnlocked(this.sel)) {
+      Sfx.play('ui', 0.6, 0.5); this.msg = 110;
+      this.msgText = this.sel === 10 ? '제1지역의 던전 10개를 모두 클리어하면 제2지역이 열립니다' : '앞의 던전을 먼저 클리어하세요';
+      return;
+    }
     Sfx.play('select');
     this.enterT = 40;
     Game.flashScreen(0.25, '200,230,255');
@@ -147,45 +162,63 @@ const Lobby = {
     if (this.enterT > 0) { ctx.fillStyle = `rgba(0,0,0,${1 - this.enterT / 40})`; ctx.fillRect(0, 0, W, H); }
   },
 
+  // 카드 배치 (그리기와 터치가 같은 값을 쓴다)
+  CW: 108, GAP: 10, CY: 206,
+  cardX(i) { const tot = 10 * this.CW + 9 * this.GAP; return W / 2 - tot / 2 + i * (this.CW + this.GAP); },
+  shopBtn: { x: W - 230, y: 92, w: 190, h: 36 },
+  tabRect(i) { return { x: W / 2 - 262 + i * 270, y: 160, w: 252, h: 34 }; },
+
   drawUI(ctx) {
-    const n = DUNGEONS.length, t = this.t;
+    const t = this.t, pg = this.page, W_ = Gear.w(), A_ = Gear.a();
     UI.text(ctx, '원 정 대  야 영 지', 40, 48, { size: 30, fill: '#ffe9a6', stroke: 5 });
     UI.text(ctx, '던전을 선택하세요', 40, 80, { size: 15, font: FONT_B, weight: 700, fill: '#9aa4c0' });
     // 내 캐릭터 상태
     UI.text(ctx, `검귀 카엘   Lv.${playerLevel()}`, 40, 104, { size: 17, fill: '#fff', stroke: 3 });
-    UI.text(ctx, `공격력 ${fmt(Math.round(3000 * playerPower()))}`, 40, 126, { size: 14, font: FONT_B, weight: 700, fill: '#ffb0a0', stroke: 3 });
-    // 보유 골드 / 진행도
+    UI.text(ctx, `공격력 ${fmt(Math.round(3000 * playerPower() * (W_.atk || 1)))}`, 40, 126, { size: 14, font: FONT_B, weight: 700, fill: '#ffb0a0', stroke: 3 });
+    UI.text(ctx, `검  ${W_.name}`, 40, 148, { size: 13, font: FONT_B, weight: 700, fill: `rgb(${W_.col})`, stroke: 3 });
+    UI.text(ctx, `방어구  ${A_.name}`, 40, 168, { size: 13, font: FONT_B, weight: 700, fill: '#cfd8ff', stroke: 3 });
+    // 보유 골드 / 진행도 / 상점
     const cleared = Object.keys(Save.data.cleared || {}).length;
-    UI.text(ctx, `클리어한 던전  ${cleared} / ${n}`, W - 40, 48, { size: 17, align: 'right', fill: '#cfd8ff', stroke: 4 });
+    UI.text(ctx, `클리어한 던전  ${cleared} / ${DUNGEONS.length}`, W - 40, 48, { size: 17, align: 'right', fill: '#cfd8ff', stroke: 4 });
     ctx.fillStyle = '#f5c542'; ctx.beginPath(); ctx.arc(W - 150, 76, 7, 0, TAU); ctx.fill();
     UI.text(ctx, fmt(Save.data.gold || 0), W - 40, 76, { size: 17, align: 'right', fill: '#ffe9a6', stroke: 4 });
+    const sb = this.shopBtn, glowS = 0.5 + Math.sin(t * 0.08) * 0.5;
+    ctx.fillStyle = 'rgba(40,30,12,0.9)'; roundRect(ctx, sb.x, sb.y, sb.w, sb.h, 9); ctx.fill();
+    ctx.strokeStyle = `rgba(255,${190 + glowS * 40 | 0},80,${0.7 + glowS * 0.3})`; ctx.lineWidth = 2.4; ctx.stroke();
+    UI.text(ctx, Touch.on ? '상 점' : '상 점   [ B ]', sb.x + sb.w / 2, sb.y + 24, { size: 17, align: 'center', fill: '#ffe9a6', stroke: 3 });
 
-    // 던전 목록 (가로 카드)
-    const cw = 108, gap = 10, tot = n * cw + (n - 1) * gap;
-    const x0 = W / 2 - tot / 2, y0 = 132;
-    for (let i = 0; i < n; i++) {
-      const d = DUNGEONS[i], x = x0 + i * (cw + gap);
-      const on = i === this.sel, lock = !Save.isUnlocked(i);
+    // 지역 탭
+    for (let i = 0; i < MAPS.length; i++) {
+      const r = this.tabRect(i), on = i === pg, lock = i === 1 && (Save.data.unlocked || 1) <= 10;
+      ctx.fillStyle = on ? 'rgba(52,44,22,0.95)' : 'rgba(14,16,24,0.8)';
+      roundRect(ctx, r.x, r.y, r.w, r.h, 8); ctx.fill();
+      ctx.strokeStyle = on ? '#ffd24a' : 'rgba(150,160,190,0.35)'; ctx.lineWidth = on ? 2.4 : 1.2; ctx.stroke();
+      UI.text(ctx, `${MAPS[i].name} · ${MAPS[i].sub}${lock ? '  (잠김)' : ''}`, r.x + r.w / 2, r.y + 23, { size: 15, align: 'center', fill: on ? '#ffe9a6' : lock ? '#7a7a8a' : '#aab2d0', stroke: 3 });
+    }
+    if (!Touch.on) UI.text(ctx, '↑ ↓ 지역 이동', W / 2 + 394, 183, { size: 12, font: FONT_B, weight: 700, fill: '#7a84a4', stroke: 3 });
+
+    // 던전 목록 (가로 카드, 지역별 10개)
+    const cw = this.CW, y0 = this.CY;
+    for (let k = 0; k < 10; k++) {
+      const gi = pg * 10 + k, d = DUNGEONS[gi], x = this.cardX(k);
+      const on = gi === this.sel, lock = !Save.isUnlocked(gi);
       const best = Save.data.best[d.id];
       const h = on ? 128 : 112, yy = y0 + (on ? -8 : 0);
       ctx.save();
       ctx.globalAlpha = lock ? 0.5 : 1;
-      // 카드
       ctx.fillStyle = on ? 'rgba(40,46,64,0.95)' : 'rgba(16,18,26,0.85)';
       roundRect(ctx, x, yy, cw, h, 8); ctx.fill();
       ctx.strokeStyle = on ? '#ffd24a' : 'rgba(150,160,190,0.4)';
       ctx.lineWidth = on ? 3 : 1.4; ctx.stroke();
-      // 테마 썸네일
       ctx.save();
       roundRect(ctx, x + 7, yy + 7, cw - 14, 52, 5); ctx.clip();
       this.thumb(ctx, d.theme, x + 7, yy + 7, cw - 14, 52);
       ctx.restore();
       ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1;
       roundRect(ctx, x + 7, yy + 7, cw - 14, 52, 5); ctx.stroke();
-      // 이름 / 레벨
-      UI.text(ctx, d.name, x + cw / 2, yy + 72, { size: 14, align: 'center', fill: lock ? '#8a8a9a' : '#fff', stroke: 3 });
+      UI.text(ctx, d.name, x + cw / 2, yy + 72, { size: d.name.length > 8 ? 12 : 14, align: 'center', fill: lock ? '#8a8a9a' : '#fff', stroke: 3 });
       UI.text(ctx, 'Lv.' + d.lv, x + cw / 2, yy + 90, { size: 12, align: 'center', fill: '#ffd87a', stroke: 3 });
-      // 최고 랭크
+      UI.text(ctx, String(k + 1), x + 14, yy + 104, { size: 12, fill: '#7a84a4', stroke: 3 });
       if (best) {
         const col = { SSS: '#ff4ad8', SS: '#ffb020', S: '#ffd24a', A: '#4ac2ff', B: '#4adf6a', C: '#999' }[best.rank] || '#fff';
         UI.text(ctx, best.rank, x + cw - 14, yy + 104, { size: 19, align: 'right', italic: true, fill: col, stroke: 4 });
@@ -202,7 +235,7 @@ const Lobby = {
 
     // 선택한 던전 설명
     const d = DUNGEONS[this.sel];
-    const by = 296;
+    const by = 362;
     ctx.fillStyle = 'rgba(8,10,16,0.82)';
     roundRect(ctx, W / 2 - 330, by, 660, 92, 10); ctx.fill();
     ctx.strokeStyle = 'rgba(201,165,92,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
@@ -214,11 +247,13 @@ const Lobby = {
 
     // 안내
     if (this.msg > 0) {
-      UI.text(ctx, '앞의 던전을 먼저 클리어하세요', W / 2, by + 118, { size: 18, align: 'center', fill: '#ff8a70', stroke: 4 });
+      UI.text(ctx, this.msgText, W / 2, by + 124, { size: 18, align: 'center', fill: '#ff8a70', stroke: 4 });
     } else if (t % 70 < 50) {
       const key = Touch.on ? '카드를 터치' : '← →  선택      J / 좌클릭  입장';
-      UI.text(ctx, key, W / 2, by + 118, { size: 18, align: 'center', fill: '#ffe070', stroke: 4 });
+      UI.text(ctx, key, W / 2, by + 124, { size: 18, align: 'center', fill: '#ffe070', stroke: 4 });
     }
+    // 제2지역 개방 안내
+    if (pg === 1 && (Save.data.unlocked || 1) <= 10) UI.text(ctx, '제1지역 던전 10개를 모두 클리어하면 열립니다', W / 2, by + 152, { size: 15, align: 'center', font: FONT_B, weight: 700, fill: '#9aa4c0', stroke: 3 });
   },
 
   // 카드용 간이 테마 그림
@@ -229,6 +264,11 @@ const Lobby = {
       desert: ['#8a4a3a', '#d98a4a', '#f0c078'], swamp: ['#0a1410', '#2c4430', '#8cf07a'],
       factory: ['#0b0d12', '#39404f', '#ffaa3c'], sky: ['#2a4a8a', '#b8d8f0', '#fff0b8'],
       abyss: ['#04020a', '#2a1050', '#c878ff'], lair: ['#1a0505', '#5a1208', '#ff8a30'],
+      bloodmoon: ['#14040a', '#5a1226', '#ff5a4a'], crystal: ['#0a0620', '#3a2a78', '#8ae0ff'],
+      deep: ['#04283a', '#0e6a88', '#a8f0ff'], grave: ['#0a0e16', '#26323c', '#a8ffd0'],
+      jungle: ['#0e3a2a', '#2a7a3a', '#ffe888'], clock: ['#1a1006', '#6a4a1c', '#ffd070'],
+      neon: ['#06040e', '#2a0f48', '#ff50d0'], storm: ['#0a0c1c', '#363a68', '#8ae0ff'],
+      cosmos: ['#02010a', '#2a1a68', '#ff90d0'], chaos: ['#1a0420', '#5a0a50', '#ffe060'],
     }[theme] || ['#111', '#333', '#888'];
     const g = ctx.createLinearGradient(x, y, x, y + h2);
     g.addColorStop(0, C[0]); g.addColorStop(1, C[1]);
@@ -246,18 +286,23 @@ const Lobby = {
     ctx.globalAlpha = 1;
   },
 
-  // 터치 : 카드 직접 선택
+  // 터치 : 카드 / 지역 탭 / 상점 버튼 직접 선택
   touchAt(lx, ly) {
-    const n = DUNGEONS.length, cw = 108, gap = 10, tot = n * cw + (n - 1) * gap;
-    const x0 = W / 2 - tot / 2, y0 = 124;
-    for (let i = 0; i < n; i++) {
-      const x = x0 + i * (cw + gap);
-      if (lx >= x && lx <= x + cw && ly >= y0 && ly <= y0 + 136) {
-        if (this.sel === i) this.choose(); else { this.sel = i; Sfx.play('ui', 0.7); }
+    const sb = this.shopBtn;
+    if (lx >= sb.x && lx <= sb.x + sb.w && ly >= sb.y && ly <= sb.y + sb.h) { Sfx.play('select'); Game.toShop(); return true; }
+    for (let i = 0; i < MAPS.length; i++) {
+      const r = this.tabRect(i);
+      if (lx >= r.x && lx <= r.x + r.w && ly >= r.y && ly <= r.y + r.h) { this.setPage(i); return true; }
+    }
+    for (let k = 0; k < 10; k++) {
+      const x = this.cardX(k);
+      if (lx >= x && lx <= x + this.CW && ly >= this.CY - 8 && ly <= this.CY + 128) {
+        const gi = this.page * 10 + k;
+        if (this.sel === gi) this.choose(); else { this.sel = gi; Sfx.play('ui', 0.7); }
         return true;
       }
     }
-    if (ly > 280) { this.choose(); return true; }
+    if (ly > 350 && ly < 470) { this.choose(); return true; }
     return false;
   },
 };

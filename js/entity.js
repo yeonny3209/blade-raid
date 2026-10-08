@@ -128,6 +128,7 @@ class Entity {
     const fl = this.flash > 0;
     R.draw(ctx, this.J, fl ? R.flashPal : R.pal, this, { flash: fl });
     ctx.restore();
+    if (this.st || this.holdT > 0) Status.draw(ctx, this);
   }
 
   drawTrail(ctx) {
@@ -174,22 +175,32 @@ function newSwing() { return { id: ++_swingId, set: new Set() }; }
 
 // 타격 적용 (손맛의 핵심)
 function applyHit(att, tgt, hit, o = {}) {
+  if (tgt.isPlayer && tgt.rollDodge && tgt.rollDodge(att)) return 0;           // 방어구 : 회피
   const dir = o.dir ?? (tgt.x >= att.x ? 1 : -1);
   let dmg = (att.atk || 1000) * hit.dmg * rand(0.93, 1.07);
   let crit = false, counter = false, back = false;
+  const W = att.isPlayer ? att.wdef : null;                                        // 장착한 검
   if (att.isPlayer) {
     crit = Math.random() < att.critRate + (hit.crit || 0);
     counter = !!(tgt.counterable && tgt.counterable());
     back = !hit.noBack && tgt.facing === sign(tgt.x - att.x) && !tgt.isBoss;
-    if (crit) dmg *= 1.5;
+    if (crit) dmg *= att.critDmg || 1.5;
     if (counter) dmg *= 1.25;
     if (back) dmg *= 1.1;
     if (tgt.breakT > 0) dmg *= 1.35;
+    if (W && W.mod) dmg *= W.mod(att, tgt, dmg, { back, crit, counter, hit });
+  } else if (tgt.isPlayer) {
+    dmg *= (tgt.takeMul || 1) * (tgt.shield > 0 ? 0.7 : 1);                        // 방어구 : 피해 감소
   }
   dmg = Math.max(1, Math.round(dmg));
+  if (tgt.isPlayer && tgt.capHit) dmg = Math.min(dmg, Math.round(tgt.hpMax * tgt.capHit));
 
   // --- 히트스톱 ---
   let stop = hit.stop ?? 5;
+  if (W) {
+    if (W.stop) stop = Math.min(36, Math.max(1, Math.round(stop * W.stop)));
+    if (W.kx) hit = Object.assign({}, hit, { kx: (hit.kx ?? 3) * W.kx });
+  }
   if (counter) stop += 3;
   if (crit && att.isPlayer) stop += 2;               // 크리티컬은 한 박자 더 멈춘다
   tgt.lastHitDmg = dmg;
@@ -214,7 +225,7 @@ function applyHit(att, tgt, hit, o = {}) {
       FX.add('world', new CutLine(X, Y, -0.75, 150 * pw, 10, '255,120,90', 18));
       Hitfx.heavy(X, Y, dir, ang, pw);
       break;
-    default: Hitfx.slash(X, Y, dir, ang, pw, att.isPlayer ? '140,200,255' : '255,140,120');
+    default: Hitfx.slash(X, Y, dir, ang, pw, att.isPlayer ? (att.wcol || '140,200,255') : '255,140,120');
   }
   if (crit) FX.add('world', new Flash(X, Y, 8, 48, 10, '255,210,90', 0.6));
 
@@ -224,12 +235,14 @@ function applyHit(att, tgt, hit, o = {}) {
   const ipw = hit.power2 ?? (stop >= 12 ? 3 : stop >= 8 ? 2 : stop <= 2 ? 0 : 1);     // 타격 강도 0~3
   if (att.isPlayer) {
     // 맞는 대상의 재질 + 타격 강도로 즉석 합성 (같은 적도 매번 음색이 다름)
-    if (hit.sfx !== 'none') Sfx.impact(tgt.hitMat || 'flesh', ipw, { vol: hit.vol || 1, pitch: cp, crit, combo: Game.combo.n });
+    if (hit.sfx !== 'none') Sfx.impact(tgt.hitMat || 'flesh', ipw, { vol: hit.vol || 1, pitch: cp * ((W && W.pitch) || 1), crit, combo: Game.combo.n });
+    if (W && W.snd && hit.sfx !== 'none') Sfx.wlayer(W.snd, ipw, crit);               // 검 고유 음색
     if (tgt.grunt) tgt.grunt(ipw);                                                    // 몬스터가 비명을 지른다
     // 재질별 파편 (살=체액, 갑옷=불꽃, 뼈=조각, 마법=빛알갱이 …)
     if (tgt.hitMat && hit.fx !== 'none') Hitfx.material(tgt.hitMat, tgt.x - dir * tgt.w * 0.3, tgt.y, hz, dir, ipw, tgt);
     // 강타·크리티컬 : 방사형 충격선
     if (ipw >= 2 || crit) FX.add('world', new Burst(X, Y, { n: 9 + ipw * 3, r0: 14, r1: 60 + ipw * 26, life: 9, col: crit ? '255,220,120' : '255,255,255' }));
+    if (W && W.part && hit.fx !== 'none') Gear.hitFx(W, tgt.x - dir * tgt.w * 0.3, tgt.y, hz, dir, ipw, crit);   // 검 고유 파편
   } else {
     const snd = hit.sfx && hit.sfx !== 'none' ? hit.sfx : 'blunt';
     if (snd !== 'none') Sfx.play(snd, hit.vol || 1);
@@ -245,12 +258,13 @@ function applyHit(att, tgt, hit, o = {}) {
 
   // --- 반응 ---
   tgt.takeHit(hit, att, dir, dmg, { crit, counter });
+  if (W && W.hit) W.hit(att, tgt, dmg, { crit, ipw, X, Y, hz, dir, hit, back, counter });   // 검 고유 능력
 
   // --- 손맛 연출 ---
   const power = stop / 5;                                  // 타격 강도 (히트스톱 기준)
   tgt.squash = Math.min(1.1, 0.45 + power * 0.28);         // 맞는 쪽이 찌그러졌다 펴짐
   if (att.isPlayer && stop >= 7) att.squash = Math.max(att.squash || 0, 0.3);
-  Game.addShake(hit.shake ?? 2);
+  Game.addShake((hit.shake ?? 2) * ((W && W.shake) || 1));
   Game.kick(dir * Math.min(12, (hit.shake ?? 2) * 0.9), -Math.min(5, power));
   if (stop >= 9) Game.freeze(Math.min(4, Math.round(stop / 3)));   // 강타는 화면 전체를 정지
   if (att.isPlayer && ipw >= 2) Game.zoomPunch(1 + 0.012 * ipw);   // 강타일수록 화면이 살짝 파고든다

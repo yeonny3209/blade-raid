@@ -69,6 +69,68 @@ const BOSS_DEFS = {
     aura: '255,60,140', elem: '255,70,150', hitMat: 'beast',
     patterns: ['swing', 'charge', 'leap', 'erupt'], eruptCount: 12, heavyHit: true,
   },
+
+  // ---------------- 제2지역 보스 ----------------
+  dracul: {
+    name: '피의 백작 드라쿨', title: '핏빛 달의 주인', head: 'skull', scale: 1.9,
+    skin: ['#2a0810', '#7a1428', '#c03048'], armor: ['#100408', '#3a0e1c', '#8a2040'],
+    aura: '255,40,80', elem: '255,50,90', hitMat: 'flesh', blood: ['#a01020', '#e03050'],
+    patterns: ['swing', 'leap', 'beam', 'summon'], eruptCount: 8,
+  },
+  prism: {
+    name: '프리즘 거신 크리스탈로스', title: '빛을 가르는 자', head: 'eye', scale: 2.1,
+    skin: ['#2a3a6a', '#7aa0e0', '#d8f0ff'], armor: ['#3a2a6a', '#a080e0', '#f0d8ff'], horn: ['#a0e0ff', '#e8f8ff', '#ffffff'],
+    aura: '160,220,255', elem: '190,170,255', hitMat: 'ice',
+    patterns: ['swing', 'nova', 'erupt', 'rain'], heavyHit: true, eruptCount: 9,
+  },
+  kraken: {
+    name: '심해의 군주 크라켄', title: '파도를 부르는 자', head: 'eye', scale: 2.1,
+    skin: ['#0a2a3a', '#1e6a8a', '#58b8d8'], armor: ['#0a1e2a', '#1a4a64', '#4a98b8'],
+    aura: '80,200,240', elem: '80,190,255', hitMat: 'flesh', blood: ['#1e6a8a', '#58b8d8'],
+    patterns: ['charge', 'rain', 'nova', 'summon'],
+  },
+  deathknight: {
+    name: '죽음의 기사 모르타', title: '끝나지 않는 행진', head: 'skull', scale: 1.85,
+    skin: ['#1a1e24', '#4a5560', '#8a98a8'], armor: ['#0a0c10', '#2a3038', '#68788a'],
+    aura: '140,255,220', elem: '120,255,210', hitMat: 'bone',
+    patterns: ['swing', 'charge', 'summon', 'beam'],
+  },
+  flora: {
+    name: '태고의 식인초 플로라', title: '숲의 포식자', head: 'eye', scale: 2.1,
+    skin: ['#10300e', '#3a8a2a', '#8ad048'], armor: ['#1a2a10', '#4a6a20', '#98c040'],
+    aura: '160,255,100', elem: '170,255,90', hitMat: 'flesh', blood: ['#5aa020', '#b0e050'],
+    patterns: ['erupt', 'summon', 'rain', 'swing'], eruptCount: 12,
+  },
+  chronarch: {
+    name: '시간의 지배자 크로나르크', title: '멈춰버린 초침', head: 'bull', scale: 1.95,
+    skin: ['#3a2a10', '#a8803a', '#f0d080'], armor: ['#2a1e08', '#8a6a28', '#e8c868'], horn: ['#8a6a28', '#d8b050', '#fff0b0'],
+    aura: '255,220,120', elem: '150,230,255', hitMat: 'metal',
+    patterns: ['swing', 'charge', 'nova', 'rain'],
+  },
+  cyberlord: {
+    name: '사이버 군주 ZX-0', title: '네온의 지배자', head: 'eye', scale: 2.0,
+    skin: ['#1a1030', '#5a30a0', '#c060ff'], armor: ['#0a0818', '#302060', '#ff40d0'],
+    aura: '255,60,220', elem: '60,240,255', hitMat: 'metal',
+    patterns: ['beam', 'charge', 'rain', 'summon'],
+  },
+  raijin: {
+    name: '뇌신 라이진', title: '폭풍을 다스리는 자', head: 'bull', scale: 2.0,
+    skin: ['#20284a', '#5a6ab0', '#c0d0ff'], armor: ['#10162e', '#3a4a88', '#ffe060'], horn: ['#c9a24a', '#ffe060', '#fff8c0'],
+    aura: '255,240,100', elem: '255,240,90', hitMat: 'metal',
+    patterns: ['leap', 'beam', 'erupt', 'nova'], eruptCount: 14,
+  },
+  galactus: {
+    name: '별을 삼키는 자 갤럭투스', title: '성운의 포식자', head: 'eye', scale: 2.15,
+    skin: ['#140a30', '#4a2a9a', '#a888ff'], armor: ['#0a0620', '#2a1a68', '#ffd860'],
+    aura: '160,130,255', elem: '255,220,120', hitMat: 'magic',
+    patterns: ['rain', 'beam', 'nova', 'summon', 'leap'], heavyHit: true, eruptCount: 12,
+  },
+  azathoth: {
+    name: '태초의 혼돈 아자토스', title: '모든 것의 끝', head: 'skull', scale: 2.3,
+    skin: ['#200418', '#7a1060', '#ff40b0'], armor: ['#100010', '#4a0848', '#ff60d0'], horn: ['#ff40b0', '#ffa0e0', '#ffffff'],
+    aura: '255,70,200', elem: '255,80,200', hitMat: 'beast',
+    patterns: ['swing', 'charge', 'leap', 'erupt', 'rain', 'nova', 'summon', 'beam'], heavyHit: true, eruptCount: 14,
+  },
 };
 
 // 몬스터 외형 변형 : 테마에 맞춰 색을 갈아입는다
@@ -83,6 +145,16 @@ const SKINS = {
   sky: { tint: '#fff0c0', amt: 0.34, pre: '천상의 ' },
   abyss: { tint: '#b070ff', amt: 0.4, pre: '심연의 ' },
   lair: { tint: '#ff7a40', amt: 0.28, pre: '화염 ' },
+  bloodmoon: { tint: '#d02040', amt: 0.3, pre: '피에 젖은 ' },
+  crystal: { tint: '#a8b0ff', amt: 0.38, pre: '수정 ' },
+  deep: { tint: '#4aa0c0', amt: 0.4, pre: '심해 ' },
+  grave: { tint: '#9aa0a8', amt: 0.46, pre: '망자의 ' },
+  jungle: { tint: '#6ad050', amt: 0.3, pre: '밀림 ' },
+  clock: { tint: '#d8b060', amt: 0.38, pre: '태엽 ' },
+  neon: { tint: '#ff40d0', amt: 0.34, pre: '네온 ' },
+  storm: { tint: '#ffe060', amt: 0.3, pre: '폭풍 ' },
+  cosmos: { tint: '#8080ff', amt: 0.4, pre: '성운 ' },
+  chaos: { tint: '#ff4090', amt: 0.4, pre: '혼돈의 ' },
 };
 
 // ------------------------------------------------------------
@@ -139,6 +211,62 @@ const DUNGEONS = [
     desc: '모든 것이 끝나는 화염의 왕좌.',
     rooms: 6, pool: [['orc', 5], ['mage', 4], ['goblin', 3]], boss: 'doomking', mul: 10,
   },
+
+  // ===================== 제2지역 : 신화의 땅 =====================
+  {
+    id: 'bloodmoon', name: '핏빛 달의 성', theme: 'bloodmoon', lv: 94, seed: 163,
+    desc: '붉은 달 아래 흡혈귀가 군림하는 고성.',
+    rooms: 5, pool: [['mage', 4], ['goblin', 3], ['orc', 3]], boss: 'dracul', mul: 14.4,
+  },
+  {
+    id: 'crystal', name: '수정 심연 동굴', theme: 'crystal', lv: 97, seed: 179,
+    desc: '무지갯빛 수정이 빛나는 거대한 지하 공동.',
+    rooms: 5, pool: [['mage', 3], ['orc', 4], ['thrower', 3]], boss: 'prism', mul: 17.4,
+  },
+  {
+    id: 'deep', name: '가라앉은 해저 신전', theme: 'deep', lv: 100, seed: 197,
+    desc: '바다 밑에 잠든 고대 신전.',
+    rooms: 5, pool: [['thrower', 4], ['goblin', 3], ['mage', 3]], boss: 'kraken', mul: 21,
+  },
+  {
+    id: 'grave', name: '망자의 공동묘지', theme: 'grave', lv: 103, seed: 211,
+    desc: '안개 속에서 망자들이 일어서는 묘지.',
+    rooms: 6, pool: [['goblin', 5], ['orc', 3], ['mage', 2]], boss: 'deathknight', mul: 25,
+  },
+  {
+    id: 'jungle', name: '태고의 밀림', theme: 'jungle', lv: 106, seed: 227,
+    desc: '거대한 식물이 모든 것을 삼키는 정글.',
+    rooms: 6, pool: [['goblin', 4], ['thrower', 3], ['orc', 3]], boss: 'flora', mul: 30,
+  },
+  {
+    id: 'clock', name: '멈춰버린 시계탑', theme: 'clock', lv: 109, seed: 241,
+    desc: '톱니바퀴가 시간을 갉아먹는 탑.',
+    rooms: 6, pool: [['orc', 4], ['mage', 3], ['thrower', 3]], boss: 'chronarch', mul: 36,
+  },
+  {
+    id: 'neon', name: '네온 폐허 도시', theme: 'neon', lv: 112, seed: 257,
+    desc: '비 내리는 밤, 네온이 깜빡이는 미래의 폐허.',
+    rooms: 6, pool: [['thrower', 4], ['orc', 3], ['mage', 3]], boss: 'cyberlord', mul: 42,
+  },
+  {
+    id: 'storm', name: '뇌운의 고원', theme: 'storm', lv: 115, seed: 271,
+    desc: '번개가 끊이지 않는 하늘 위 고원.',
+    rooms: 6, pool: [['mage', 4], ['goblin', 3], ['orc', 3]], boss: 'raijin', mul: 49,
+  },
+  {
+    id: 'cosmos', name: '은하 정거장', theme: 'cosmos', lv: 118, seed: 283,
+    desc: '별과 성운 사이에 떠 있는 정거장.',
+    rooms: 7, pool: [['mage', 4], ['orc', 4], ['thrower', 2]], boss: 'galactus', mul: 58,
+  },
+  {
+    id: 'chaos', name: '혼돈의 근원', theme: 'chaos', lv: 122, seed: 307,
+    desc: '모든 것이 시작되고 끝나는 최후의 장소.',
+    rooms: 7, pool: [['orc', 5], ['mage', 4], ['goblin', 3]], boss: 'azathoth', mul: 67,
+  },
+];
+const MAPS = [
+  { name: '제1지역', sub: '저주받은 대륙', from: 0, to: 10 },
+  { name: '제2지역', sub: '신화의 땅', from: 10, to: 20 },
 ];
 const DUNGEON_BY_ID = Object.fromEntries(DUNGEONS.map(d => [d.id, d]));
 
@@ -154,6 +282,16 @@ const ROOM_NAMES = {
   sky: ['구름 계단', '빛의 회랑', '천공 정원', '부유 석판', '성소 앞', '심판의 단'],
   abyss: ['균열 입구', '뒤틀린 회랑', '촉수의 숲', '무중력 지대', '속삭이는 방', '아가리'],
   lair: ['용암 다리', '화염 회랑', '재의 뜰', '녹아내린 홀', '불의 제단', '군주의 옥좌'],
+  bloodmoon: ['붉은 달 정원', '박쥐의 회랑', '피의 연회장', '고성 지하 묘실', '첨탑 계단', '백작의 침실'],
+  crystal: ['수정 입구', '프리즘 동굴', '반짝이는 호수', '결정 숲', '빛의 갈림길', '거신의 심장'],
+  deep: ['침몰한 입구', '산호 회랑', '진주 정원', '난파선 잔해', '심해 기둥', '크라켄의 둥지'],
+  grave: ['묘지 정문', '비석의 언덕', '안개 낀 무덤길', '지하 납골당', '썩은 예배당', '기사의 묘'],
+  jungle: ['덩굴 입구', '거대한 고사리밭', '독꽃 군락', '폭포 아래', '뿌리의 미로', '식인초의 심장'],
+  clock: ['톱니 정문', '진자 회랑', '멈춘 시침', '태엽 창고', '종탑 계단', '시간의 방'],
+  neon: ['빗속의 골목', '깨진 간판 거리', '홀로그램 광장', '폐쇄된 지하철', '옥상 정원', '군주의 서버실'],
+  storm: ['구름 절벽', '번개 능선', '폭풍의 다리', '낙뢰 평원', '신의 계단', '뇌신의 제단'],
+  cosmos: ['정거장 입구', '무중력 회랑', '성운 전망대', '운석 정원', '블랙홀 앞', '별의 심장'],
+  chaos: ['균열의 문턱', '뒤섞인 땅', '부서진 시간', '혼돈의 소용돌이', '모든 색의 방', '태초의 자리'],
 };
 
 // ------------------------------------------------------------
@@ -199,7 +337,7 @@ function buildDungeon(d) {
 // 클리어한 던전 수에 따른 캐릭터 성장
 //   던전의 난이도 배율(mul)과 같은 곡선을 따라가므로
 //   순서대로 진행하면 항상 비슷한 체감 난이도가 된다.
-const POWER_CURVE = [1, 1.35, 1.8, 2.3, 3, 3.9, 5, 6.4, 8, 10, 12];
+const POWER_CURVE = [1, 1.35, 1.8, 2.3, 3, 3.9, 5, 6.4, 8, 10, 12, 14.5, 17.5, 21, 25, 30, 35, 41, 48, 56, 66];
 function playerPower() {
   const n = Object.keys((Save.data && Save.data.cleared) || {}).length;
   return POWER_CURVE[clamp(n, 0, POWER_CURVE.length - 1)];
@@ -217,6 +355,12 @@ const Save = {
     let d = null;
     try { d = JSON.parse(localStorage.getItem(this.key) || 'null'); } catch (e) { }
     this.data = Object.assign({ cleared: {}, best: {}, gold: 0, unlocked: 1 }, d || {});
+    // 예전 저장 : 던전이 10개뿐일 때는 마지막 던전을 깨도 해금 수가 10에서 멈췄다 → 클리어 기록으로 다시 계산
+    let hi = 0;
+    DUNGEONS.forEach((dd, i) => { if (this.data.cleared && this.data.cleared[dd.id]) hi = Math.max(hi, i + 2); });
+    this.data.unlocked = Math.min(DUNGEONS.length, Math.max(this.data.unlocked || 1, hi));
+    this.data.owned = Object.assign({ w: ['w0'], a: ['a0'] }, this.data.owned || {});
+    this.data.eq = Object.assign({ w: 'w0', a: 'a0' }, this.data.eq || {});
     return this.data;
   },
   save() {
@@ -236,5 +380,7 @@ const Save = {
     if (idx >= 0 && idx + 2 > (d.unlocked || 1)) d.unlocked = Math.min(DUNGEONS.length, idx + 2);
     this.save();
   },
-  reset() { this.data = { cleared: {}, best: {}, gold: 0, unlocked: 1 }; this.save(); },
+  // 던전을 클리어하지 못하고 끝나도 주운 골드는 가져간다
+  bank(g) { if (g > 0) { this.data.gold = (this.data.gold || 0) + g; this.save(); } },
+  reset() { this.data = { cleared: {}, best: {}, gold: 0, unlocked: 1, owned: { w: ['w0'], a: ['a0'] }, eq: { w: 'w0', a: 'a0' } }; this.save(); },
 };

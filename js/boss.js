@@ -43,7 +43,7 @@ class Boss extends Enemy {
     }
     this.isBoss = true; this.heavy = true; this.noLaunch = true;
     this.brkMax = 100; this.brk = 100; this.breakT = 0;
-    this.cds = { swing: 60, charge: 200, leap: 260, erupt: 330 };
+    this.cds = { swing: 60, charge: 200, leap: 260, erupt: 330, rain: 300, nova: 240, summon: 380, beam: 200 };
     this.enraged = false; this.summon2 = false;
     this.cape = new Chain(5, 15, 0.5, 0.88);
     this.flinchCd = 0; this.shadowMul = 1.3;
@@ -133,6 +133,11 @@ class Boss extends Enemy {
       return;
     }
     const c = this.cds, faceOK = want === this.facing, has = k => this.patterns.includes(k);
+    const en = this.enraged;
+    if (has('nova') && adx < 360 && Math.abs(dy) < 100 && c.nova <= 0 && chance(0.5)) { this.startAttack('nova'); c.nova = en ? 300 : 420; return; }
+    if (has('beam') && adx > 220 && Math.abs(dy) < 70 && c.beam <= 0 && chance(0.45)) { this.facing = want; this.startAttack('beam'); c.beam = en ? 260 : 380; return; }
+    if (has('rain') && c.rain <= 0 && chance(0.4)) { this.startAttack('rain'); c.rain = en ? 330 : 480; return; }
+    if (has('summon') && c.summon <= 0 && Game.enemies.filter(o => !o.isBoss && !o.dying).length < 3 && chance(0.5)) { this.startAttack('summon'); c.summon = en ? 520 : 760; return; }
     if (has('swing') && adx < 240 && Math.abs(dy) < 50 && faceOK && c.swing <= 0) { this.startAttack('swing'); c.swing = this.enraged ? 60 : 90; return; }
     if (has('charge') && adx > 330 && Math.abs(dy) < 70 && c.charge <= 0 && chance(0.6)) { this.facing = want; this.startAttack('charge'); c.charge = this.enraged ? 280 : 380; return; }
     if (has('leap') && c.leap <= 0 && chance(0.4)) { this.startAttack('leap'); c.leap = this.enraged ? 320 : 440; return; }
@@ -336,3 +341,120 @@ const BOSS_ACTS = {
     },
   },
 };
+
+
+// ------------------------------------------------------------
+//  제2지역 보스 전용 패턴
+// ------------------------------------------------------------
+Object.assign(BH, {
+  rain: { dmg: 0.9, kx: 3, kz: 9, stun: 30, stop: 6, shake: 5, fx: 'none', sfx: 'hurt', down: true },
+  nova: { dmg: 1.0, kx: 5, kz: 9, stun: 30, stop: 8, shake: 7, fx: 'none', sfx: 'heavy', down: true },
+  beam: { dmg: 1.1, kx: 6, kz: 8, stun: 30, stop: 8, shake: 6, fx: 'none', sfx: 'heavy', down: true },
+});
+
+// 지면 폭발 : 기둥 + 충격파 링 + 파편, 범위 안이면 플레이어 피격
+function bossBlast(e, x, y, rx, ry, hd, col, hmax = 150) {
+  FX.add('world', new Pillar(x, y, rx, 300, 30, col, '255,240,225'));
+  FX.add('ground', new Ring(x, sy(y, 0), 10, rx * 2, 20, { col, w: 10 }));
+  for (let k = 0; k < 6; k++) FX.add('world', new Debris(x, y, 2, { vx: rand(-4, 4), vz: rand(5, 10), s: rand(2, 4), glow: col }));
+  Sfx.play('pillar', 0.7); Game.addShake(4);
+  const pl = Game.player;
+  if (pl && pl.hp > 0 && pl.invul <= 0 && pl.state !== 'down' && Math.pow((pl.x - x) / rx, 2) + Math.pow((pl.y - y) / ry, 2) <= 1.1 && pl.z < hmax)
+    applyHit(e, pl, hd, { dir: sign(pl.x - x) || 1, noStopAtt: true });
+}
+
+Object.assign(BOSS_ACTS, {
+  // 하늘에서 별똥별이 방 전체에 쏟아진다
+  rain: {
+    anim: 'cast', len: 118, armor: [0, 999], counter: 0,
+    start(e) { e.axeGlow = 0; Sfx.play('roar', 0.5, 1.1); },
+    update(e, f) {
+      e.vx = 0;
+      e.axeGlow = f < 76 ? Math.min(1, f / 30) : Math.max(0, 1 - (f - 76) / 20);
+      if (f > 18 && f < 84 && f % 4 === 0) {
+        const r = Game.room, p = Game.player, aim = f % 12 === 6;
+        const tx = clamp(aim ? p.x + rand(-50, 50) : rand(r.minX + 60, r.maxX - 60), r.minX + 30, r.maxX - 30);
+        const ty = clamp(aim ? p.y + rand(-20, 20) : rand(10, DEPTH - 10), 0, DEPTH);
+        FX.add('ground', new Telegraph(tx, ty, 56, 21, 28, {
+          col: e.elem, onEnd: tg => FX.add('world', new Meteor(tg.x, tg.y, { col: e.elem, dur: 12, r: 22, onEnd: m => bossBlast(e, m.x, m.y, 56, 22, BH.rain, e.elem) })),
+        }));
+      }
+    },
+    cancel(e) { e.axeGlow = 0; },
+  },
+  // 땅을 내려쳐 3겹의 충격파가 퍼진다 (점프로 넘어야 한다)
+  nova: {
+    anim: 'crouch', len: 126, armor: [0, 999], counter: 0,
+    start(e) { Sfx.play('roar', 0.6, 0.8); },
+    update(e, f) {
+      e.vx = 0;
+      if (f === 24) e.play('slam', 1, 1, true);
+      if (f === 30 || f === 54 || f === 78) {
+        const gy = sy(e.y, 0), first = f === 30;
+        if (first) FX.add('top', new Label(Game.player.x, sy(Game.player.y, 0) - 180, 'JUMP!', { col: ['#ffffff', '#ffd24a'], size: 30, life: 56 }));
+        FX.add('ground', new Ring(e.x, gy, 20, 140, 18, { col: e.elem, w: 16 }));
+        FX.add('world', new Flash(e.x, gy - 20, 30, 200, 18, e.elem, 0.8));
+        Hitfx.dust(e.x, gy, 10, 60); Sfx.play('quake', first ? 1 : 0.7); Game.addShake(first ? 12 : 7);
+        FX.add('ground', new ShockWave(e.x, e.y, {
+          col: e.elem, speed: e.enraged ? 11 : 9, maxR: 760, w: 15,
+          hitFn: w => {
+            const pl = Game.player;
+            if (w.hit || !pl || pl.hp <= 0 || pl.invul > 0 || pl.state === 'down') return;
+            const d = Math.abs(pl.x - w.x);
+            if (d > w.r - 24 && d < w.r + 14 && Math.abs(pl.y - w.y) < 110 && pl.z < 44) { w.hit = true; applyHit(e, pl, BH.nova, { dir: sign(pl.x - w.x) || 1, noStopAtt: true }); }
+          },
+        }));
+      }
+    },
+  },
+  // 졸개 소환
+  summon: {
+    anim: 'roar', len: 84, armor: [0, 999], counter: 0,
+    start(e) { e.invul = 40; Sfx.play('roar', 0.9, 1.2); },
+    update(e, f) {
+      e.vx = 0;
+      if (f === 22) {
+        const D = Game.dungeon.def, r = Game.room, n = e.enraged ? 4 : 3;
+        FX.add('ground', new Ring(e.x, sy(e.y, 0), 30, 360, 28, { col: e.elem, w: 14 }));
+        Game.addShake(8); Sfx.play('spawn', 1);
+        const tot = D.pool.reduce((a, q) => a + q[1], 0);
+        for (let i = 0; i < n; i++) {
+          let q = rand(0, tot), k = D.pool[0][0];
+          for (const [kk, w] of D.pool) { q -= w; if (q <= 0) { k = kk; break; } }
+          const en = new Enemy(k, clamp(e.x + (i % 2 ? 1 : -1) * rand(180, 460), r.minX + 40, r.maxX - 40), rand(30, DEPTH - 30));
+          en.hpMax = en.hp = Math.round(en.hpMax * 0.3);
+          en.spawnIn(i * 8); Game.enemies.push(en);
+        }
+      }
+    },
+  },
+  // 일직선 광선 (예고선이 사라지면 발사)
+  beam: {
+    anim: 'cast', len: 104, armor: [0, 999], counter: 0,
+    start(e) {
+      const r = Game.room, L = e.facing > 0 ? r.maxX - e.x : e.x - r.minX;
+      e.bmY = e.y; e.axeGlow = 0;
+      FX.add('ground', new Telegraph(e.x, e.y, 0, 34, 46, { shape: 'rect', w: L, dir: e.facing, col: e.elem }));
+      Sfx.play('charge', 0.9);
+    },
+    update(e, f) {
+      e.vx = 0;
+      e.axeGlow = f < 46 ? Math.min(1, f / 30) : Math.max(0, 1 - (f - 70) / 20);
+      if (f === 46) {
+        const r = Game.room, x0 = e.x + e.facing * 70, x1 = e.facing > 0 ? r.maxX + 40 : r.minX - 40;
+        FX.add('world', new FlashLine(x0, x1, sy(e.bmY, 80), 30, e.elem));
+        FX.add('world', new Flash(x0, sy(e.bmY, 80), 20, 160, 22, e.elem, 0.9));
+        Sfx.play('explode', 0.7); Game.addShake(10); e.swing = newSwing();
+      }
+      if (f >= 46 && f <= 72) {
+        const pl = Game.player, x0 = e.x + e.facing * 40;
+        if (pl && pl.hp > 0 && pl.invul <= 0 && pl.state !== 'down' && !e.swing.set.has(pl) && Math.abs(pl.y - e.bmY) < 36 && (pl.x - x0) * e.facing > 0 && pl.z < 130) {
+          e.swing.set.add(pl);
+          applyHit(e, pl, BH.beam, { dir: e.facing, noStopAtt: true });
+        }
+        if (f % 3 === 0) Game.addShake(3);
+      }
+    },
+    cancel(e) { e.axeGlow = 0; },
+  },
+});

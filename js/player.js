@@ -36,7 +36,7 @@ const HD = {
 // 화면 좌표 초승달 (facing 에 따라 좌우 반전)
 function crescentAt(p, dx, dz, r, a0, a1, o = {}) {
   const f = p.facing, m = a => (f > 0 ? a : 180 - a) * DEG;
-  FX.add('world', new Crescent(p.x + dx * f, sy(p.y, p.z + dz), r, m(a0), m(a1), o));
+  FX.add('world', new Crescent(p.x + dx * f, sy(p.y, p.z + dz), r, m(a0), m(a1), Object.assign({ col: p.wcol }, o)));
 }
 
 function convergeMotes(x, y, n, col = '120,190,255', rad = 110) {
@@ -53,7 +53,7 @@ const PA = {
   a1: {
     anim: 'a1', len: 20, chain: 8, next: 'a2', cancel: 4, trail: [[3, 8]],
     update(p, f) {
-      if (f === 2) Sfx.play('swing');
+      if (f === 2) Sfx.pplay('swing');
       p.vx = f <= 6 ? p.facing * 2.4 : p.vx * 0.6;
       if (f >= 4 && f <= 6) p.hit(HD.a1, { x0: -10, x1: 110, d: 32, z0: -10, z1: 185 });
     },
@@ -61,7 +61,7 @@ const PA = {
   a2: {
     anim: 'a2', len: 22, chain: 9, next: 'a3', cancel: 4, trail: [[3, 9]],
     update(p, f) {
-      if (f === 2) Sfx.play('swing', 1, 1.1);
+      if (f === 2) Sfx.pplay('swing', 1, 1.1);
       p.vx = f <= 6 ? p.facing * 2 : p.vx * 0.6;
       if (f >= 4 && f <= 7) p.hit(HD.a2, { x0: -10, x1: 106, d: 32, z0: -10, z1: 215 });
     },
@@ -69,16 +69,16 @@ const PA = {
   a3: {
     anim: 'a3', len: 24, chain: 11, next: 'a4', cancel: 5,
     update(p, f) {
-      if (f === 4) { Sfx.play('swing', 1, 1.3); Sfx.play('dash', 0.4); }
+      if (f === 4) { Sfx.pplay('swing', 1, 1.3); Sfx.play('dash', 0.4); }
       p.vx = (f >= 4 && f <= 8) ? p.facing * 8 : p.vx * 0.6;
-      if (f === 6) FX.add('world', new CutLine(p.x + p.facing * 70, sy(p.y, p.z + 78), p.facing > 0 ? 0 : Math.PI, 90, 4, '150,210,255', 9));
+      if (f === 6) FX.add('world', new CutLine(p.x + p.facing * 70, sy(p.y, p.z + 78), p.facing > 0 ? 0 : Math.PI, 90, 4, p.wcol, 9));
       if (f >= 5 && f <= 8) p.hit(HD.a3, { x0: 0, x1: 142, d: 28, z0: 20, z1: 150 });
     },
   },
   a4: {
     anim: 'a4', len: 36, cancel: 12, atkCancel: 17, trail: [[6, 11]],
     update(p, f) {
-      if (f === 5) { Sfx.play('swingBig'); p.bladeGlow = 0.7; }
+      if (f === 5) { Sfx.pplay('swingBig'); p.bladeGlow = 0.7; }
       p.vx = (f >= 5 && f <= 9) ? p.facing * 3.5 : p.vx * 0.6;
       if (f >= 7 && f <= 10) p.hit(HD.a4, { x0: -10, x1: 124, d: 34, z0: -10, z1: 210 });
       if (f === 9) {
@@ -94,7 +94,7 @@ const PA = {
     anim: 'dashAtk', len: 30, cancel: 10, chain: 12, next: 'a2', trail: [[3, 9]],
     update(p, f) {
       if (f === 1) { Sfx.play('dash', 0.8); p.afterOn = 10; }
-      if (f === 3) Sfx.play('swingBig');
+      if (f === 3) Sfx.pplay('swingBig');
       p.vx = f <= 12 ? p.facing * (12 - f * 0.55) : p.vx * 0.7;
       if (f >= 4 && f <= 9) p.hit(HD.dash, { x0: -10, x1: 112, d: 32, z0: 0, z1: 160 });
       if (f % 3 === 0 && f < 12) Hitfx.dust(p.x - p.facing * 10, sy(p.y, 0), 1, 4);
@@ -104,7 +104,7 @@ const PA = {
     anim: 'jumpAtk', len: 18, air: true, chain: 11, next: 'jumpAtk', trail: [[2, 6]],
     start(p) { p.popped = false; },
     update(p, f) {
-      if (f === 1) Sfx.play('swing', 1, 1.05);
+      if (f === 1) Sfx.pplay('swing', 1, 1.05);
       if (f >= 3 && f <= 7) p.hit(HD.jump, { x0: -12, x1: 102, d: 32, z0: -80, z1: 100 });
     },
     onHit(p) { if (!p.popped) { p.popped = true; p.vz = Math.max(p.vz, 3.4); } },
@@ -122,7 +122,7 @@ const PA = {
     update(p, f) {
       p.vx *= 0.7;
       if (f === 1) p.bladeGlow = 1;
-      if (f === 5) { Sfx.play('swingBig'); Sfx.play('ring', 0.6); p.vz = 4.5; p.vx = p.facing * 2; }
+      if (f === 5) { Sfx.pplay('swingBig'); Sfx.play('ring', 0.6); p.vz = 4.5; p.vx = p.facing * 2; }
       if (f === 7) crescentAt(p, 22, 60, 88, 70, -115, { th: 30, life: 14 });
       if (f >= 6 && f <= 10) p.hit(HD.upper, { x0: -10, x1: 108, d: 34, z0: -10, z1: 180 });
     },
@@ -133,17 +133,17 @@ const PA = {
       p.armorF = f >= 8 && f <= 24;
       if (f === 1) { Sfx.play('charge', 0.6); p.bladeGlow = 1; }
       if (f < 8) { p.vx *= 0.5; if (f % 2) convergeMotes(p.x + p.facing * 20, sy(p.y, p.z + 70), 2); }
-      if (f === 8) { Sfx.play('dash'); Sfx.play('swingBig'); p.afterOn = 18; Game.speedLines(p.facing, 22); }
+      if (f === 8) { Sfx.play('dash'); Sfx.pplay('swingBig'); p.afterOn = 18; Game.speedLines(p.facing, 22); }
       if (f >= 8 && f < 24) {
         p.vx = p.facing * 15; p.vy = 0;
         if ((f - 8) % 3 === 0) p.swing = newSwing();
         p.hit(HD.rushHit, { x0: -25, x1: 80, d: 36, z0: 0, z1: 150 });
         if (f % 2 === 0) Hitfx.dust(p.x - p.facing * 20, sy(p.y, 0), 1, 6);
-        if (f % 2 === 0) FX.add('world', new CutLine(p.x + p.facing * 60, sy(p.y, p.z + 74), p.facing > 0 ? 0 : Math.PI, 70, 3, '150,210,255', 6));
+        if (f % 2 === 0) FX.add('world', new CutLine(p.x + p.facing * 60, sy(p.y, p.z + 74), p.facing > 0 ? 0 : Math.PI, 70, 3, p.wcol, 6));
       }
       if (f === 24) p.vx = p.facing * 3;
       if (f > 24) p.vx *= 0.8;
-      if (f === 27) { p.swing = newSwing(); Sfx.play('swingBig'); Sfx.play('ring', 0.5); p.trailOn = true; }
+      if (f === 27) { p.swing = newSwing(); Sfx.pplay('swingBig'); Sfx.play('ring', 0.5); p.trailOn = true; }
       if (f === 29) crescentAt(p, 18, 62, 96, 60, -120, { th: 34, life: 15 });
       if (f >= 28 && f <= 31) p.hit(HD.rushEnd, { x0: -10, x1: 118, d: 36, z0: -10, z1: 175 });
     },
@@ -217,7 +217,7 @@ const PA = {
     anim: 'ebCrouch', len: 999, noAirEnd: true,
     start(p) {
       p.armorF = true;
-      if (p.z > 5) { p.qPhase = 'plunge'; p.vz = -22; p.play('ebPlunge', 1, 1, true); p.afterOn = 10; Sfx.play('swingBig'); }
+      if (p.z > 5) { p.qPhase = 'plunge'; p.vz = -22; p.play('ebPlunge', 1, 1, true); p.afterOn = 10; Sfx.pplay('swingBig'); }
       else { p.qPhase = 'crouch'; }
       p.qT = 0;
     },
@@ -227,7 +227,7 @@ const PA = {
         p.vx *= 0.5;
         if (p.qT === 6) { p.qPhase = 'rise'; p.vz = 13; p.vx = p.facing * 2.5; Sfx.play('jump'); p.play('ebRise', 3, 1, true); p.bladeGlow = 1.2; Hitfx.dust(p.x, sy(p.y, 0), 5, 16); }
       } else if (p.qPhase === 'rise') {
-        if (p.vz < 1.5) { p.qPhase = 'plunge'; p.vz = -24; p.vx = p.facing * 3; p.play('ebPlunge', 1, 1, true); Sfx.play('swingBig'); p.afterOn = 10; }
+        if (p.vz < 1.5) { p.qPhase = 'plunge'; p.vz = -24; p.vx = p.facing * 3; p.play('ebPlunge', 1, 1, true); Sfx.pplay('swingBig'); p.afterOn = 10; }
       } else if (p.qPhase === 'plunge') {
         p.vz = Math.min(p.vz, -24); p.bladeGlow = 1.5;
       } else if (p.qPhase === 'impact') {
@@ -370,9 +370,10 @@ class Player extends Entity {
     const P = typeof playerPower === 'function' ? playerPower() : 1;
     this.power = P;
     this.lv = typeof playerLevel === 'function' ? playerLevel() : 70;
-    this.hpMax = Math.round(34000 * (1 + (P - 1) * 0.35)); this.hp = this.hpMax;
-    this.mpMax = 1500; this.mp = this.mpMax; this.mpRegen = 42;
-    this.atk = Math.round(3000 * P); this.critRate = 0.2;
+    this.base = { hp: Math.round(34000 * (1 + (P - 1) * 0.35)), atk: Math.round(3000 * P), mpRegen: 42 };
+    this.mpMax = 1500; this.sinceHit = 999; this.novaCd = 0; this.wcd = 0; this.shield = 0;
+    this.setGear();
+    this.hp = this.hpMax; this.mp = this.mpMax;
     this.state = 'ground'; this.running = false; this.act = null; this.af = 0; this.stT = 0;
     this.buf = {}; this.dashDir = 0;
     this.cd = {}; for (const s of SKILLS) this.cd[s.key] = 0;
@@ -382,6 +383,23 @@ class Player extends Entity {
     this.ribbon = new Chain(4, 7, 0.3, 0.84);
     this.bladeGlow = 0; this.ghostGlow = 0; this.armorF = false; this.landT = 0;
     this.play('idle', 0);
+  }
+
+  // 장착한 검 / 방어구를 능력치와 외형에 반영 (w, a 를 주면 미리보기용)
+  setGear(w, a) {
+    const hasGear = typeof Gear !== 'undefined';
+    const W = this.wdef = w || (hasGear ? Gear.w() : null), A = this.adef = a || (hasGear ? Gear.a() : null);
+    const B = this.base, wp = W || {}, ap = A || {};
+    const frac = this.hpMax ? this.hp / this.hpMax : 1;
+    this.hpMax = Math.round(B.hp * (ap.hp || 1)); this.hp = Math.max(1, Math.round(this.hpMax * frac));
+    this.atk = this.baseAtk = Math.round(B.atk * (wp.atk || 1));
+    this.critRate = 0.2 + (wp.crit || 0); this.critDmg = wp.critDmg || 1.5;
+    this.moveMul = (wp.move || 1) * (ap.move || 1);
+    this.mpRegen = B.mpRegen * (ap.mpRegen || 1); this.cdr = ap.cdr || 0;
+    this.takeMul = 1 - (ap.def || 0); this.dodge = ap.dodge || 0; this.capHit = ap.capHit || 0; this.kbRes = ap.kbRes || 0;
+    if (hasGear && typeof gearRig === 'function') { this.rig = gearRig(A); }
+    this.wlook = wp.look || null; this.wcol = wp.col || '140,200,255';
+    this.trailCol = this.wcol; this.afterCol = this.wcol;
   }
 
   reset(x, y) {
@@ -405,9 +423,10 @@ class Player extends Entity {
     if (this.hitstop > 0) { this.hitstop--; return; }
     this.shakeHit = false;
     for (const k in this.buf) if (this.buf[k] > 0) this.buf[k]--;
-    for (const k in this.cd) if (this.cd[k] > 0) this.cd[k] = Math.max(0, this.cd[k] - 1 / 60);
+    for (const k in this.cd) if (this.cd[k] > 0) this.cd[k] = Math.max(0, this.cd[k] - (1 + this.cdr) / 60);
     if (this.invul > 0) this.invul--;
     if (this.potCd > 0) this.potCd--;
+    this.gearTick();
     if (this.state !== 'dead') this.mp = Math.min(this.mpMax, this.mp + this.mpRegen / 60);
     this.bladeGlow = Math.max(0, this.bladeGlow - 0.035);
     this.stT++;
@@ -433,6 +452,96 @@ class Player extends Entity {
   }
 
   setState(s) { this.state = s; this.stT = 0; }
+
+  // 검·방어구의 상시 효과 (재생, 광폭화, 검에서 흩날리는 입자 …)
+  gearTick() {
+    const A = this.adef, W = this.wdef;
+    if (this.wcd > 0) this.wcd--;
+    if (this.shield > 0) this.shield--;
+    if (this.novaCd > 0) this.novaCd--;
+    this.sinceHit++;
+    this.atk = this.baseAtk * (A && A.berserk && this.hp < this.hpMax * 0.5 ? 1 + A.berserk : 1);
+    if (A && A.regen && this.sinceHit > 180 && this.hp > 0 && this.hp < this.hpMax && this.state !== 'dead') this.hp = Math.min(this.hpMax, this.hp + this.hpMax * A.regen / 60);
+    if (W && W.look && W.look.dyn) {
+      if (this.wHold > 0) this.wHold--; else this.wcol = hslRgb((Game.time * 2.2) % 360, 0.8, 0.6).join(',');
+    }
+    this.trailCol = this.wcol; this.afterCol = this.wcol;
+    if (W && W.amb && this.visible && this.state !== 'dead' && this.state !== 'cine' && FX.world.length < 230 && Math.random() < W.amb[2] * (this.bladeGlow > 0.3 ? 2.5 : 1)) this.emitAmb(W.amb[0], W.amb[1]);
+  }
+  bladePt(u) {
+    const J = this.J, a = J.wAng * DEG, L = RIG_PLAYER.wlen * ((this.wlook && this.wlook.L) || 1) * u;
+    return this.toWorld({ x: J.hand1.x + Math.sin(a) * L, y: J.hand1.y + Math.cos(a) * L });
+  }
+  emitAmb(kind, col) {
+    const [X, Y] = this.bladePt(rand(0.25, 1)), f = this.facing;
+    const M = (vx, vy, o) => FX.add('world', new Mote(X, Y, vx, vy, Object.assign({ col }, o)));
+    switch (kind) {
+      case 'ember': M(rand(-0.4, 0.4), rand(-1.7, -0.5), { life: 30, r: rand(4, 8) }); break;
+      case 'snow': M(rand(-0.3, 0.3), rand(0.1, 0.5), { life: 44, r: rand(3, 5), grav: 0.025 }); break;
+      case 'spark': M(rand(-3, 3), rand(-3, 3), { life: 9, r: 3.5, drag: 0.8, grav: 0 }); break;
+      case 'drip': M(rand(-0.2, 0.2), 0.4, { life: 28, r: 3.5, grav: 0.12 }); break;
+      case 'dust': M(rand(-0.6, 0.6), rand(-0.2, 0.3), { life: 30, r: rand(5, 8), grav: 0.01 }); break;
+      case 'wind': M(-f * rand(2, 4), rand(-0.3, 0.3), { life: 14, r: 4, grav: 0, drag: 0.95 }); break;
+      case 'bubble': M(rand(-0.3, 0.3), rand(-0.9, -0.3), { life: 34, r: rand(4, 6) }); break;
+      case 'mote': M(rand(-0.3, 0.3), rand(-1, -0.3), { life: 36, r: rand(3.5, 6) }); break;
+      case 'void': FX.add('world', new Mote(X + rand(-26, 26), Y + rand(-26, 26), 0, 0, { col, life: 20, r: 5, tx: X, ty: Y, grav: 0 })); break;
+      case 'star': M(rand(-0.6, 0.6), rand(-0.8, 0.2), { life: 24, r: rand(3, 5.5) }); break;
+      case 'feather': M(rand(-0.6, 0.6) - f * 0.4, rand(-0.4, 0.2), { life: 52, r: rand(4, 6), grav: 0.05 }); break;
+      case 'chaos': M(rand(-1.5, 1.5), rand(-1.5, 1), { col: this.wcol, life: 22, r: rand(4, 7), grav: 0 }); break;
+    }
+  }
+
+  // 방어구 : 회피
+  rollDodge() {
+    if (!this.dodge || this.invul > 0 || this.state === 'dead' || this.state === 'down') return false;
+    if (Math.random() > this.dodge) return false;
+    this.invul = 22; this.afterOn = 10;
+    FX.add('top', new Label(this.x, sy(this.y, this.z) - 150, 'MISS', { col: ['#ffffff', '#9a8cff'], size: 22 }));
+    Sfx.play('dash', 0.5, 1.5);
+    return true;
+  }
+  // 방어구 : 맞았을 때 발동 (가시 / 충격파)
+  onHurtGear(att, dmg) {
+    const A = this.adef;
+    if (!A) return;
+    if (A.thorns && att && att.team === 1 && att.hp > 0 && !att.dying && Math.abs(att.x - this.x) < 260) {
+      Hitfx.sparks(att.x, sy(att.y, att.z + att.h * 0.5), sign(att.x - this.x), 7, { col: '255,210,160', spread: 1.5 });
+      Status.dot(att, this.atk * 0.35, '255,210,160');
+    }
+    if (A.nova && this.novaCd <= 0) {
+      this.novaCd = 90;
+      const gy = sy(this.y, 0);
+      FX.add('ground', new Ring(this.x, gy, 20, 330, 24, { col: '170,120,255', w: 14 }));
+      FX.add('world', new Flash(this.x, gy - 40, 20, 240, 20, '170,120,255', 0.8));
+      Sfx.wlayer('void', 2, false); Game.addShake(6);
+      for (const e of Game.enemies) if (e.hittable() && Math.abs(e.x - this.x) < 330 && Math.abs(e.y - this.y) < 130) Gear.proc(this, e, 0.8, { quiet: true, hit: { dmg: 0.6, kx: 9, kz: 6, stun: 34 } });
+    }
+  }
+  // 불사조 갑주 : 치명상 시 1회 부활
+  rise() {
+    this.phoenixUsed = true; this.hp = Math.round(this.hpMax * 0.45); this.invul = 170;
+    if (this.act && this.act.end) this.act.end(this);
+    this.act = null; this.trailOn = false; this.gravOff = false; this.visible = true; this.armorF = false;
+    this.setState('getup'); this.play('getup', 2, 1, true);
+    const gy = sy(this.y, 0);
+    FX.add('ground', new Ring(this.x, gy, 30, 460, 30, { col: '255,170,70', w: 20 }));
+    FX.add('world', new Flash(this.x, gy - 60, 40, 420, 28, '255,170,70', 0.95));
+    FX.add('world', new Pillar(this.x, this.y, 90, 440, 40, '255,120,40', '255,240,200'));
+    for (let i = 0; i < 40; i++) FX.add('world', new Mote(this.x + rand(-50, 50), gy - rand(0, 160), rand(-1.5, 1.5), rand(-4, -1), { col: '255,150,50', life: 54, r: rand(6, 12) }));
+    FX.add('top', new Label(this.x, sy(this.y, this.z) - 190, 'PHOENIX REBIRTH', { col: ['#fff4d0', '#ff7a20'], size: 30, life: 70 }));
+    Sfx.play('explode', 0.9); Sfx.play('clear', 0.8); Game.flashScreen(0.8, '255,210,150'); Game.addShake(16); Game.slowmo(0.3, 40);
+    for (const e of Game.enemies) if (e.hittable() && Math.abs(e.x - this.x) < 460) { Gear.proc(this, e, 4, { quiet: true, hit: { dmg: 1, kx: 10, kz: 9, stun: 50 } }); Status.add(e, 'burn', { t: 180, d: this.atk * 0.2 }); }
+  }
+
+  draw(ctx) {
+    super.draw(ctx);
+    if (this.shield > 0 && this.visible) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const a = Math.min(1, this.shield / 40) * (0.55 + Math.sin(Game.time * 0.2) * 0.12);
+      drawGlow(ctx, this.x, sy(this.y, this.z + 70), 90, '255,240,190', 0.35 * a, 0.8, 1.15);
+      ctx.restore();
+    }
+  }
 
   updateChains() {
     const J = this.J, F = torsoFrame(J);
@@ -515,7 +624,7 @@ class Player extends Entity {
     if (this.has('dash') && this.dashDir === ax) { this.running = true; this.use('dash'); }
     if (ax === 0) this.running = false;
     if (ax) { if (ax !== this.facing && this.running) this.running = false; this.facing = ax; }
-    const sp = this.running ? 7 : 3.7;
+    const sp = (this.running ? 7 : 3.7) * this.moveMul;
     this.vx = ax * sp; this.vy = ay * (this.running ? 3.1 : 2.6);
     if (this.landT > 0) this.landT--;
     if (this.tryGroundActions()) return;
@@ -542,7 +651,7 @@ class Player extends Entity {
 
   stAir() {
     const ax = Input.axisX(), ay = Input.axisY();
-    const sp = this.running ? 6.6 : 3.7;
+    const sp = (this.running ? 6.6 : 3.7) * this.moveMul;
     this.vx = approach(this.vx, ax * sp, 0.55);
     this.vy = approach(this.vy, ay * 2.2, 0.4);
     if (ax) this.facing = ax;
@@ -617,7 +726,10 @@ class Player extends Entity {
   takeHit(hit, att, dir, dmg) {
     if (this.state === 'dead') return;
     this.hp -= dmg;
+    this.sinceHit = 0;
     Game.onPlayerDamaged(dmg);
+    if (this.hp <= 0 && this.adef && this.adef.phoenix && !this.phoenixUsed) { this.rise(); return; }
+    if (this.hp > 0) this.onHurtGear(att, dmg);
     if (this.hp <= 0) {
       this.hp = 0;
       if (this.act && this.act.end) this.act.end(this);
@@ -633,11 +745,11 @@ class Player extends Entity {
     this.facing = -dir;
     if (hit.down || hit.kz > 0 || this.z > 0.5) {
       this.setState('fall'); this.bounced = false;
-      this.vz = Math.max(5, hit.kz || 6); this.vx = dir * (hit.kx || 4) * 0.8;
+      this.vz = Math.max(5, hit.kz || 6); this.vx = dir * (hit.kx || 4) * 0.8 * (1 - this.kbRes);
       this.play('fall', 2, 1, true);
     } else {
       this.setState('hurt'); this.hurtT = hit.stun || 18;
-      this.vx = dir * (hit.kx || 3);
+      this.vx = dir * (hit.kx || 3) * (1 - this.kbRes);
       this.hurtFlip = !this.hurtFlip;
       this.play(this.hurtFlip ? 'hurt1' : 'hurt2', 1, 1, true);
     }

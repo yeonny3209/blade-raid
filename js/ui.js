@@ -540,6 +540,13 @@ const UI = {
       this.text(ctx, `SCORE ${fmt(R.score)}`, 835, 460, { size: 22, align: 'center', fill: '#ffe9a6', stroke: 4, italic: true });
     }
     if (t > 140 && t % 60 < 44) this.text(ctx, 'Enter : 다시 도전', W / 2, 580, { size: 20, align: 'center', fill: '#ffd87a', stroke: 4 });
+    if (t > 150) this.text(ctx, `보유 골드 ${fmt(Save.data.gold || 0)}  —  로비의 상점에서 검과 방어구를 살 수 있습니다`, W / 2, 548, { size: 15, align: 'center', font: FONT_B, weight: 700, fill: '#b8c0dc', stroke: 3 });
+    if (R.newMap && t > 60) {                                  // 제2지역 최초 개방
+      const k = 0.5 + Math.sin(t * 0.12) * 0.5;
+      ctx.fillStyle = 'rgba(60,40,10,0.92)'; roundRect(ctx, 340, 70, 600, 56, 12); ctx.fill();
+      ctx.strokeStyle = `rgba(255,${200 + k * 50 | 0},90,0.95)`; ctx.lineWidth = 3; ctx.stroke();
+      this.text(ctx, '제2지역  「신화의 땅」  개방!', W / 2, 99, { size: 28, align: 'center', fill: '#ffe9a6', stroke: 5, italic: true });
+    }
     ctx.restore();
   },
 
@@ -558,7 +565,8 @@ const UI = {
   drawGameOver(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, H);
     this.text(ctx, 'GAME OVER', W / 2, 300, { size: 80, align: 'center', italic: true, fill: '#ff5a4a', stroke: 8 });
-    if (Game.frame % 60 < 44) this.text(ctx, 'Enter : 처음부터 다시', W / 2, 420, { size: 22, align: 'center', fill: '#ffd87a', stroke: 4 });
+    if (Game.keptGold > 0) this.text(ctx, `주운 골드 ${fmt(Game.keptGold)} 는 그대로 가져갑니다`, W / 2, 360, { size: 20, align: 'center', font: FONT_B, weight: 700, fill: '#ffe9a6', stroke: 4 });
+    if (Game.frame % 60 < 44) this.text(ctx, 'Enter : 로비로', W / 2, 420, { size: 22, align: 'center', fill: '#ffd87a', stroke: 4 });
   },
 
   drawBossIntro(ctx, t) {

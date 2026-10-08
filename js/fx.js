@@ -224,6 +224,73 @@ class Burst {
   }
 }
 
+// ---------- 번개 (화면 좌표, 지그재그) ----------
+class Bolt {
+  constructor(x0, y0, x1, y1, o = {}) {
+    Object.assign(this, { x0, y0, x1, y1, t: 0, add: true });
+    this.life = o.life || 12; this.col = o.col || '255,240,120'; this.w = o.w || 3.4; this.amp = o.amp || 24;
+    this.build();
+  }
+  build() {
+    const dx = this.x1 - this.x0, dy = this.y1 - this.y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+    const n = Math.max(4, Math.round(L / 30));
+    this.pts = [[this.x0, this.y0]];
+    for (let i = 1; i < n; i++) {
+      const u = i / n, o = rand(-1, 1) * this.amp * Math.sin(u * Math.PI);
+      this.pts.push([this.x0 + dx * u + nx * o, this.y0 + dy * u + ny * o]);
+    }
+    this.pts.push([this.x1, this.y1]);
+  }
+  update() { this.t++; if (this.t % 2 === 0) this.build(); return this.t < this.life; }
+  draw(ctx) {
+    const a = 1 - this.t / this.life;
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (const [lw, col, al] of [[this.w * 3.2, this.col, 0.28], [this.w * 1.3, this.col, 0.85], [this.w * 0.5, '255,255,255', 1]]) {
+      ctx.strokeStyle = `rgba(${col},${al * a})`; ctx.lineWidth = lw;
+      ctx.beginPath(); this.pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
+    }
+    drawGlow(ctx, this.x1, this.y1, 34, this.col, 0.7 * a);
+  }
+}
+
+// ---------- 낙하하는 별 / 운석 (월드 좌표 목표) ----------
+class Meteor {
+  constructor(x, y, o = {}) {
+    Object.assign(this, { x, y, t: 0, add: true });
+    this.dur = o.dur || 16; this.col = o.col || '255,220,120'; this.onEnd = o.onEnd; this.r = o.r || 18;
+    this.sx = x + (o.from ?? 300); this.sy0 = -90;
+  }
+  update() {
+    this.t++;
+    if (this.t >= this.dur) { if (this.onEnd) this.onEnd(this); return false; }
+    return true;
+  }
+  draw(ctx) {
+    const gy = sy(this.y, 0);
+    for (let k = 0; k < 7; k++) {
+      const u = Math.max(0, this.t / this.dur - k * 0.035), e = u * u;
+      const px = lerp(this.sx, this.x, e), py = lerp(this.sy0, gy, e);
+      drawGlow(ctx, px, py, this.r * (1 - k * 0.1), k ? this.col : '255,255,255', 1 - k * 0.12);
+    }
+  }
+}
+
+// ---------- 지면을 따라 퍼지는 충격파 (점프로 피해야 함) ----------
+class ShockWave {
+  constructor(x, y, o = {}) {
+    Object.assign(this, { x, y, r: o.r0 || 20, t: 0 });
+    this.speed = o.speed || 9; this.maxR = o.maxR || 700; this.w = o.w || 16; this.col = o.col || '255,200,120'; this.hitFn = o.hitFn; this.add = true;
+  }
+  update() { this.t++; this.r += this.speed; if (this.hitFn) this.hitFn(this); return this.r < this.maxR; }
+  draw(ctx) {
+    const u = this.r / this.maxR, gy = sy(this.y, 0), a = 1 - u * 0.7;
+    ctx.strokeStyle = `rgba(${this.col},${0.55 * a})`; ctx.lineWidth = this.w * 1.8;
+    ctx.beginPath(); ctx.ellipse(this.x, gy, this.r, this.r * 0.3, 0, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${0.85 * a})`; ctx.lineWidth = this.w * 0.45;
+    ctx.stroke();
+  }
+}
+
 // ---------- 빛 입자 (상승/수렴 등) ----------
 class Mote {
   constructor(x, y, vx, vy, o = {}) {
@@ -281,7 +348,7 @@ class DmgText {
     Object.assign(this, { x: x + rand(-14, 14), y: y - stack * 26, val, type, t: 0, vy: -1.4 });
     this.life = type === 'c' ? 62 : 52;
     this.str = fmt(val);
-    this.size = type === 'c' ? 40 : type === 'p' ? 32 : type === 'h' ? 28 : 30;
+    this.size = type === 'c' ? 40 : type === 'p' ? 32 : type === 'h' ? 28 : type === 'd' ? 22 : 30;
     if (val >= 100000) this.size += 10;
   }
   update() { this.t++; this.y += this.vy; this.vy *= 0.9; return this.t < this.life; }
@@ -297,6 +364,7 @@ class DmgText {
     if (this.type === 'c') { g.addColorStop(0, '#fffbe0'); g.addColorStop(0.45, '#ffd23a'); g.addColorStop(1, '#ff6a00'); }
     else if (this.type === 'p') { g.addColorStop(0, '#ffd0d0'); g.addColorStop(0.5, '#ff4a4a'); g.addColorStop(1, '#a00'); }
     else if (this.type === 'h') { g.addColorStop(0, '#e0ffe0'); g.addColorStop(1, '#3adf5a'); }
+    else if (this.type === 'd') { g.addColorStop(0, '#ffffff'); g.addColorStop(1, `rgb(${this.dcol || '255,160,60'})`); }
     else { g.addColorStop(0, '#ffffff'); g.addColorStop(0.55, '#fff4c8'); g.addColorStop(1, '#f2c75c'); }
     ctx.fillStyle = g; ctx.fillText(this.str, 0, 0);
     if (this.type === 'c' && t < 10) {

@@ -52,6 +52,16 @@ const AMBIENT = {
   factory: { n: 30, cols: ['255,170,80', '200,210,230'], vx: [-0.3, 0.5], vy: [-0.9, -0.2], r: [3, 7] },
   sky: { n: 34, cols: ['255,250,220', '200,230,255'], vx: [-0.25, 0.25], vy: [-0.35, 0.05], r: [4, 9], blink: true },
   abyss: { n: 44, cols: ['190,110,255', '120,200,255'], vx: [-0.3, 0.3], vy: [-0.8, -0.15], r: [4, 9], blink: true },
+  bloodmoon: { n: 40, cols: ['255,60,80', '255,150,120'], vx: [-0.2, 0.4], vy: [-0.6, 0.1], r: [3, 7], blink: true },
+  crystal: { n: 44, cols: ['120,220,255', '255,130,230', '170,140,255'], vx: [-0.2, 0.2], vy: [-0.5, -0.05], r: [3, 8], blink: true },
+  deep: { n: 56, rate: 0.5, cols: ['190,240,255', '140,220,240'], vx: [-0.15, 0.15], vy: [-1.3, -0.4], r: [3, 8], y0: 200, y1: 720 },
+  grave: { n: 36, cols: ['140,255,190', '190,230,220'], vx: [-0.25, 0.25], vy: [-0.4, 0.05], r: [4, 9], blink: true },
+  jungle: { n: 40, cols: ['255,240,140', '190,255,130'], vx: [-0.3, 0.3], vy: [-0.35, 0.2], r: [4, 8], blink: true },
+  clock: { n: 34, cols: ['255,220,140', '255,190,100'], vx: [-0.2, 0.3], vy: [-0.4, 0.1], r: [3, 6] },
+  neon: { n: 90, rate: 0.9, life: [30, 60], cols: ['120,220,255', '255,100,220'], vx: [-0.5, -0.2], vy: [5, 9], r: [2, 3.5], y0: -30, y1: 300 },
+  storm: { n: 60, rate: 0.7, life: [30, 70], cols: ['190,200,255', '140,170,255'], vx: [-3, -1.5], vy: [3, 6], r: [2, 3.4], y0: -30, y1: 400 },
+  cosmos: { n: 50, cols: ['200,210,255', '255,200,230'], vx: [-0.15, 0.15], vy: [-0.2, 0.2], r: [3, 7], blink: true },
+  chaos: { n: 60, cols: ['255,90,200', '90,200,255', '255,220,90', '120,255,190'], vx: [-0.6, 0.6], vy: [-1, 0.3], r: [4, 10], blink: true },
 };
 
 class Room {
@@ -96,7 +106,7 @@ class Room {
     const th = this.def.theme, cam = Game.cam.x;
     const C = AMBIENT[th] || AMBIENT.lair;
     if (this.ambient.length < C.n && chance(C.rate ?? 0.3)) {
-      const a = { x: cam + rand(-50, W + 50), y: rand(C.y0 ?? 40, C.y1 ?? H - 60), t: 0, life: randi(160, 320), ph: rand(0, TAU) };
+      const a = { x: cam + rand(-50, W + 50), y: rand(C.y0 ?? 40, C.y1 ?? H - 60), t: 0, life: C.life ? randi(C.life[0], C.life[1]) : randi(160, 320), ph: rand(0, TAU) };
       a.vx = rand(C.vx[0], C.vx[1]); a.vy = rand(C.vy[0], C.vy[1]);
       a.col = choose(C.cols); a.r = rand(C.r[0], C.r[1]); a.blink = !!C.blink;
       this.ambient.push(a);
@@ -167,15 +177,15 @@ class Room {
       } else if (L.type === 'gear') {
         ctx.save(); ctx.globalCompositeOperation = 'source-over';
         ctx.translate(x, L.y); ctx.rotate(t * L.spd);
-        ctx.fillStyle = '#39404f';
+        ctx.fillStyle = L.c1 || '#39404f';
         ctx.beginPath(); ctx.arc(0, 0, L.r * 0.72, 0, TAU); ctx.fill();
-        ctx.fillStyle = '#4a5364';
+        ctx.fillStyle = L.c2 || '#4a5364';
         for (let i = 0; i < 10; i++) {
           const a = i / 10 * TAU;
           ctx.save(); ctx.rotate(a); ctx.fillRect(L.r * 0.66, -L.r * 0.13, L.r * 0.3, L.r * 0.26); ctx.restore();
         }
         ctx.beginPath(); ctx.arc(0, 0, L.r * 0.66, 0, TAU); ctx.fill();
-        ctx.fillStyle = '#20252f'; ctx.beginPath(); ctx.arc(0, 0, L.r * 0.22, 0, TAU); ctx.fill();
+        ctx.fillStyle = L.c3 || '#20252f'; ctx.beginPath(); ctx.arc(0, 0, L.r * 0.22, 0, TAU); ctx.fill();
         ctx.restore();
         ctx.globalCompositeOperation = 'lighter';
       } else if (L.type === 'steam') {
@@ -183,6 +193,12 @@ class Room {
           const ph = (t * 1.4 + i * 90) % 270;
           drawGlow(ctx, x + Math.sin(ph * 0.03 + i) * 14, L.y - ph, 26 + ph * 0.16, '210,225,245', 0.16 * (1 - ph / 270));
         }
+      } else if (L.type === 'neon') {
+        const fl = 0.7 + Math.sin(t * 0.31 + L.x) * 0.15 + (Math.sin(t * 1.3 + L.x * 3) > 0.93 ? -0.5 : 0);
+        drawGlow(ctx, x, L.y, L.r * (0.9 + fl * 0.2), L.col, 0.45 * Math.max(0.1, fl));
+      } else if (L.type === 'flash') {
+        const k = (t + L.x * 37) % 330;
+        if (k < 5 || (k > 9 && k < 13)) { ctx.globalAlpha = k < 5 ? 0.28 : 0.16; ctx.fillStyle = '#cfe0ff'; ctx.fillRect(0, 0, W, GROUND_Y + 40); ctx.globalAlpha = 1; }
       } else if (L.type === 'shaft') {
         ctx.globalAlpha = 0.07 + Math.sin(t * 0.01 + L.x) * 0.03;
         ctx.fillStyle = '#cfefff';
@@ -235,6 +251,8 @@ function buildBackground(def, S) {
   const B = {
     forest: buildForest, ruins: buildRuins, frost: buildFrost, mine: buildMine,
     desert: buildDesert, swamp: buildSwamp, factory: buildFactory, sky: buildSky, abyss: buildAbyss,
+    bloodmoon: buildBloodmoon, crystal: buildCrystal, deep: buildDeep, grave: buildGrave, jungle: buildJungle,
+    clock: buildClock, neon: buildNeon, storm: buildStorm, cosmos: buildCosmos, chaos: buildChaos,
   }[def.theme];
   if (B) B(bg, ctxs, farW, midW, w, rnd, def);
   else buildLair(bg, ctxs, farW, midW, w, rnd, def, S);

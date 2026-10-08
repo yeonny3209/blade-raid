@@ -80,6 +80,7 @@ const Game = {
     switch (this.state) {
       case 'title': this.updateTitle(); break;
       case 'lobby': Lobby.update(); break;
+      case 'shop': Shop.update(); break;
       case 'paused': if (Input.take('pause')) { this.state = this.pausedFrom; Sfx.play('ui'); } Input.queue = Input.queue.filter(q => q.a === 'pause'); break;
       case 'result': this.resT++; if (this.resT > 100 && (Input.take('confirm') || Input.take('attack'))) { Sfx.play('select'); this.toLobby(); } Input.clear(); break;
       case 'gameover': if (Input.take('confirm') || Input.take('attack')) { Sfx.play('select'); this.coins = 3; this.toLobby(); } Input.clear(); break;
@@ -117,6 +118,12 @@ const Game = {
     Lobby.enter();
   },
 
+  toShop() {
+    this.state = 'shop';
+    FX.clear(); Touch.release(); Input.clear();
+    Shop.enter();
+  },
+
   startDungeon(id) {
     const d = DUNGEON_BY_ID[id] || DUNGEONS[0];
     this.dungeon = buildDungeon(d);
@@ -125,11 +132,13 @@ const Game = {
     this.player = new Player();
     this.combo = { n: 0, t: 0, dmg: 0, pop: 0 };
     this.coins = 3;
+    this.dungeonIdx = DUNGEONS.indexOf(d);
     this.loadRoom(0);
   },
 
   loadRoom(i) {
     this.roomIdx = i;
+    Gear.reset();
     this.room = new Room(i);
     this.enemies = []; this.projectiles = []; this.pickups = [];
     FX.clear();
@@ -177,6 +186,7 @@ const Game = {
       for (const e of this.enemies) e.update();
       this.enemies = this.enemies.filter(e => !e.dead);
       this.projectiles = this.projectiles.filter(pr => pr.update() !== false);
+      Gear.tick();
       this.pickups = this.pickups.filter(it => it.update(p) !== false);
       this.room.update();
     }
@@ -257,7 +267,10 @@ const Game = {
       this.coins--; this.state = 'play'; this.player.revive(); Input.clear(); return;
     }
     Input.clear();
-    if (c.t <= 0 || this.coins <= 0 && c.t < 480) { this.state = 'gameover'; Music.stop(); }
+    if (c.t <= 0 || this.coins <= 0 && c.t < 480) {
+      this.state = 'gameover'; Music.stop();
+      this.keptGold = this.stats.gold; Save.bank(this.stats.gold); this.stats.gold = 0;      // 클리어하지 못해도 주운 골드는 가져간다
+    }
   },
 
   // ---------------- 전투 이벤트 ----------------
@@ -299,8 +312,14 @@ const Game = {
 
   onEnemyKilled(e) {
     this.stats.kills++;
-    const n = randi(e.gold[0], e.gold[1]);
-    for (let i = 0; i < n; i++) this.pickups.push(new Pickup('gold', e.x, e.y, e.z + 40 * e.scale, randi(40, 120) * (e.elite ? 2 : 1) * (e.isBoss ? 5 : 1)));
+    const idx = this.dungeonIdx || 0, gm = idx >= 10 ? 4.5 : 1.6;                  // 지역별 골드 배율
+    let coins, total;
+    if (e.isBoss) { coins = 36; total = Math.round(6000 * (1 + idx * 0.5) * gm); }
+    else { coins = randi(e.gold[0], e.gold[1]); total = coins * randi(40, 120) * (e.elite ? 2 : 1) * gm; }
+    const per = Math.max(1, Math.round(total / coins));
+    for (let i = 0; i < coins; i++) this.pickups.push(new Pickup('gold', e.x, e.y, e.z + 40 * e.scale, per));
+    const pl = this.player, wdf = pl && pl.wdef;
+    if (wdf && wdf.kill && pl.hp > 0) wdf.kill(pl, e);                                  // 검의 처치 능력
     if (chance(e.elite ? 0.5 : 0.12)) this.pickups.push(new Pickup('hp', e.x, e.y, e.z + 40, 0));
     const r = this.room;
     const others = this.enemies.some(o => o !== e && !o.dying && !o.dead);
@@ -332,6 +351,7 @@ const Game = {
   showResult() {
     const s = this.stats, sec = s.time / 60 | 0;
     const dun = this.dungeon.def;
+    const wasOpen = Save.data.unlocked || 1;
     let score = 0;
     score += clamp(100 - Math.max(0, sec - 180) / 3, 20, 100) * 40;
     score += Math.min(s.maxCombo, 150) * 20;
@@ -345,6 +365,7 @@ const Game = {
     this.result.dungeon = dun.name;
     Save.record(dun.id, rank, this.result.score, s.gold);
     this.result.unlockedNew = Save.data.unlocked;
+    this.result.newMap = wasOpen <= 10 && Save.data.unlocked > 10;                   // 제2지역 최초 개방
     this.state = 'result'; this.resT = 0;
     Input.clear();
   },
@@ -388,6 +409,7 @@ const Game = {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
     if (this.state === 'title') { UI.drawTitle(ctx); return; }
     if (this.state === 'lobby') { Lobby.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
+    if (this.state === 'shop') { Shop.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     const r = this.room, p = this.player, camX = Math.round(this.cam.x * 2) / 2;
 
     ctx.save();

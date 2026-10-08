@@ -12,7 +12,7 @@ const KEYMAP = {
   Space: 'jump',
   KeyZ: 'back', KeyL: 'back',
   KeyQ: 's1', KeyE: 's2', KeyT: 's3', KeyF: 's4', KeyG: 's5', KeyR: 's6',
-  KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
+  KeyB: 'shop', KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
   Escape: 'pause', KeyM: 'mute', Enter: 'confirm', NumpadEnter: 'confirm',
   F2: 'debug',
 };
@@ -28,13 +28,16 @@ const Input = {
   any: false,
 
   init() {
+    // 일부 환경(원격 입력 등)은 e.code 를 비워 보내므로 e.key 로 보충한다
+    const codeOf = e => e.code || (e.key && e.key.length === 1 && /[a-z0-9]/i.test(e.key) ? (/[0-9]/.test(e.key) ? 'Digit' : 'Key') + e.key.toUpperCase() : (e.key === ' ' ? 'Space' : e.key || ''));
     addEventListener('keydown', e => {
       if (e.ctrlKey || e.metaKey) return;   // Ctrl+R 새로고침 등 브라우저 단축키는 그대로 둠
-      if (KEYMAP[e.code] || e.code.startsWith('Arrow') || e.code === 'Space' || e.code === 'Tab') e.preventDefault();
+      const code = codeOf(e);
+      if (KEYMAP[code] || code.startsWith('Arrow') || code === 'Space' || code === 'Tab') e.preventDefault();
       if (e.repeat) return;
-      this.press(e.code);
+      this.press(code);
     });
-    addEventListener('keyup', e => this.release(e.code));
+    addEventListener('keyup', e => this.release(codeOf(e)));
     // 마우스 좌클릭 = 기본 공격
     addEventListener('mousedown', e => {
       if (e.button !== 0) return;
