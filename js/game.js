@@ -138,7 +138,7 @@ const Game = {
 
   loadRoom(i) {
     this.roomIdx = i;
-    Gear.reset();
+    Gear.reset(); WS.reset();
     this.room = new Room(i);
     this.enemies = []; this.projectiles = []; this.pickups = [];
     FX.clear();
@@ -183,9 +183,13 @@ const Game = {
       this.freezeT--;                 // 강타 순간 : 세상이 멈추고 이펙트만 살아있음
     } else {
       p.update();
-      for (const e of this.enemies) e.update();
+      if (p.hasteT > 0 && this.frame % 2 === 0 && p.hp > 0) p.update();          // 시간 가속 : 나만 1.5배
+      const ts = this.tstopT > 0;                                                // 크로노 브레이크 : 적의 시간이 멈춤
+      if (ts && --this.tstopT === 0) WS.timeResume();
+      if (!ts) for (const e of this.enemies) e.update();
       this.enemies = this.enemies.filter(e => !e.dead);
-      this.projectiles = this.projectiles.filter(pr => pr.update() !== false);
+      if (!ts) this.projectiles = this.projectiles.filter(pr => pr.update() !== false);
+      WS.tick();
       Gear.tick();
       this.pickups = this.pickups.filter(it => it.update(p) !== false);
       this.room.update();
@@ -398,7 +402,7 @@ const Game = {
     this.notices.push({ text, t: 0, life: 70 });
   },
   bigText(text, c1, c2, y = 250, size = 72) { this.big = { text, c1, c2, t: 0, life: 110, y, size }; },
-  startCutin() { this.cutin = { t: 0, dur: 84 }; Sfx.play('cutin'); },
+  startCutin(p, o = {}) { this.cutin = { t: 0, dur: 84, p, name: o.name || '극 귀신참', sub: o.sub || '', col: o.col || '255,60,40' }; Sfx.play('cutin'); },
 
   // ---------------- 렌더 ----------------
   render() {
@@ -444,6 +448,7 @@ const Game = {
 
     r.drawFront(ctx, camX);
     ctx.restore();
+    WS.overlay(ctx);
 
     // 화면 효과
     if (this.speedT > 0) this.drawSpeedLines(ctx);

@@ -273,7 +273,7 @@ const PA = {
   },
   ult: {
     anim: 'ultUp', len: 136, cancel: 104, atkCancel: 102,
-    start(p) { Game.startCutin(p); p.invul = 260; p.vx = 0; p.vy = 0; },
+    start(p) { Game.startCutin(p, { name: '극 귀신참', sub: '極 · 鬼 神 斬', col: '255,60,40' }); p.invul = 260; p.vx = 0; p.vy = 0; },
     update(p, f) {
       p.invul = Math.max(p.invul, 12); p.armorF = true;
       if (f === 1) {
@@ -459,6 +459,18 @@ class Player extends Entity {
     if (this.wcd > 0) this.wcd--;
     if (this.shield > 0) this.shield--;
     if (this.novaCd > 0) this.novaCd--;
+    if (this.bloodT > 0) this.bloodT--;
+    if (this.cloneT > 0) this.cloneT--;
+    if (this.guardT > 0) this.guardT--;
+    if (this.hasteT > 0) { this.hasteT--; if (Game.frame % 4 === 0) this.afterOn = Math.max(this.afterOn, 3); }
+    if (this.angelT > 0) {                                  // 대천사 : 무적 + 회복 + 성광 고리
+      this.angelT--; this.invul = Math.max(this.invul, 2);
+      if (this.angelT % 12 === 0) this.hp = Math.min(this.hpMax, this.hp + this.hpMax * 0.012);
+      if (this.angelT % 48 === 0 && typeof WS !== 'undefined') {
+        FX.add('ground', new Ring(this.x, sy(this.y, 0), 20, 320, 22, { col: '255,245,200', w: 12 }));
+        WS.area(this, this.x, this.y, 300, 120, WH.angelRing); Sfx.wlayer('holy', 1, false);
+      }
+    }
     this.sinceHit++;
     this.atk = this.baseAtk * (A && A.berserk && this.hp < this.hpMax * 0.5 ? 1 + A.berserk : 1);
     if (A && A.regen && this.sinceHit > 180 && this.hp > 0 && this.hp < this.hpMax && this.state !== 'dead') this.hp = Math.min(this.hpMax, this.hp + this.hpMax * A.regen / 60);
@@ -489,6 +501,19 @@ class Player extends Entity {
       case 'feather': M(rand(-0.6, 0.6) - f * 0.4, rand(-0.4, 0.2), { life: 52, r: rand(4, 6), grav: 0.05 }); break;
       case 'chaos': M(rand(-1.5, 1.5), rand(-1.5, 1), { col: this.wcol, life: 22, r: rand(4, 7), grav: 0 }); break;
     }
+  }
+
+  // 성스러운 반격 : 방패를 든 동안 맞으면 무효 + 반격
+  onGuard(att) {
+    this.guardT = 0; this.invul = Math.max(this.invul, 30);
+    FX.add('top', new Label(this.x, sy(this.y, this.z) - 170, 'GUARD!', { col: ['#ffffff', '#ffd24a'], size: 28 }));
+    FX.add('world', new Flash(this.x, sy(this.y, 70), 30, 300, 22, '255,240,170', 1));
+    FX.add('ground', new Ring(this.x, sy(this.y, 0), 20, 260, 22, { col: '255,240,170', w: 16 }));
+    Sfx.play('counter'); Sfx.wlayer('holy', 3, true); Game.freeze(5); Game.addShake(10); Game.flashScreen(0.3, '255,250,220');
+    Gear.heal(this, this.hpMax * 0.05);
+    WS.area(this, this.x, this.y, 240, 100, WH.holyCounter);
+    swingT(this, 'a4', 1.3);
+    if (this.act) this.atkOK = true;
   }
 
   // 방어구 : 회피
@@ -534,7 +559,42 @@ class Player extends Entity {
   }
 
   draw(ctx) {
+    const R = this.rig;
+    if (this.visible && this.angelT > 0) {                  // 대천사의 거대한 날개
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const X = this.x, Y = sy(this.y, this.z + 100), fl = Math.sin(Game.time * 0.12) * 0.15;
+      for (const s of [-1, 1]) for (let i = 0; i < 6; i++) {
+        const a = -Math.PI / 2 + s * (0.5 + i * 0.22 + fl), L = 150 - i * 12;
+        ctx.strokeStyle = `rgba(255,248,215,${0.5 - i * 0.05})`; ctx.lineWidth = 14 - i;
+        ctx.beginPath(); ctx.moveTo(X, Y); ctx.quadraticCurveTo(X + Math.cos(a) * L * 0.5 + s * 30, Y + Math.sin(a) * L * 0.4, X + Math.cos(a) * L, Y + Math.sin(a) * L * 0.7); ctx.stroke();
+      }
+      drawGlow(ctx, X, Y, 170, '255,240,190', 0.35);
+      ctx.restore();
+    }
+    if (this.visible && this.cloneT > 0) {                  // 그림자 분신
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 4; i++) {
+        const a = Game.time * 0.04 + i * TAU / 4, ox = Math.cos(a) * 80, oz = 20 + Math.sin(a * 2) * 10;
+        ctx.save(); ctx.globalAlpha = 0.35 * Math.min(1, this.cloneT / 30);
+        ctx.translate(this.x + ox, sy(this.y + Math.sin(a) * 30, this.z + oz)); ctx.scale(this.facing * this.scale, this.scale);
+        R.draw(ctx, this.J, R.ghostPal('130,90,230'), this, { ghost: true });
+        ctx.restore();
+      }
+      ctx.restore();
+    }
     super.draw(ctx);
+    if (this.visible && (this.bloodT > 0 || this.guardT > 0 || this.hasteT > 0)) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const X = this.x, Y = sy(this.y, this.z + 70);
+      if (this.bloodT > 0) drawGlow(ctx, X, Y, 90 + Math.sin(Game.time * 0.3) * 8, '255,30,60', 0.3, 0.8, 1.2);
+      if (this.hasteT > 0) drawGlow(ctx, X, Y, 80, '150,220,255', 0.22, 0.8, 1.2);
+      if (this.guardT > 0) {
+        drawGlow(ctx, X, Y, 120, '255,240,170', 0.4, 0.9, 1.1);
+        ctx.strokeStyle = `rgba(255,240,170,${0.6 + Math.sin(Game.time * 0.5) * 0.3})`; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.ellipse(X + this.facing * 20, Y, 70, 96, 0, 0, TAU); ctx.stroke();
+      }
+      ctx.restore();
+    }
     if (this.shield > 0 && this.visible) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       const a = Math.min(1, this.shield / 40) * (0.55 + Math.sin(Game.time * 0.2) * 0.12);
@@ -577,14 +637,18 @@ class Player extends Entity {
     }
   }
 
+  // 슬롯 스킬 : G(s5) / R(s6) 은 장착한 검의 고유 스킬로 바뀐다
+  skill(k) { const o = this.wdef && this.wdef.skills && this.wdef.skills[k]; return o || SKILL_BY_KEY[k]; }
+  actOf(s) { return typeof s.act === 'string' ? PA[s.act] : s.act; }
   canSkill(k) {
-    const s = SKILL_BY_KEY[k];
+    const s = this.skill(k);
     return this.cd[k] <= 0 && this.mp >= s.mp;
   }
   trySkills(allowAir, exclude) {
-    for (const s of SKILLS) {
+    for (const base of SKILLS) {
+      const s = this.skill(base.key);
       if (!this.has(s.key)) continue;
-      if (exclude && s.act === exclude) continue;
+      if (exclude && this.actOf(s) === exclude) continue;
       if (this.z > 1 && !(allowAir && s.air) && s.key !== 's5' && s.key !== 's6') continue;
       this.use(s.key);
       if (!this.canSkill(s.key)) {
@@ -594,7 +658,7 @@ class Player extends Entity {
       }
       this.mp -= s.mp; this.cd[s.key] = s.cd;
       Game.stats.skills++;
-      this.startAct(PA[s.act]);
+      this.startAct(this.actOf(s));
       return true;
     }
     return false;
@@ -680,7 +744,7 @@ class Player extends Entity {
       return;
     }
     if (f >= (act.cancel ?? 9999)) {
-      if (this.trySkills(true, act.isSkill ? act.name : null)) return;
+      if (this.trySkills(true, act.isSkill ? act : null)) return;
       if (this.z <= 0.5 && this.has('back')) { this.use('back'); this.startAct(PA.back); return; }
       if (this.z <= 0.5 && this.has('jump') && act !== PA.back) { this.use('jump'); this.endAct(); this.jump(); return; }
     }

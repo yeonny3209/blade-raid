@@ -165,14 +165,14 @@ const Touch = {
     ctx.strokeStyle = b.id === 'attack' ? '#c9a55c' : '#8ea0c0'; ctx.lineWidth = 3;
     ctx.stroke();
     ctx.globalAlpha = Math.min(1, alpha + 0.45 + b.glow * 0.3);
-    const ic = UI.icons[b.icon];
+    const ic = p && /^s\d$/.test(b.id) ? UI.skIcon(p.skill(b.id)) : UI.icons[b.icon];
     if (ic) {
       const s = b.r * 1.32;
       ctx.drawImage(ic, b.x - s / 2, b.y - s / 2, s, s);
     } else this.glyph(ctx, b);
     // 스킬 쿨타임 / 물약 개수
     if (p && /^s\d$/.test(b.id)) {
-      const sk = SKILL_BY_KEY[b.id], cd = p.cd[b.id];
+      const sk = p.skill(b.id), cd = p.cd[b.id];
       if (p.mp < sk.mp) { ctx.globalAlpha = alpha + 0.25; ctx.fillStyle = 'rgba(10,20,70,0.6)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 1, 0, TAU); ctx.fill(); }
       if (cd > 0) {
         ctx.globalAlpha = 0.72;

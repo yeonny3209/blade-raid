@@ -345,23 +345,36 @@ const Shop = {
       if (it.cdr) rows.push(['쿨타임', `-${Math.round(it.cdr * 100)}%`, true]);
       if (it.dodge) rows.push(['회피', `${Math.round(it.dodge * 100)}%`, true]);
     }
-    const colW = mw / 2;
+    const colW = mw / 2, rh = isW ? 22 : 26;
     rows.forEach((r, i) => {
-      const cx = x + (i % 2) * colW, cy = y + Math.floor(i / 2) * 26;
+      const cx = x + (i % 2) * colW, cy = y + Math.floor(i / 2) * rh;
       UI.text(ctx, r[0], cx, cy, { size: 13, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 2.5 });
       UI.text(ctx, r[1], cx + colW - 18, cy, { size: 15, align: 'right', fill: r[2] ? '#b8ffcc' : '#ffb0a0', stroke: 3 });
     });
-    y += Math.ceil(rows.length / 2) * 26 + 10;
+    y += Math.ceil(rows.length / 2) * rh + 8;
     ctx.strokeStyle = 'rgba(201,165,92,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + mw, y - 6); ctx.stroke();
-    // 고유 능력
-    UI.text(ctx, isW ? '고유 능력' : '방어구 효과', x, y + 10, { size: 14, fill: '#ffd87a', stroke: 3 });
-    y += 30;
-    for (const ln of this.wrap(ctx, it.desc, mw, 14)) { UI.text(ctx, ln, x, y, { size: 14, font: FONT_B, weight: 700, fill: '#dfe4f6', stroke: 3 }); y += 21; }
-    if (isW && it.feel) {
-      y += 8;
-      UI.text(ctx, '타격감', x, y + 4, { size: 14, fill: '#9ac8ff', stroke: 3 });
-      y += 26;
-      for (const ln of this.wrap(ctx, it.feel, mw, 14)) { UI.text(ctx, ln, x, y, { size: 14, font: FONT_B, weight: 700, fill: '#cfd8ff', stroke: 3 }); y += 21; }
+    // 고유 능력 (패시브)
+    UI.text(ctx, isW ? '고유 능력' : '방어구 효과', x, y + 8, { size: 14, fill: '#ffd87a', stroke: 3 });
+    y += 26;
+    const fs = isW ? 13 : 14, lh = isW ? 18 : 21;
+    for (const ln of this.wrap(ctx, it.desc, mw, fs)) { UI.text(ctx, ln, x, y, { size: fs, font: FONT_B, weight: 700, fill: '#dfe4f6', stroke: 3 }); y += lh; }
+    // 고유 스킬 2개 (G / R)
+    if (isW) {
+      const sk = it.skills || { s5: SKILL_BY_KEY.s5, s6: SKILL_BY_KEY.s6 };
+      y += 4;
+      ctx.strokeStyle = 'rgba(201,165,92,0.3)'; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + mw, y - 6); ctx.stroke();
+      UI.text(ctx, '고유 스킬', x, y + 8, { size: 14, fill: '#9ac8ff', stroke: 3 });
+      y += 22;
+      for (const [k2, lab] of [['s5', 'G'], ['s6', 'R']]) {
+        const s2 = sk[k2];
+        ctx.drawImage(UI.skIcon(s2), x, y - 2, 30, 30);
+        UI.text(ctx, `[${lab}]  ${s2.name}`, x + 38, y + 8, { size: 15, fill: lab === 'R' ? '#ffd87a' : '#ffffff', stroke: 3 });
+        UI.text(ctx, `MP ${s2.mp} · ${s2.cd}초`, x + mw, y + 8, { size: 11, align: 'right', font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 2.5 });
+        y += 24;
+        const desc = s2.desc || (k2 === 's5' ? '공중에서 내려찍거나 제자리에서 뛰어올라 대지를 가른다.' : '컷신과 함께 주변의 적을 수십 번 베고 마지막 일격.');
+        for (const ln of this.wrap(ctx, desc, mw - 38, 12).slice(0, 3)) { UI.text(ctx, ln, x + 38, y, { size: 12, font: FONT_B, weight: 700, fill: '#c8d0ea', stroke: 2.5 }); y += 16; }
+        y += 6;
+      }
     }
     // 구매 / 장착 버튼
     const b = this.btnRect(), owned = Gear.owns(k, it.id), eq = Save.data.eq[k] === it.id, open = Gear.open(it);

@@ -175,16 +175,18 @@ function newSwing() { return { id: ++_swingId, set: new Set() }; }
 
 // 타격 적용 (손맛의 핵심)
 function applyHit(att, tgt, hit, o = {}) {
+  if (tgt.isPlayer && tgt.guardT > 0 && tgt.onGuard) { tgt.onGuard(att); return 0; }   // 성스러운 반격
   if (tgt.isPlayer && tgt.rollDodge && tgt.rollDodge(att)) return 0;           // 방어구 : 회피
   const dir = o.dir ?? (tgt.x >= att.x ? 1 : -1);
   let dmg = (att.atk || 1000) * hit.dmg * rand(0.93, 1.07);
   let crit = false, counter = false, back = false;
   const W = att.isPlayer ? att.wdef : null;                                        // 장착한 검
   if (att.isPlayer) {
-    crit = Math.random() < att.critRate + (hit.crit || 0);
+    crit = Math.random() < att.critRate + (hit.crit || 0) || Game.eclipseT > 0;   // 월식 : 전부 치명타
     counter = !!(tgt.counterable && tgt.counterable());
     back = !hit.noBack && tgt.facing === sign(tgt.x - att.x) && !tgt.isBoss;
-    if (crit) dmg *= att.critDmg || 1.5;
+    if (crit) dmg *= (att.critDmg || 1.5) + (Game.eclipseT > 0 ? 0.6 : 0);
+    if (att.bloodT > 0) dmg *= 1.4;                                                // 피의 계약
     if (counter) dmg *= 1.25;
     if (back) dmg *= 1.1;
     if (tgt.breakT > 0) dmg *= 1.35;
@@ -194,6 +196,7 @@ function applyHit(att, tgt, hit, o = {}) {
   }
   dmg = Math.max(1, Math.round(dmg));
   if (tgt.isPlayer && tgt.capHit) dmg = Math.min(dmg, Math.round(tgt.hpMax * tgt.capHit));
+  if (Game.tstopT > 0 && !tgt.isPlayer) tgt.tsStore = (tgt.tsStore || 0) + dmg;   // 시간 정지 중 쌓인 피해
 
   // --- 히트스톱 ---
   let stop = hit.stop ?? 5;
@@ -259,6 +262,11 @@ function applyHit(att, tgt, hit, o = {}) {
   // --- 반응 ---
   tgt.takeHit(hit, att, dir, dmg, { crit, counter });
   if (W && W.hit) W.hit(att, tgt, dmg, { crit, ipw, X, Y, hz, dir, hit, back, counter });   // 검 고유 능력
+  if (att.isPlayer && typeof WS !== 'undefined') {
+    if (att.bloodT > 0) Gear.heal(att, Math.min(dmg * 0.08, att.hpMax * 0.015), true);
+    if (att.cloneT > 0) WS.cloneStrike(att, tgt);
+    if (crit && Game.eclipseT > 0) WS.moonbeam(tgt);
+  }
 
   // --- 손맛 연출 ---
   const power = stop / 5;                                  // 타격 강도 (히트스톱 기준)

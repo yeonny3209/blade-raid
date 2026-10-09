@@ -309,7 +309,7 @@ class Enemy extends Entity {
 
   think() {
     const p = Game.player;
-    if (!p || p.hp <= 0 || Game.state !== 'play') { this.vx *= 0.8; this.vy *= 0.8; this.play('idle', 6); return; }
+    if (!p || p.hp <= 0 || Game.state !== 'play' || Game.eclipseT > 0) { this.vx *= 0.8; this.vy *= 0.8; this.play('idle', 6); return; }
     this.ai(p);
   }
 }

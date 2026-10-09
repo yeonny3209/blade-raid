@@ -36,6 +36,25 @@ const UI = {
   },
 
   // ---------- 스킬 아이콘 ----------
+  // 검 고유 스킬 아이콘 (처음 쓸 때 만든다)
+  skIcon(sk) {
+    if (this.icons[sk.icon]) return this.icons[sk.icon];
+    if (!sk.ico) return (this.icons[sk.icon] = this.makeIcon(sk.icon));
+    const S = 2, c = makeCanvas(48 * S, 48 * S), g = c.getContext('2d');
+    g.scale(S, S);
+    const [glyph, col] = sk.ico, rgb = col.split(',').map(Number), ult = sk.key === 's6';
+    const gr = g.createLinearGradient(0, 0, 48, 48);
+    gr.addColorStop(0, `rgb(${rgb.map(v => v * 0.38 | 0)})`); gr.addColorStop(1, `rgb(${rgb.map(v => v * 0.1 | 0)})`);
+    g.fillStyle = gr; g.fillRect(0, 0, 48, 48);
+    const rg = g.createRadialGradient(24, 24, 2, 24, 24, 30);
+    rg.addColorStop(0, 'rgba(255,255,255,0.16)'); rg.addColorStop(1, 'rgba(0,0,0,0.3)');
+    g.fillStyle = rg; g.fillRect(0, 0, 48, 48);
+    WS.glyph(g, glyph, col);
+    if (ult) { g.strokeStyle = 'rgba(255,220,120,0.9)'; g.lineWidth = 2; g.strokeRect(3, 3, 42, 42); }
+    g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 2; g.strokeRect(1, 1, 46, 46);
+    return (this.icons[sk.icon] = c);
+  },
+
   makeIcon(kind) {
     const S = 2, c = makeCanvas(48 * S, 48 * S), g = c.getContext('2d');
     g.scale(S, S);
@@ -329,9 +348,9 @@ const UI = {
     this.globe(ctx, 1018, 664, 48, p.mp / p.mpMax, ['#5aa0ff', '#0c2a8a', '120,170,255'], 'MP', fmt(p.mp));
     // 스킬 슬롯
     const sx = 404, sz = 50, gap = 8, sy0 = 656;
-    SKILLS.forEach((s, i) => {
-      const x = sx + i * (sz + gap);
-      this.slot(ctx, x, sy0, sz, this.icons[s.icon], s.key.replace('s', ''), SKILL_KEY_LABELS[i], p.cd[s.key], s.cd, p.mp < s.mp);
+    SKILLS.forEach((s0, i) => {
+      const x = sx + i * (sz + gap), s = p.skill(s0.key);
+      this.slot(ctx, x, sy0, sz, this.skIcon(s), s.key.replace('s', ''), SKILL_KEY_LABELS[i], p.cd[s.key], s.cd, p.mp < s.mp);
     });
     const px = sx + 6 * (sz + gap) + 16;
     this.slot(ctx, px, sy0 + 3, 44, this.icons.hpPot, '', POTION_KEY_LABELS[0], p.potCd / 60, 0.5, p.pots.hp <= 0, p.pots.hp);
@@ -401,31 +420,34 @@ const UI = {
     ctx.fillStyle = `rgba(0,0,0,${0.72 * (1 - outU)})`; ctx.fillRect(0, 0, W, H);
     ctx.translate(W / 2, H / 2); ctx.rotate(-0.1);
     const bh = 250 * (1 - outU) * inU;
+    const rgb = (c.col || '255,60,40').split(',').map(Number), dk = k => `rgb(${rgb.map(v => v * k | 0)})`;
     const bg = ctx.createLinearGradient(0, -bh / 2, 0, bh / 2);
-    bg.addColorStop(0, '#2a0204'); bg.addColorStop(0.5, '#8a0a0e'); bg.addColorStop(1, '#2a0204');
+    bg.addColorStop(0, dk(0.12)); bg.addColorStop(0.5, dk(0.5)); bg.addColorStop(1, dk(0.12));
     ctx.fillStyle = bg; ctx.fillRect(-W, -bh / 2, W * 2, bh);
     ctx.save(); ctx.beginPath(); ctx.rect(-W, -bh / 2, W * 2, bh); ctx.clip();
     // 집중선
     ctx.globalCompositeOperation = 'lighter';
     for (let i = 0; i < 26; i++) {
       const yy = ((i * 37 + t * 3) % 250) - 125, xx = ((i * 211 + t * 60) % (W * 2)) - W;
-      ctx.fillStyle = `rgba(255,${120 + (i * 13) % 100},90,0.25)`; ctx.fillRect(xx, yy, 260 + (i % 5) * 60, 2);
+      ctx.fillStyle = `rgba(${c.col || '255,120,90'},0.25)`; ctx.fillRect(xx, yy, 260 + (i % 5) * 60, 2);
     }
     ctx.globalCompositeOperation = 'source-over';
     // 캐릭터
     if (!this.cutJ) { this.cutJ = newJ(); solveRig(RIG_PLAYER, PP.hero, this.cutJ, true); }
     ctx.save();
     ctx.translate(-330 + t * 0.9 - (1 - inU) * 300, 190); ctx.scale(3.6, 3.6);
-    ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 0, -70, 90, '255,60,40', 0.45); ctx.globalCompositeOperation = 'source-over';
-    drawPlayer(ctx, this.cutJ, RIG_PLAYER.pal, { bladeGlow: 2, ghostGlow: 1.5 }, {});
+    ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 0, -70, 90, c.col || '255,60,40', 0.45); ctx.globalCompositeOperation = 'source-over';
+    const cp = c.p;
+    drawPlayer(ctx, this.cutJ, cp ? cp.rig.pal : RIG_PLAYER.pal, { bladeGlow: 2, ghostGlow: 1.5, wlook: cp && cp.wlook, adef: cp && cp.adef, id: 0 }, {});
     ctx.restore();
     // 기술명
     const tx = 150 + (1 - inU) * 500 - t * 0.5;
-    ctx.font = `110px ${FONT_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineJoin = 'round'; ctx.lineWidth = 12; ctx.strokeStyle = '#000'; ctx.strokeText('극 귀신참', tx, -14);
-    const tg = ctx.createLinearGradient(0, -70, 0, 40); tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.5, '#ffd0c0'); tg.addColorStop(1, '#ff3a2a');
-    ctx.fillStyle = tg; ctx.fillText('극 귀신참', tx, -14);
-    ctx.font = `28px ${FONT_B}`; ctx.lineWidth = 5; ctx.strokeText('極 · 鬼 神 斬', tx + 40, 66); ctx.fillStyle = '#ffb0a0'; ctx.fillText('極 · 鬼 神 斬', tx + 40, 66);
+    const nm = c.name || '극 귀신참';
+    ctx.font = `${nm.length > 6 ? 84 : 110}px ${FONT_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round'; ctx.lineWidth = 12; ctx.strokeStyle = '#000'; ctx.strokeText(nm, tx, -14);
+    const tg = ctx.createLinearGradient(0, -70, 0, 40); tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.5, `rgb(${rgb.map(v => 255 - (255 - v) * 0.35 | 0)})`); tg.addColorStop(1, `rgb(${c.col || '255,58,42'})`);
+    ctx.fillStyle = tg; ctx.fillText(nm, tx, -14);
+    if (c.sub) { ctx.font = `28px ${FONT_B}`; ctx.lineWidth = 5; ctx.strokeText(c.sub, tx + 40, 66); ctx.fillStyle = `rgb(${rgb.map(v => 255 - (255 - v) * 0.5 | 0)})`; ctx.fillText(c.sub, tx + 40, 66); }
     ctx.restore();
     ctx.strokeStyle = 'rgba(255,200,180,0.8)'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(-W, -bh / 2); ctx.lineTo(W, -bh / 2); ctx.moveTo(-W, bh / 2); ctx.lineTo(W, bh / 2); ctx.stroke();

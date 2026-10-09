@@ -1,11 +1,11 @@
 // 오프라인 캐시 : 한 번 실행하면 인터넷 없이도 플레이 가능
-const CACHE = 'blade-raid-v7';
-const BUILD = '20261008g';
+const CACHE = 'blade-raid-v8';
+const BUILD = '20261009a';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './js/util.js?v=' + BUILD, './js/input.js?v=' + BUILD, './js/audio.js?v=' + BUILD, './js/rig.js?v=' + BUILD, './js/characters.js?v=' + BUILD,
   './js/anims.js?v=' + BUILD, './js/fx.js?v=' + BUILD, './js/entity.js?v=' + BUILD, './js/player.js?v=' + BUILD, './js/enemies.js?v=' + BUILD,
-  './js/boss.js?v=' + BUILD, './js/themes.js?v=' + BUILD, './js/themes2.js?v=' + BUILD, './js/items.js?v=' + BUILD, './js/shop.js?v=' + BUILD, './js/stage.js?v=' + BUILD, './js/dungeons.js?v=' + BUILD,
+  './js/boss.js?v=' + BUILD, './js/themes.js?v=' + BUILD, './js/themes2.js?v=' + BUILD, './js/items.js?v=' + BUILD, './js/wskills.js?v=' + BUILD, './js/shop.js?v=' + BUILD, './js/stage.js?v=' + BUILD, './js/dungeons.js?v=' + BUILD,
   './js/ui.js?v=' + BUILD, './js/touch.js?v=' + BUILD, './js/lobby.js?v=' + BUILD, './js/game.js?v=' + BUILD,
   './fonts/BlackHanSans-Regular.ttf',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/icon-180.png',
