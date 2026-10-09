@@ -27,10 +27,42 @@
     -webkit-tap-highlight-color: transparent;
   }
   canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block; }
+  /* 앱 다운로드 버튼 (웹에서만, 타이틀·로비 화면에 표시) */
+  #dlbar { position: fixed; right: 14px; bottom: 14px; display: none; flex-direction: column; gap: 8px; z-index: 10; font-family: 'Black Han Sans', 'Malgun Gothic', sans-serif; }
+  #dlbar a, #dlbar button {
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(180deg, rgba(60,46,18,0.95), rgba(28,22,10,0.95)); color: #ffe9a6; text-decoration: none;
+    border: 2px solid #c9a55c; font: inherit; font-size: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+  #dlbar a:hover, #dlbar button:hover { border-color: #ffd24a; filter: brightness(1.15); }
+  #dlbar small { display: block; font-family: 'Malgun Gothic', sans-serif; font-size: 11px; color: #b8a888; font-weight: 700; }
+  #dlbar svg { flex: none; }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
+<div id="dlbar">
+  <a id="dlApk" href="https://github.com/yeonny3209/blade-raid/releases/latest/download/BladeRaid.apk" download="BladeRaid.apk">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="#a4d65e"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-5.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48A5.84 5.84 0 0 0 12 1c-.96 0-1.86.23-2.66.63L7.85.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.31 1.31A5.983 5.983 0 0 0 6 7h12c0-1.99-.97-3.75-2.47-4.84zM10 5H9V4h1v1zm5 0h-1V4h1v1z"/></svg>
+    <span>안드로이드 앱 다운로드<small>APK · 설치하면 오프라인으로 플레이</small></span>
+  </a>
+  <button id="dlPwa" style="display:none">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="#8fd0ff"><path d="M12 16l-5-5h3V4h4v7h3l-5 5zm-7 2h14v2H5v-2z"/></svg>
+    <span>이 기기에 바로 설치<small>홈 화면에 아이콘 추가</small></span>
+  </button>
+</div>
+<script>
+  // 홈 화면 설치 (지원하는 브라우저에서만 버튼이 나타난다)
+  let installEvt = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; document.getElementById('dlPwa').style.display = 'flex'; });
+  addEventListener('appinstalled', () => { installEvt = null; document.getElementById('dlPwa').style.display = 'none'; });
+  document.getElementById('dlPwa').addEventListener('click', async () => {
+    if (!installEvt) return;
+    installEvt.prompt();
+    try { await installEvt.userChoice; } catch (e) { }
+    installEvt = null; document.getElementById('dlPwa').style.display = 'none';
+  });
+</script>
 <script>
   // 서비스 워커 : 설치 + 오프라인 실행
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
@@ -39,7 +71,7 @@
 </script>
 <script>
   // 파일이 섞이지 않도록 한 번에 같은 버전으로 로드
-  const BUILD = '20261011c';
+  const BUILD = '20261012a';
   ['util', 'input', 'audio', 'rig', 'characters', 'anims', 'fx', 'entity', 'player', 'enemies', 'boss', 'themes', 'themes2', 'stage', 'dungeons', 'creatures', 'creatures2', 'creatures3', 'mobs', 'items', 'wskills', 'ui', 'touch', 'lobby', 'shop', 'game']
     .forEach(n => document.write(`<script src="js/${n}.js?v=${BUILD}"><\/script>`));
 </script>

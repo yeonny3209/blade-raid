@@ -405,7 +405,14 @@ const Game = {
   startCutin(p, o = {}) { this.cutin = { t: 0, dur: 84, p, name: o.name || '극 귀신참', sub: o.sub || '', col: o.col || '255,60,40' }; Sfx.play('cutin'); },
 
   // ---------------- 렌더 ----------------
+  // 앱 다운로드 버튼 : 웹에서 타이틀·로비 화면일 때만 (앱 안에서는 숨김)
+  updateDlBar() {
+    const show = location.protocol !== 'file:' && !window.matchMedia('(display-mode: standalone)').matches && (this.state === 'title' || this.state === 'lobby');
+    if (show !== this.dlShown) { this.dlShown = show; const el = document.getElementById('dlbar'); if (el) el.style.display = show ? 'flex' : 'none'; }
+  },
+
   render() {
+    this.updateDlBar();
     const ctx = this.ctx;
     ctx.setTransform(this.ps, 0, 0, this.ps, 0, 0);
     ctx.imageSmoothingEnabled = true;

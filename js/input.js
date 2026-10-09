@@ -40,7 +40,7 @@ const Input = {
     addEventListener('keyup', e => this.release(codeOf(e)));
     // 마우스 좌클릭 = 기본 공격
     addEventListener('mousedown', e => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || (e.target.closest && e.target.closest('#dlbar'))) return;
       e.preventDefault();          // 드래그로 텍스트/이미지가 선택되지 않게
       this.press('Mouse0');
     });

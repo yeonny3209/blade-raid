@@ -57,7 +57,7 @@ const Touch = {
   },
 
   down(e) {
-    if (e.pointerType === 'mouse') return;
+    if (e.pointerType === 'mouse' || (e.target.closest && e.target.closest('#dlbar'))) return;
     this.on = true;
     e.preventDefault();
     this.goFullscreen();
