@@ -1,6 +1,6 @@
 // 오프라인 캐시 : 한 번 실행하면 인터넷 없이도 플레이 가능
-const CACHE = 'blade-raid-v11';
-const BUILD = '20261012a';
+const CACHE = 'blade-raid-v12';
+const BUILD = '20261012b';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './js/util.js?v=' + BUILD, './js/input.js?v=' + BUILD, './js/audio.js?v=' + BUILD, './js/rig.js?v=' + BUILD, './js/characters.js?v=' + BUILD,
@@ -31,12 +31,15 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // 다른 주소(깃허브 APK 다운로드 등)는 브라우저가 직접 처리하게 둔다.
+  // 가로채면 다운로드가 깨지고 캐시된 index.html 이 APK 로 덮어써진다.
+  if (new URL(req.url).origin !== self.location.origin) return;
   // 문서는 네트워크 우선 : 새 버전이 나오면 바로 반영되게
   if (req.mode === 'navigate') {
     e.respondWith((async () => {
       try {
         const res = await fetch(req);
-        const c = await caches.open(CACHE); c.put('./index.html', res.clone()).catch(() => { });
+        if (res.ok && (res.headers.get('content-type') || '').includes('text/html')) { const c = await caches.open(CACHE); c.put('./index.html', res.clone()).catch(() => { }); }
         return res;
       } catch (err) {
         return (await caches.match('./index.html')) || Response.error();

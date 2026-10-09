@@ -23,6 +23,7 @@ const Shop = {
     this.t = 0; this.msgT = 0; this.step = 0; this.hitDone = true;
     if (!this.inited) {
       this.inited = true;
+      addEventListener('wheel', e => { if (Game.state === 'shop') this.scrollBy(e.deltaY > 0 ? 1 : -1); }, { passive: true });
       addEventListener('mousemove', e => {
         if (Game.state !== 'shop') return;
         const r = Game.canvas.getBoundingClientRect();
@@ -92,15 +93,38 @@ const Shop = {
     const inR = r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
     if (inR(this.backRect())) { this.leave(); return true; }
     for (let i = 0; i < 2; i++) if (inR(this.tabRect(i))) { this.setTab(i); return true; }
+    if (inR(this.upRect())) { this.scrollBy(-3); return true; }
+    if (inR(this.downRect())) { this.scrollBy(3); return true; }
     if (inR(this.btnRect())) { this.act(); return true; }
     if (x >= this.LX && x <= this.LX + this.LW && y >= this.LY && y < this.LY + this.ROWS * this.ROW_H) {
       const i = this.scroll[this.tab] + Math.floor((y - this.LY) / this.ROW_H);
-      if (i < this.items().length) { if (i === this.sel[this.tab]) this.act(); else this.setSel(i); }
+      if (i < this.items().length && i !== this.sel[this.tab]) this.setSel(i);
       return true;
     }
     return false;
   },
-  touchAt(x, y) { this.clickAt(x, y); },
+  // ----- 터치 : 목록을 위아래로 끌어 스크롤, 짧게 탭하면 선택 -----
+  touchDown(x, y) {
+    const inList = x >= this.LX && x <= this.LX + this.LW + 20 && y >= this.LY && y < this.LY + this.ROWS * this.ROW_H;
+    this.td = { x, y, s: this.scroll[this.tab], drag: false, inList };
+  },
+  touchMove(x, y) {
+    const t = this.td; if (!t || !t.inList) return;
+    const dy = y - t.y;
+    if (!t.drag && Math.abs(dy) > 14) t.drag = true;
+    if (t.drag) {
+      const max = Math.max(0, this.items().length - this.ROWS), ns = clamp(Math.round(t.s - dy / this.ROW_H), 0, max);
+      if (ns !== this.scroll[this.tab]) { this.scroll[this.tab] = ns; Sfx.play('ui', 0.25, 1.4); }
+    }
+  },
+  touchUp(x, y) { const t = this.td; this.td = null; if (t && !t.drag) this.clickAt(x, y); },
+  scrollBy(n) {
+    const max = Math.max(0, this.items().length - this.ROWS);
+    this.scroll[this.tab] = clamp(this.scroll[this.tab] + n, 0, max);
+    Sfx.play('ui', 0.4, 1.3);
+  },
+  upRect() { return { x: this.LX + 300, y: 90, w: 80, h: 42 }; },
+  downRect() { return { x: this.LX + 390, y: 90, w: 80, h: 42 }; },
 
   // ---------- 매 프레임 ----------
   update() {
@@ -224,7 +248,12 @@ const Shop = {
       ctx.strokeStyle = on ? '#ffd24a' : 'rgba(150,160,190,0.35)'; ctx.lineWidth = on ? 2.4 : 1.2; ctx.stroke();
       UI.text(ctx, i ? `방어구  ${Save.data.owned.a.length}/${ARMORS.length}` : `검  ${Save.data.owned.w.length}/${WEAPONS.length}`, r.x + r.w / 2, r.y + 26, { size: 17, align: 'center', fill: on ? '#ffe9a6' : '#8a94b4', stroke: 3 });
     }
-    if (!Touch.on) UI.text(ctx, '← →  전환', this.LX + 330, 112, { size: 12, font: FONT_B, weight: 700, fill: '#6a7494', stroke: 3 });
+    const max = Math.max(0, this.items().length - this.ROWS);
+    for (const [r, lab, ok] of [[this.upRect(), '▲', this.scroll[this.tab] > 0], [this.downRect(), '▼', this.scroll[this.tab] < max]]) {
+      ctx.fillStyle = ok ? 'rgba(54,44,22,0.95)' : 'rgba(20,20,28,0.7)'; roundRect(ctx, r.x, r.y, r.w, r.h, 9); ctx.fill();
+      ctx.strokeStyle = ok ? '#ffd24a' : 'rgba(150,160,190,0.3)'; ctx.lineWidth = 2; ctx.stroke();
+      UI.text(ctx, lab, r.x + r.w / 2, r.y + 23, { size: 20, align: 'center', fill: ok ? '#ffe9a6' : '#5a6070', stroke: 3 });
+    }
 
     this.drawList(ctx);
     this.drawStage(ctx);
@@ -236,8 +265,10 @@ const Shop = {
       ctx.globalAlpha = a;
       UI.text(ctx, this.msg, W / 2, 682, { size: 22, align: 'center', fill: this.msgCol, stroke: 5 });
       ctx.globalAlpha = 1;
+    } else if (Touch.on) {
+      UI.text(ctx, '목록을 위아래로 밀어 스크롤 · 탭하면 선택 · 오른쪽 아래 큰 버튼으로 구매/장착', W / 2, 682, { size: 14, align: 'center', font: FONT_B, weight: 700, fill: '#7a84a4', stroke: 3 });
     } else if (!Touch.on) {
-      UI.text(ctx, '↑ ↓  고르기      Enter / Space  구매·장착      B / Esc  돌아가기', W / 2, 682, { size: 15, align: 'center', font: FONT_B, weight: 700, fill: '#6a7494', stroke: 3 });
+      UI.text(ctx, '↑ ↓ / 휠  고르기      Enter / Space  구매·장착      B / Esc  돌아가기', W / 2, 682, { size: 15, align: 'center', font: FONT_B, weight: 700, fill: '#6a7494', stroke: 3 });
     }
     ctx.drawImage(UI.vignette, 0, 0);
     FX.draw(ctx, 'top');

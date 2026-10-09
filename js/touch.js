@@ -69,7 +69,7 @@ const Touch = {
       if (Math.hypot(x - pb.x, y - pb.y) < pb.r * 1.4) { pb.ptr = e.pointerId; pb.glow = 1; Input.press('T_pause'); return; }
     }
     if (Game.state === 'lobby') { this.menuPtr = e.pointerId; Lobby.touchAt(x, y); return; }   // 로비 : 카드 직접 선택
-    if (Game.state === 'shop') { this.menuPtr = e.pointerId; Shop.touchAt(x, y); return; }     // 상점 : 항목 직접 선택
+    if (Game.state === 'shop') { this.menuPtr = e.pointerId; Shop.touchDown(x, y); return; }    // 상점 : 드래그 스크롤 / 탭 선택
     if (Game.state === 'paused') { this.menuPtr = e.pointerId; Input.press('T_pause'); return; }  // 아무 데나 터치 = 계속
     if (!this.playing()) {                                             // 타이틀 / 결과 / 컨티뉴
       this.menuPtr = e.pointerId;
@@ -85,6 +85,7 @@ const Touch = {
 
   move(e) {
     if (!this.on || e.pointerType === 'mouse') return;
+    if (this.menuPtr === e.pointerId && Game.state === 'shop') { e.preventDefault(); const [x, y] = this.toLogical(e); Shop.touchMove(x, y); return; }
     if (this.stick && this.stick.id === e.pointerId) {
       e.preventDefault();
       const [x, y] = this.toLogical(e);
@@ -101,6 +102,7 @@ const Touch = {
     if (this.stick && this.stick.id === e.pointerId) { this.stick = null; this.apply(); }
     for (const b of this.btns) if (b.ptr === e.pointerId) { b.ptr = null; Input.release('T_' + b.id); }
     // 메뉴 탭은 눌린 채 남지 않도록 반드시 떼어준다 (도중에 화면이 바뀌어도)
+    if (this.menuPtr === e.pointerId && Game.state === 'shop') { const [x, y] = this.toLogical(e); Shop.touchUp(x, y); }
     if (this.menuPtr === e.pointerId) { this.menuPtr = null; Input.release('T_attack'); Input.release('T_pause'); }
   },
 
