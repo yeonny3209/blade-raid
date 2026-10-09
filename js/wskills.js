@@ -41,11 +41,12 @@ const WS = {
   cutin(p, name, sub, col) { Game.startCutin(p, { name, sub, col }); },
   hd(o) { return Object.assign({ dmg: 1, kx: 3, airKz: 5, stun: 30, stop: 5, shake: 3 }, o); },
 
-  reset() { Game.tstopT = 0; Game.eclipseT = 0; Game.frostT = 0; Game.stormT = 0; Game.crack = null; },
+  reset() { Game.tstopT = 0; Game.eclipseT = 0; Game.frostT = 0; Game.stormT = 0; Game.crack = null; Game.inkT = 0; },
   tick() {
     if (Game.eclipseT > 0) Game.eclipseT--;
     if (Game.frostT > 0) Game.frostT--;
     if (Game.stormT > 0) Game.stormT--;
+    if (Game.inkT > 0) Game.inkT--;
     if (Game.crack && Game.crack.t > 0) Game.crack.t--;
   },
 
@@ -84,6 +85,12 @@ const WS = {
   // 화면 전체 연출 (월드 위, UI 아래)
   overlay(ctx) {
     const t = Game.time;
+    if (Game.inkT > 0 && Game.player) {                      // 크라켄의 먹물 : 내 주변만 보인다
+      const p = Game.player, a = Math.min(1, Game.inkT / 30, (300 - Game.inkT) / 20), X = p.x - Game.cam.x, Y = sy(p.y, p.z + 60);
+      const g = ctx.createRadialGradient(X, Y, 120, X, Y, 360);
+      g.addColorStop(0, 'rgba(4,6,16,0)'); g.addColorStop(1, `rgba(4,6,16,${0.92 * a})`);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
     if (Game.tstopT > 0) {
       const a = Math.min(1, Game.tstopT / 20, (270 - Game.tstopT) / 12 + 0.2);
       ctx.fillStyle = `rgba(40,60,90,${0.38 * a})`; ctx.fillRect(0, 0, W, H);

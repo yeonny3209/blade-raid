@@ -370,14 +370,14 @@ class Player extends Entity {
     const P = typeof playerPower === 'function' ? playerPower() : 1;
     this.power = P;
     this.lv = typeof playerLevel === 'function' ? playerLevel() : 70;
-    this.base = { hp: Math.round(34000 * (1 + (P - 1) * 0.35)), atk: Math.round(3000 * P), mpRegen: 42 };
+    this.base = { hp: Math.round(34000 * 1.3 * (1 + (P - 1) * 0.35)), atk: Math.round(3000 * P), mpRegen: 48 };
     this.mpMax = 1500; this.sinceHit = 999; this.novaCd = 0; this.wcd = 0; this.shield = 0;
     this.setGear();
     this.hp = this.hpMax; this.mp = this.mpMax;
     this.state = 'ground'; this.running = false; this.act = null; this.af = 0; this.stT = 0;
     this.buf = {}; this.dashDir = 0;
     this.cd = {}; for (const s of SKILLS) this.cd[s.key] = 0;
-    this.pots = { hp: 3, mp: 3 }; this.potCd = 0;
+    this.pots = { hp: 5, mp: 5 }; this.potCd = 0;
     this.swing = newSwing(); this.hitCount = 0;
     this.tail = new Chain(4, 9, 0.42, 0.86);
     this.ribbon = new Chain(4, 7, 0.3, 0.84);
@@ -460,6 +460,7 @@ class Player extends Entity {
     if (this.shield > 0) this.shield--;
     if (this.novaCd > 0) this.novaCd--;
     if (this.bloodT > 0) this.bloodT--;
+    if (this.slowT > 0) { this.slowT--; if (Game.frame % 6 === 0) FX.add('world', new Mote(this.x + rand(-20, 20), sy(this.y, rand(20, 120)), 0, 0.4, { col: '200,200,140', life: 20, r: 5, grav: 0 })); }
     if (this.cloneT > 0) this.cloneT--;
     if (this.guardT > 0) this.guardT--;
     if (this.hasteT > 0) { this.hasteT--; if (Game.frame % 4 === 0) this.afterOn = Math.max(this.afterOn, 3); }
@@ -688,7 +689,7 @@ class Player extends Entity {
     if (this.has('dash') && this.dashDir === ax) { this.running = true; this.use('dash'); }
     if (ax === 0) this.running = false;
     if (ax) { if (ax !== this.facing && this.running) this.running = false; this.facing = ax; }
-    const sp = (this.running ? 7 : 3.7) * this.moveMul;
+    const sp = (this.running ? 7 : 3.7) * this.moveMul * (this.slowT > 0 ? 0.55 : 1);
     this.vx = ax * sp; this.vy = ay * (this.running ? 3.1 : 2.6);
     if (this.landT > 0) this.landT--;
     if (this.tryGroundActions()) return;
@@ -715,7 +716,7 @@ class Player extends Entity {
 
   stAir() {
     const ax = Input.axisX(), ay = Input.axisY();
-    const sp = (this.running ? 6.6 : 3.7) * this.moveMul;
+    const sp = (this.running ? 6.6 : 3.7) * this.moveMul * (this.slowT > 0 ? 0.55 : 1);
     this.vx = approach(this.vx, ax * sp, 0.55);
     this.vy = approach(this.vy, ay * 2.2, 0.4);
     if (ax) this.facing = ax;

@@ -36,8 +36,8 @@ class Boss extends Enemy {
     const D = Game.dungeon && Game.dungeon.def;
     if (D) {
       this.lv = D.lv + 4;
-      this.hpMax = this.hp = Math.round(1250000 * D.mul);
-      this.atk = Math.round(5000 * Math.pow(D.mul, 0.62));
+      this.hpMax = this.hp = Math.round(1250000 * D.mul * DIFF.bossHp);
+      this.atk = Math.round(5000 * Math.pow(D.mul, 0.62) * DIFF.bossAtk);
       this.lines = Math.max(20, Math.round(62 * Math.pow(D.mul, 0.3)));
       this.gold = [Math.round(40 * D.mul), Math.round(60 * D.mul)];
     }

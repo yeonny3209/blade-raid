@@ -236,10 +236,14 @@ const UI = {
     ctx.save();
     ctx.fillStyle = 'rgba(10,4,4,0.78)'; roundRect(ctx, x - 78, y - 26, w + 96, 66, 10); ctx.fill();
     ctx.strokeStyle = 'rgba(200,60,40,0.6)'; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.drawImage(this.cached('bp_' + !!b.enraged, 64, 64, g => {
+    ctx.drawImage(this.cached('bp_' + b.name + !!b.enraged, 64, 64, g => {
       g.save(); g.beginPath(); g.arc(32, 32, 28, 0, TAU); g.fillStyle = '#200606'; g.fill(); g.clip();
-      g.translate(24, 39); g.scale(0.95, 0.95);
-      bossHead(g, this.pJ, RIG_BOSS.pal, 1.6, b, {});
+      if (b.portrait) b.portrait(g);
+      else {
+        g.translate(24, 39); g.scale(0.95, 0.95);
+        const hf = b.rig && b.rig.head === 'skull' ? bossHeadSkull : b.rig && b.rig.head === 'eye' ? bossHeadEye : bossHead;
+        hf(g, this.pJ, b.rig ? b.rig.pal : RIG_BOSS.pal, 1.6, b, {});
+      }
       g.restore();
       g.strokeStyle = '#c03020'; g.lineWidth = 2.5; g.beginPath(); g.arc(32, 32, 28, 0, TAU); g.stroke();
     }), x - 74, y - 25, 64, 64);
@@ -599,9 +603,10 @@ const UI = {
       ctx.save(); ctx.globalAlpha = a;
       const x = 150 + (1 - E.out3(Math.min(1, u / 18))) * -200;
       ctx.fillStyle = 'rgba(120,10,10,0.6)'; ctx.fillRect(0, 420, W * 0.7 * E.out3(Math.min(1, u / 14)), 4);
-      this.text(ctx, '뿔의 군주', x, 460, { size: 30, fill: '#ffb0a0', stroke: 5 });
-      this.text(ctx, '바르카스', x, 520, { size: 72, fill: '#fff', stroke: 8, italic: true });
-      this.text(ctx, 'Lv.70  네임드 보스', x + 6, 572, { size: 18, fill: '#e0c080', stroke: 4 });
+      const b = Game.boss || {}, nm = b.name || '', title = b.title || '';
+      this.text(ctx, title, x, 460, { size: 30, fill: '#ffb0a0', stroke: 5 });
+      this.text(ctx, nm, x, 520, { size: nm.length > 9 ? 54 : 72, fill: '#fff', stroke: 8, italic: true });
+      this.text(ctx, `Lv.${b.lv || 70}  네임드 보스`, x + 6, 572, { size: 18, fill: '#e0c080', stroke: 4 });
       ctx.restore();
     }
   },

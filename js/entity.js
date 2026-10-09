@@ -191,6 +191,7 @@ function applyHit(att, tgt, hit, o = {}) {
     if (back) dmg *= 1.1;
     if (tgt.breakT > 0) dmg *= 1.35;
     if (W && W.mod) dmg *= W.mod(att, tgt, dmg, { back, crit, counter, hit });
+    if (tgt.dmgMul) dmg *= tgt.dmgMul(att);                                          // 보스 고유 방어 (바위 껍질 등)
   } else if (tgt.isPlayer) {
     dmg *= (tgt.takeMul || 1) * (tgt.shield > 0 ? 0.7 : 1);                        // 방어구 : 피해 감소
   }

@@ -146,7 +146,7 @@ const Game = {
     this.player.reset(110, DEPTH / 2);
     Touch.release();
     this.cam.x = 0; this.dim = 0; this.dimTarget = 0; this.zoom = 1; this.hurtA = 0; this.flash = 0; this.speedT = 0; this.kickX = 0; this.kickY = 0; this.freezeT = 0;
-    this.tokenMax = i >= 2 ? 3 : 2;
+    this.tokenMax = 2;
     this.room.spawnWave(0, true);
     this.fade = 1; this.fadeDir = -1;
     if (this.room.def.boss) {

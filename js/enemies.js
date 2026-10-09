@@ -2,6 +2,9 @@
 // ============================================================
 //  몬스터 : 기본 클래스 + 종류별 AI
 // ============================================================
+// 난이도 : 일반 몬스터 체력·공격력 / 보스 체력·공격력 배율
+const DIFF = { hp: 0.85, atk: 0.68, bossHp: 0.72, bossAtk: 0.7 };
+
 const ENEMY_TYPES = {
   goblin: { hitMat: 'flesh', voice: 'goblin', bloodCol: ['#3f8a22', '#7ccf46'], name: '고블린 전사', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 16000, atk: 1700, speed: 2.4, w: 15, d: 12, h: 92, weight: 1, range: 70, gear: 'helm', gold: [3, 6] },
   thrower: { hitMat: 'flesh', voice: 'goblin', bloodCol: ['#3f8a22', '#7ccf46'], name: '고블린 투척병', lv: 62, rig: RIG_GOBLIN, anims: ANIM_GOB, hpMax: 11000, atk: 1500, speed: 2.2, w: 15, d: 12, h: 92, weight: 1, range: 320, gear: 'band', gold: [3, 6] },
@@ -30,8 +33,8 @@ class Enemy extends Entity {
       const sk = SKINS[D.theme];
       if (sk) { this.rig = themedRig(T.rig, D.theme); this.name = sk.pre + T.name; }
       this.lv = D.lv;
-      this.hpMax = Math.round(T.hpMax * D.mul);
-      this.atk = Math.round(T.atk * Math.pow(D.mul, 0.62));
+      this.hpMax = Math.round(T.hpMax * D.mul * DIFF.hp);
+      this.atk = Math.round(T.atk * Math.pow(D.mul, 0.62) * DIFF.atk);
     }
     this.hp = this.hpMax;
     this.x = this.px = x; this.y = y; this.facing = -1;
