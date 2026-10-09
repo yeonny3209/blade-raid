@@ -31,7 +31,7 @@ class Enemy extends Entity {
     const D = Game.dungeon && Game.dungeon.def;
     if (D) {
       const sk = SKINS[D.theme];
-      if (sk) { this.rig = themedRig(T.rig, D.theme); this.name = sk.pre + T.name; }
+      if (sk && !T.mob) { this.rig = themedRig(T.rig, D.theme); this.name = sk.pre + T.name; }
       this.lv = D.lv;
       this.hpMax = Math.round(T.hpMax * D.mul * DIFF.hp);
       this.atk = Math.round(T.atk * Math.pow(D.mul, 0.62) * DIFF.atk);

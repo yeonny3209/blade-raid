@@ -81,7 +81,7 @@ class Room {
     const list = this.def.waves[i];
     list.forEach(([k, x, y], j) => {
       const BD = BOSS_DEFS[Game.dungeon.def.boss];
-      const e = k === 'boss' ? (BD.body ? new CBoss(x, y, BD) : new Boss(x, y, BD)) : new Enemy(k, x, y);
+      const e = k === 'boss' ? (BD.body ? new CBoss(x, y, BD) : new Boss(x, y, BD)) : makeEnemy(k, x, y);
       if (!pre) e.spawnIn(j * 8);
       else { e.aiWait = randi(40, 90) + j * 10; }
       Game.enemies.push(e);

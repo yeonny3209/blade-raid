@@ -421,7 +421,7 @@ Object.assign(BOSS_ACTS, {
         for (let i = 0; i < n; i++) {
           let q = rand(0, tot), k = D.pool[0][0];
           for (const [kk, w] of D.pool) { q -= w; if (q <= 0) { k = kk; break; } }
-          const en = new Enemy(k, clamp(e.x + (i % 2 ? 1 : -1) * rand(180, 460), r.minX + 40, r.maxX - 40), rand(30, DEPTH - 30));
+          const en = makeEnemy(k, clamp(e.x + (i % 2 ? 1 : -1) * rand(180, 460), r.minX + 40, r.maxX - 40), rand(30, DEPTH - 30));
           en.hpMax = en.hp = Math.round(en.hpMax * 0.3);
           en.spawnIn(i * 8); Game.enemies.push(en);
         }

@@ -89,7 +89,7 @@ const BX = {
   summon(b, n, hpMul = 0.3, kinds) {
     const D = Game.dungeon.def, r = Game.room, pool = kinds || D.pool.map(q => q[0]);
     for (let i = 0; i < n; i++) {
-      const en = new Enemy(choose(pool), clamp(b.x + (i % 2 ? 1 : -1) * rand(160, 420), r.minX + 40, r.maxX - 40), rand(30, DEPTH - 30));
+      const en = makeEnemy(choose(pool), clamp(b.x + (i % 2 ? 1 : -1) * rand(160, 420), r.minX + 40, r.maxX - 40), rand(30, DEPTH - 30));
       en.hpMax = en.hp = Math.round(en.hpMax * hpMul);
       en.spawnIn(i * 8); Game.enemies.push(en);
     }

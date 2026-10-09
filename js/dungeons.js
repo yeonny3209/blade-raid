@@ -183,104 +183,104 @@ const DUNGEONS = [
   {
     id: 'forest', name: '어둠의 숲', theme: 'forest', lv: 62, seed: 11,
     desc: '고블린 무리가 자리잡은 밤의 숲.',
-    rooms: 4, pool: [['goblin', 5], ['thrower', 2], ['orc', 1]], boss: 'varkas', mul: 1,
+    rooms: 4, pool: [['goblin', 4], ['thrower', 2], ['wolf', 3], ['mushroom', 2], ['orc', 1]], boss: 'varkas', mul: 1,
   },
   {
     id: 'ruins', name: '잊혀진 신전', theme: 'ruins', lv: 65, seed: 23,
     desc: '술사들이 지키는 무너진 석조 신전.',
-    rooms: 4, pool: [['goblin', 3], ['mage', 3], ['orc', 2]], boss: 'gravelord', mul: 1.35,
+    rooms: 4, pool: [['skeleton', 3], ['gargoyle', 2], ['mage', 2], ['goblin', 2], ['orc', 1]], boss: 'gravelord', mul: 1.35,
   },
   {
     id: 'frost', name: '얼어붙은 설원', theme: 'frost', lv: 68, seed: 37,
     desc: '오로라 아래 끝없이 눈보라가 치는 벌판.',
-    rooms: 5, pool: [['goblin', 3], ['thrower', 3], ['orc', 2]], boss: 'frostjarl', mul: 1.8,
+    rooms: 5, pool: [['yeti', 2], ['slime', 3], ['wolf', 3], ['thrower', 2]], boss: 'frostjarl', mul: 1.8,
   },
   {
     id: 'mine', name: '버려진 광산', theme: 'mine', lv: 71, seed: 51,
     desc: '수정이 자라난 깊은 갱도.',
-    rooms: 5, pool: [['goblin', 4], ['orc', 3], ['mage', 2]], boss: 'ironwarden', mul: 2.3,
+    rooms: 5, pool: [['bat', 3], ['mole', 3], ['goblin', 2], ['orc', 2]], boss: 'ironwarden', mul: 2.3,
   },
   {
     id: 'desert', name: '사막의 유적', theme: 'desert', lv: 74, seed: 67,
     desc: '모래에 잠긴 파라오의 무덤.',
-    rooms: 5, pool: [['thrower', 4], ['mage', 3], ['orc', 3]], boss: 'sandking', mul: 3,
+    rooms: 5, pool: [['scorpion', 3], ['mummy', 3], ['thrower', 2], ['mage', 1]], boss: 'sandking', mul: 3,
   },
   {
     id: 'swamp', name: '죽음의 늪', theme: 'swamp', lv: 77, seed: 83,
     desc: '독 안개가 걷히지 않는 썩은 습지.',
-    rooms: 5, pool: [['goblin', 3], ['mage', 4], ['orc', 3]], boss: 'plaguefen', mul: 3.9,
+    rooms: 5, pool: [['rat', 3], ['mushroom', 3], ['slime', 2], ['mage', 2]], boss: 'plaguefen', mul: 3.9,
   },
   {
     id: 'factory', name: '강철 공장', theme: 'factory', lv: 80, seed: 97,
     desc: '아직도 돌아가는 기계 도시의 심장부.',
-    rooms: 6, pool: [['orc', 4], ['thrower', 3], ['mage', 3]], boss: 'emberfang', mul: 5,
+    rooms: 6, pool: [['turret', 2], ['drone', 3], ['orc', 3], ['goblin', 2]], boss: 'emberfang', mul: 5,
   },
   {
     id: 'sky', name: '천상의 회랑', theme: 'sky', lv: 83, seed: 113,
     desc: '구름 위에 떠 있는 하얀 신전.',
-    rooms: 6, pool: [['mage', 4], ['orc', 4], ['goblin', 2]], boss: 'stormseraph', mul: 6.4,
+    rooms: 6, pool: [['aegis', 2], ['gargoyle', 3], ['mage', 2], ['drone', 1]], boss: 'stormseraph', mul: 6.4,
   },
   {
     id: 'abyss', name: '심연의 나락', theme: 'abyss', lv: 86, seed: 131,
     desc: '별이 뒤틀린 공허의 밑바닥.',
-    rooms: 6, pool: [['mage', 5], ['orc', 4], ['thrower', 2]], boss: 'voidmaw', mul: 8,
+    rooms: 6, pool: [['wisp', 3], ['eye', 3], ['mage', 2], ['orc', 1]], boss: 'voidmaw', mul: 8,
   },
   {
     id: 'lair', name: '군주의 옥좌', theme: 'lair', lv: 90, seed: 149,
     desc: '모든 것이 끝나는 화염의 왕좌.',
-    rooms: 6, pool: [['orc', 5], ['mage', 4], ['goblin', 3]], boss: 'doomking', mul: 10,
+    rooms: 6, pool: [['imp', 3], ['orc', 3], ['wolf', 2], ['mage', 1]], boss: 'doomking', mul: 10,
   },
 
   // ===================== 제2지역 : 신화의 땅 =====================
   {
     id: 'bloodmoon', name: '핏빛 달의 성', theme: 'bloodmoon', lv: 94, seed: 163,
     desc: '붉은 달 아래 흡혈귀가 군림하는 고성.',
-    rooms: 5, pool: [['mage', 4], ['goblin', 3], ['orc', 3]], boss: 'dracul', mul: 14.4,
+    rooms: 5, pool: [['bat', 3], ['skeleton', 2], ['wisp', 2], ['mage', 2], ['orc', 1]], boss: 'dracul', mul: 14.4,
   },
   {
     id: 'crystal', name: '수정 심연 동굴', theme: 'crystal', lv: 97, seed: 179,
     desc: '무지갯빛 수정이 빛나는 거대한 지하 공동.',
-    rooms: 5, pool: [['mage', 3], ['orc', 4], ['thrower', 3]], boss: 'prism', mul: 17.4,
+    rooms: 5, pool: [['crystalling', 3], ['gargoyle', 2], ['bat', 2], ['mage', 1]], boss: 'prism', mul: 17.4,
   },
   {
     id: 'deep', name: '가라앉은 해저 신전', theme: 'deep', lv: 100, seed: 197,
     desc: '바다 밑에 잠든 고대 신전.',
-    rooms: 5, pool: [['thrower', 4], ['goblin', 3], ['mage', 3]], boss: 'kraken', mul: 21,
+    rooms: 5, pool: [['fishman', 4], ['slime', 2], ['eye', 2]], boss: 'kraken', mul: 21,
   },
   {
     id: 'grave', name: '망자의 공동묘지', theme: 'grave', lv: 103, seed: 211,
     desc: '안개 속에서 망자들이 일어서는 묘지.',
-    rooms: 6, pool: [['goblin', 5], ['orc', 3], ['mage', 2]], boss: 'deathknight', mul: 25,
+    rooms: 6, pool: [['skeleton', 3], ['mummy', 2], ['wisp', 3], ['rat', 1]], boss: 'deathknight', mul: 25,
   },
   {
     id: 'jungle', name: '태고의 밀림', theme: 'jungle', lv: 106, seed: 227,
     desc: '거대한 식물이 모든 것을 삼키는 정글.',
-    rooms: 6, pool: [['goblin', 4], ['thrower', 3], ['orc', 3]], boss: 'flora', mul: 30,
+    rooms: 6, pool: [['pod', 3], ['rat', 2], ['scorpion', 2], ['wolf', 2]], boss: 'flora', mul: 30,
   },
   {
     id: 'clock', name: '멈춰버린 시계탑', theme: 'clock', lv: 109, seed: 241,
     desc: '톱니바퀴가 시간을 갉아먹는 탑.',
-    rooms: 6, pool: [['orc', 4], ['mage', 3], ['thrower', 3]], boss: 'chronarch', mul: 36,
+    rooms: 6, pool: [['turret', 2], ['drone', 2], ['crystalling', 2], ['orc', 2]], boss: 'chronarch', mul: 36,
   },
   {
     id: 'neon', name: '네온 폐허 도시', theme: 'neon', lv: 112, seed: 257,
     desc: '비 내리는 밤, 네온이 깜빡이는 미래의 폐허.',
-    rooms: 6, pool: [['thrower', 4], ['orc', 3], ['mage', 3]], boss: 'cyberlord', mul: 42,
+    rooms: 6, pool: [['drone', 3], ['turret', 2], ['rat', 2], ['orc', 2]], boss: 'cyberlord', mul: 42,
   },
   {
     id: 'storm', name: '뇌운의 고원', theme: 'storm', lv: 115, seed: 271,
     desc: '번개가 끊이지 않는 하늘 위 고원.',
-    rooms: 6, pool: [['mage', 4], ['goblin', 3], ['orc', 3]], boss: 'raijin', mul: 49,
+    rooms: 6, pool: [['gargoyle', 3], ['aegis', 2], ['imp', 2], ['drone', 1]], boss: 'raijin', mul: 49,
   },
   {
     id: 'cosmos', name: '은하 정거장', theme: 'cosmos', lv: 118, seed: 283,
     desc: '별과 성운 사이에 떠 있는 정거장.',
-    rooms: 7, pool: [['mage', 4], ['orc', 4], ['thrower', 2]], boss: 'galactus', mul: 58,
+    rooms: 7, pool: [['eye', 3], ['drone', 2], ['wisp', 2], ['crystalling', 2]], boss: 'galactus', mul: 58,
   },
   {
     id: 'chaos', name: '혼돈의 근원', theme: 'chaos', lv: 122, seed: 307,
     desc: '모든 것이 시작되고 끝나는 최후의 장소.',
-    rooms: 7, pool: [['orc', 5], ['mage', 4], ['goblin', 3]], boss: 'azathoth', mul: 67,
+    rooms: 7, pool: [['imp', 2], ['aegis', 1], ['yeti', 1], ['fishman', 2], ['mummy', 2], ['eye', 2], ['scorpion', 2]], boss: 'azathoth', mul: 67,
   },
 ];
 const MAPS = [
