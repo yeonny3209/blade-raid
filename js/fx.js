@@ -261,6 +261,7 @@ class Meteor {
     this.sx = x + (o.from ?? 300); this.sy0 = -90;
   }
   update() {
+    if (Game.tstopT > 0) return true;                       // 시간 정지 중에는 예고도 멈춘다
     this.t++;
     if (this.t >= this.dur) { if (this.onEnd) this.onEnd(this); return false; }
     return true;
@@ -281,7 +282,7 @@ class ShockWave {
     Object.assign(this, { x, y, r: o.r0 || 20, t: 0 });
     this.speed = o.speed || 9; this.maxR = o.maxR || 700; this.w = o.w || 16; this.col = o.col || '255,200,120'; this.hitFn = o.hitFn; this.add = true;
   }
-  update() { this.t++; this.r += this.speed; if (this.hitFn) this.hitFn(this); return this.r < this.maxR; }
+  update() { if (Game.tstopT > 0) return true; this.t++; this.r += this.speed; if (this.hitFn) this.hitFn(this); return this.r < this.maxR; }
   draw(ctx) {
     const u = this.r / this.maxR, gy = sy(this.y, 0), a = 1 - u * 0.7;
     ctx.strokeStyle = `rgba(${this.col},${0.55 * a})`; ctx.lineWidth = this.w * 1.8;
@@ -353,6 +354,7 @@ class DmgText {
   }
   update() { this.t++; this.y += this.vy; this.vy *= 0.9; return this.t < this.life; }
   draw(ctx) {
+    if (this.type !== 'p' && this.type !== 'h' && Save.data && Save.data.opt && !Save.data.opt.dmg) return;
     const t = this.t;
     const s = t < 7 ? lerp(1.9, 1, E.out3(t / 7)) : 1;
     const a = t > this.life - 14 ? (this.life - t) / 14 : 1;

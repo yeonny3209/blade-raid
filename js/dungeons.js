@@ -317,6 +317,7 @@ const ROOM_NAMES = {
 //  방 구성 생성 (시드 고정 → 같은 던전은 항상 같은 배치)
 // ------------------------------------------------------------
 function buildDungeon(d) {
+  if (d.tower) return buildTower(d);
   const rnd = mulberry(d.seed * 7919 + 13);
   const pick = () => {
     const tot = d.pool.reduce((s, x) => s + x[1], 0);
@@ -380,6 +381,12 @@ const Save = {
     this.data.unlocked = Math.min(DUNGEONS.length, Math.max(this.data.unlocked || 1, hi));
     this.data.owned = Object.assign({ w: ['w0'], a: ['a0'] }, this.data.owned || {});
     this.data.eq = Object.assign({ w: 'w0', a: 'a0' }, this.data.eq || {});
+    const d2 = this.data;
+    d2.opt = Object.assign({}, Opt.defaults, d2.opt || {});
+    d2.diff = d2.diff || 'normal';
+    d2.up = d2.up || {}; d2.dex = d2.dex || {}; d2.ach = d2.ach || {}; d2.achSeen = d2.achSeen || {};
+    d2.stat = Object.assign({ kills: 0, bosses: 0, maxCombo: 0, skills: 0, goldEarned: 0, deaths: 0, hardClears: 0, hellClears: 0 }, d2.stat || {});
+    d2.tower = Object.assign({ best: 0, runs: 0 }, d2.tower || {});
     return this.data;
   },
   save() {
@@ -401,5 +408,5 @@ const Save = {
   },
   // 던전을 클리어하지 못하고 끝나도 주운 골드는 가져간다
   bank(g) { if (g > 0) { this.data.gold = (this.data.gold || 0) + g; this.save(); } },
-  reset() { this.data = { cleared: {}, best: {}, gold: 0, unlocked: 1, owned: { w: ['w0'], a: ['a0'] }, eq: { w: 'w0', a: 'a0' } }; this.save(); },
+  reset() { try { localStorage.removeItem(this.key); } catch (e) { } this.load(); this.save(); },
 };

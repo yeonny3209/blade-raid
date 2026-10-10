@@ -391,12 +391,13 @@ class Player extends Entity {
     const W = this.wdef = w || (hasGear ? Gear.w() : null), A = this.adef = a || (hasGear ? Gear.a() : null);
     const B = this.base, wp = W || {}, ap = A || {};
     const frac = this.hpMax ? this.hp / this.hpMax : 1;
-    this.hpMax = Math.round(B.hp * (ap.hp || 1)); this.hp = Math.max(1, Math.round(this.hpMax * frac));
-    this.atk = this.baseAtk = Math.round(B.atk * (wp.atk || 1));
+    const wl = W ? Gear.lv(W.id) : 0, al = A ? Gear.lv(A.id) : 0;                       // 장비 강화 단계
+    this.hpMax = Math.round(B.hp * (ap.hp || 1) * (1 + 0.05 * al)); this.hp = Math.max(1, Math.round(this.hpMax * frac));
+    this.atk = this.baseAtk = Math.round(B.atk * (wp.atk || 1) * (1 + 0.06 * wl));
     this.critRate = 0.2 + (wp.crit || 0); this.critDmg = wp.critDmg || 1.5;
     this.moveMul = (wp.move || 1) * (ap.move || 1);
     this.mpRegen = B.mpRegen * (ap.mpRegen || 1); this.cdr = ap.cdr || 0;
-    this.takeMul = 1 - (ap.def || 0); this.dodge = ap.dodge || 0; this.capHit = ap.capHit || 0; this.kbRes = ap.kbRes || 0;
+    this.takeMul = 1 - Math.min(0.85, (ap.def || 0) + 0.005 * al); this.dodge = ap.dodge || 0; this.capHit = ap.capHit || 0; this.kbRes = ap.kbRes || 0;
     if (hasGear && typeof gearRig === 'function') { this.rig = gearRig(A); }
     this.wlook = wp.look || null; this.wcol = wp.col || '140,200,255';
     this.trailCol = this.wcol; this.afterCol = this.wcol;
@@ -658,7 +659,7 @@ class Player extends Entity {
         continue;
       }
       this.mp -= s.mp; this.cd[s.key] = s.cd;
-      Game.stats.skills++;
+      Game.stats.skills++; Save.data.stat.skills++;
       this.startAct(this.actOf(s));
       return true;
     }

@@ -5,18 +5,18 @@
 //   - ↑↓ 고르기  ←→ 검·방어구 전환  Enter·Space 구매/장착  Esc 돌아가기  (마우스·터치 가능)
 // ============================================================
 const Shop = {
-  tab: 0, sel: [0, 0], scroll: [0, 0], t: 0, msg: '', msgT: 0, msgCol: '#fff',
+  tab: 0, sel: [0, 0, 0], scroll: [0, 0, 0], t: 0, msg: '', msgT: 0, msgCol: '#fff',
   pp: null, step: 0, hitDone: false, dummyHit: 0, swingK: 0, mx: 0, my: 0, mouseT: 0, inited: false,
   ROWS: 8, ROW_H: 62, LX: 40, LY: 144, LW: 470,
   STAGE: { x: 524, y: 144, w: 310, h: 500 },
   DET: { x: 848, y: 144, w: 392, h: 500 },
   TX: 770, FY: 176,                       // 허수아비 x / 바닥 깊이 (화면 y = GROUND_Y + FY)
 
-  items() { return this.tab === 0 ? WEAPONS : ARMORS; },
-  kind() { return this.tab === 0 ? 'w' : 'a'; },
+  items() { return this.tab === 0 ? WEAPONS : this.tab === 1 ? ARMORS : [Gear.w(), Gear.a()]; },
+  kind() { return this.tab === 0 ? 'w' : this.tab === 1 ? 'a' : (this.sel[2] === 0 ? 'w' : 'a'); },
   cur() { return this.items()[this.sel[this.tab]]; },
   btnRect() { const D = this.DET; return { x: D.x + 20, y: D.y + D.h - 70, w: D.w - 40, h: 52 }; },
-  tabRect(i) { return { x: this.LX + i * 160, y: 92, w: 150, h: 38 }; },
+  tabRect(i) { return { x: this.LX + i * 100, y: 92, w: 94, h: 38 }; },
   backRect() { return { x: W - 220, y: 54, w: 180, h: 34 }; },
 
   enter() {
@@ -46,7 +46,7 @@ const Shop = {
   // 선택한 아이템을 미리보기 캐릭터에게 입힌다
   refresh() {
     const pp = this.pp, it = this.cur();
-    if (this.tab === 0) pp.setGear(it, Gear.a()); else pp.setGear(Gear.w(), it);
+    if (this.tab === 2) pp.setGear(Gear.w(), Gear.a()); else if (this.tab === 0) pp.setGear(it, Gear.a()); else pp.setGear(Gear.w(), it);
     pp.bladeGlow = 0; pp.trail.length = 0; pp.after.length = 0;
     this.step = 0; this.hitDone = true;
     pp.play('idle', 0, 1, true);
@@ -72,6 +72,17 @@ const Shop = {
 
   act() {
     const it = this.cur(), k = this.kind();
+    if (this.tab === 2) {
+      const r = Gear.upgrade(it);
+      if (r === 'ok') {
+        Sfx.play('coin', 1, 0.8); Sfx.play('ring', 0.8, 1.1); this.flash(`강화 성공!  +${Gear.lv(it.id)}`, '#ffe070'); this.refresh();
+        const b = this.btnRect();
+        for (let i = 0; i < 30; i++) FX.add('top', new Mote(b.x + rand(0, b.w), b.y + rand(0, b.h), rand(-1.5, 1.5), rand(-4, -1), { col: '255,230,120', life: 40, r: rand(6, 11) }));
+        Ach.check();
+      } else if (r === 'max') { Sfx.play('ui', 0.6, 0.8); this.flash('이미 최대 강화입니다', '#9aa4c0'); }
+      else { Sfx.play('ui', 0.8, 0.5); this.flash('골드가 부족합니다', '#ff8a70'); }
+      return;
+    }
     if (Gear.owns(k, it.id)) {
       if (Save.data.eq[k] === it.id) { Sfx.play('ui', 0.6, 0.8); this.flash('이미 장착 중입니다', '#9aa4c0'); return; }
       Gear.equip(k, it.id); Sfx.play('select'); this.flash('장착했습니다', '#7dffa0'); this.refresh();
@@ -92,7 +103,7 @@ const Shop = {
   clickAt(x, y) {
     const inR = r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
     if (inR(this.backRect())) { this.leave(); return true; }
-    for (let i = 0; i < 2; i++) if (inR(this.tabRect(i))) { this.setTab(i); return true; }
+    for (let i = 0; i < 3; i++) if (inR(this.tabRect(i))) { this.setTab(i); return true; }
     if (inR(this.upRect())) { this.scrollBy(-3); return true; }
     if (inR(this.downRect())) { this.scrollBy(3); return true; }
     if (inR(this.btnRect())) { this.act(); return true; }
@@ -123,8 +134,8 @@ const Shop = {
     this.scroll[this.tab] = clamp(this.scroll[this.tab] + n, 0, max);
     Sfx.play('ui', 0.4, 1.3);
   },
-  upRect() { return { x: this.LX + 300, y: 90, w: 80, h: 42 }; },
-  downRect() { return { x: this.LX + 390, y: 90, w: 80, h: 42 }; },
+  upRect() { return { x: this.LX + 330, y: 90, w: 70, h: 42 }; },
+  downRect() { return { x: this.LX + 410, y: 90, w: 60, h: 42 }; },
 
   // ---------- 매 프레임 ----------
   update() {
@@ -137,8 +148,8 @@ const Shop = {
       const q = evs[i];
       if (q.a === 'up') this.setSel(this.sel[this.tab] - 1);
       else if (q.a === 'down') this.setSel(this.sel[this.tab] + 1);
-      else if (q.a === 'left') this.setTab(0);
-      else if (q.a === 'right') this.setTab(1);
+      else if (q.a === 'left') this.setTab((this.tab + 2) % 3);
+      else if (q.a === 'right') this.setTab((this.tab + 1) % 3);
       else if (q.a === 'confirm' || q.a === 'jump') this.act();
       else if (q.a === 'attack') { if (this.mouseT > 0) this.clickAt(this.mx, this.my); else this.act(); }
       else if (q.a === 'shop' || q.a === 'back') { this.leave(); return; }
@@ -157,7 +168,7 @@ const Shop = {
 
   // 미리보기 : 휘두르고 → 허수아비를 때리고 → 대기, 를 반복
   updatePreview() {
-    const pp = this.pp, it = this.cur(), isW = this.tab === 0;
+    const pp = this.pp, it = this.cur(), isW = this.kind() === 'w';
     const W_ = isW ? it : Gear.w();
     pp.px = pp.x; pp.pz = pp.z;
     this.step++;
@@ -242,11 +253,11 @@ const Shop = {
     UI.text(ctx, Touch.on ? '돌아가기' : '돌아가기  [Esc]', br.x + br.w / 2, br.y + 18, { size: 15, align: 'center', fill: '#ffe9a6', stroke: 3 });
 
     // 탭
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
       const r = this.tabRect(i), on = i === this.tab;
       ctx.fillStyle = on ? 'rgba(54,44,22,0.95)' : 'rgba(14,16,24,0.85)'; roundRect(ctx, r.x, r.y, r.w, r.h, 9); ctx.fill();
       ctx.strokeStyle = on ? '#ffd24a' : 'rgba(150,160,190,0.35)'; ctx.lineWidth = on ? 2.4 : 1.2; ctx.stroke();
-      UI.text(ctx, i ? `방어구  ${Save.data.owned.a.length}/${ARMORS.length}` : `검  ${Save.data.owned.w.length}/${WEAPONS.length}`, r.x + r.w / 2, r.y + 26, { size: 17, align: 'center', fill: on ? '#ffe9a6' : '#8a94b4', stroke: 3 });
+      UI.text(ctx, ['검', '방어구', '강화'][i], r.x + r.w / 2, r.y + 26, { size: 17, align: 'center', fill: on ? '#ffe9a6' : '#8a94b4', stroke: 3 });
     }
     const max = Math.max(0, this.items().length - this.ROWS);
     for (const [r, lab, ok] of [[this.upRect(), '▲', this.scroll[this.tab] > 0], [this.downRect(), '▼', this.scroll[this.tab] < max]]) {
@@ -290,12 +301,13 @@ const Shop = {
       } else { ctx.fillStyle = 'rgba(24,28,42,0.65)'; roundRect(ctx, this.LX, y + 2, this.LW, this.ROW_H - 4, 9); ctx.fill(); }
       // 아이콘
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(ctx, this.LX + 8, y + 8, 56, 46, 7); ctx.fill();
-      if (this.tab === 0) this.bladeIcon(ctx, it, this.LX + 36, y + 31, 0.58); else this.armorIcon(ctx, it, this.LX + 36, y + 31, 0.95);
+      if (this.tab === 0 || (this.tab === 2 && i === 0)) this.bladeIcon(ctx, it, this.LX + 36, y + 31, 0.58); else this.armorIcon(ctx, it, this.LX + 36, y + 31, 0.95);
       // 이름
-      UI.text(ctx, it.name, this.LX + 76, y + 24, { size: it.name.length > 9 ? 15 : 17, fill: on ? '#fff' : '#d8dcec', stroke: 3 });
+      UI.text(ctx, Gear.label(it), this.LX + 76, y + 24, { size: it.name.length > 9 ? 15 : 17, fill: on ? '#fff' : '#d8dcec', stroke: 3 });
       UI.text(ctx, it.sub, this.LX + 76, y + 45, { size: 11.5, font: FONT_B, weight: 700, fill: '#7a84a4', stroke: 2.5 });
       // 상태 / 가격
-      if (eq) UI.text(ctx, '장착중', this.LX + this.LW - 14, y + 31, { size: 15, align: 'right', fill: '#7dffa0', stroke: 3 });
+      if (this.tab === 2) UI.text(ctx, `+${Gear.lv(it.id)} / ${Gear.MAXLV}`, this.LX + this.LW - 14, y + 31, { size: 16, align: 'right', fill: '#ffe070', stroke: 3 });
+      else if (eq) UI.text(ctx, '장착중', this.LX + this.LW - 14, y + 31, { size: 15, align: 'right', fill: '#7dffa0', stroke: 3 });
       else if (owned) UI.text(ctx, '보유', this.LX + this.LW - 14, y + 31, { size: 15, align: 'right', fill: '#9ac8ff', stroke: 3 });
       else {
         UI.text(ctx, fmt(it.price), this.LX + this.LW - 14, y + 31, { size: 16, align: 'right', fill: afford && open ? '#ffe9a6' : '#ff9a88', stroke: 3 });
@@ -322,7 +334,7 @@ const Shop = {
     ctx.fillStyle = sg; ctx.fillRect(S.x, S.y, S.w, S.h);
     // 스포트라이트
     ctx.globalCompositeOperation = 'lighter';
-    const W_ = this.tab === 0 ? this.cur() : Gear.w();
+    const W_ = this.kind() === 'w' ? this.cur() : Gear.w();
     drawGlow(ctx, 670, 430, 260, W_.col || '140,200,255', 0.16);
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.beginPath(); ctx.ellipse(606, 560, 90, 18, 0, 0, TAU); ctx.fill();
@@ -351,17 +363,17 @@ const Shop = {
   },
 
   drawDetail(ctx, it, k) {
-    const D = this.DET, isW = this.tab === 0;
+    const D = this.DET, isW = this.kind() === 'w';
     this.panel(ctx, D.x, D.y, D.w, D.h);
     const x = D.x + 20, mw = D.w - 40;
     let y = D.y + 34;
-    UI.text(ctx, it.name, x, y, { size: it.name.length > 9 ? 23 : 27, fill: isW ? `rgb(${it.col})` : '#e8ecff', stroke: 5 });
+    UI.text(ctx, Gear.label(it), x, y, { size: it.name.length > 9 ? 23 : 27, fill: isW ? `rgb(${it.col})` : '#e8ecff', stroke: 5 });
     UI.text(ctx, it.sub, x, y + 26, { size: 13, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
     y += 56;
     // 능력치
     const rows = [];
     if (isW) {
-      rows.push(['공격력', `${Math.round((it.atk || 1) * 100)}%`, (it.atk || 1) > 1]);
+      rows.push(['공격력', `${Math.round((it.atk || 1) * (1 + 0.06 * Gear.lv(it.id)) * 100)}%`, (it.atk || 1) * (1 + 0.06 * Gear.lv(it.id)) > 1]);
       if (it.crit) rows.push(['치명타율', `+${Math.round(it.crit * 100)}%`, true]);
       if (it.critDmg) rows.push(['치명타 피해', `×${it.critDmg}`, true]);
       rows.push(['타격 경직', `${Math.round((it.stop || 1) * 100)}%`, (it.stop || 1) >= 1]);
@@ -369,8 +381,8 @@ const Shop = {
       if (it.kx) rows.push(['넉백', `${Math.round(it.kx * 100)}%`, true]);
       if (it.move) rows.push(['이동속도', `${Math.round(it.move * 100)}%`, it.move >= 1]);
     } else {
-      rows.push(['받는 피해', `-${Math.round((it.def || 0) * 100)}%`, (it.def || 0) > 0]);
-      rows.push(['최대 체력', `${Math.round((it.hp || 1) * 100)}%`, (it.hp || 1) >= 1]);
+      rows.push(['받는 피해', `-${Math.round(((it.def || 0) + 0.005 * Gear.lv(it.id)) * 1000) / 10}%`, (it.def || 0) + Gear.lv(it.id) > 0]);
+      rows.push(['최대 체력', `${Math.round((it.hp || 1) * (1 + 0.05 * Gear.lv(it.id)) * 100)}%`, true]);
       if (it.move) rows.push(['이동속도', `${Math.round(it.move * 100)}%`, it.move >= 1]);
       if (it.mpRegen) rows.push(['MP 재생', `${Math.round(it.mpRegen * 100)}%`, true]);
       if (it.cdr) rows.push(['쿨타임', `-${Math.round(it.cdr * 100)}%`, true]);
@@ -411,11 +423,16 @@ const Shop = {
     const b = this.btnRect(), owned = Gear.owns(k, it.id), eq = Save.data.eq[k] === it.id, open = Gear.open(it);
     const afford = (Save.data.gold || 0) >= it.price;
     let label, col, edge;
-    if (eq) { label = '장착중'; col = 'rgba(30,70,44,0.9)'; edge = '#7dffa0'; }
-    else if (owned) { label = '장착하기'; col = 'rgba(30,50,86,0.95)'; edge = '#9ac8ff'; }
-    else if (!open) { label = '제2지역 개방 필요'; col = 'rgba(40,40,50,0.9)'; edge = '#6a6a7a'; }
-    else if (!afford) { label = `${fmt(it.price)} G  (골드 부족)`; col = 'rgba(70,30,26,0.9)'; edge = '#ff8a70'; }
-    else { label = `${fmt(it.price)} G  구매`; col = 'rgba(90,70,20,0.95)'; edge = '#ffd24a'; }
+    if (this.tab === 2) {
+      const lv = Gear.lv(it.id), max = lv >= Gear.MAXLV, c = Gear.upCost(it), ok = (Save.data.gold || 0) >= c;
+      if (max) { label = '최대 강화  +15'; col = 'rgba(30,70,44,0.9)'; edge = '#7dffa0'; }
+      else if (!ok) { label = `+${lv} → +${lv + 1}   ${fmt(c)} G (골드 부족)`; col = 'rgba(70,30,26,0.9)'; edge = '#ff8a70'; }
+      else { label = `+${lv} → +${lv + 1}   ${fmt(c)} G  강화`; col = 'rgba(90,70,20,0.95)'; edge = '#ffd24a'; }
+    } else if (eq) { label = '장착중'; col = 'rgba(30,70,44,0.9)'; edge = '#7dffa0'; }
+    else if (this.tab !== 2 && owned) { label = '장착하기'; col = 'rgba(30,50,86,0.95)'; edge = '#9ac8ff'; }
+    else if (this.tab !== 2 && !open) { label = '제2지역 개방 필요'; col = 'rgba(40,40,50,0.9)'; edge = '#6a6a7a'; }
+    else if (this.tab !== 2 && !afford) { label = `${fmt(it.price)} G  (골드 부족)`; col = 'rgba(70,30,26,0.9)'; edge = '#ff8a70'; }
+    else if (this.tab !== 2) { label = `${fmt(it.price)} G  구매`; col = 'rgba(90,70,20,0.95)'; edge = '#ffd24a'; }
     ctx.fillStyle = col; roundRect(ctx, b.x, b.y, b.w, b.h, 12); ctx.fill();
     ctx.strokeStyle = edge; ctx.lineWidth = 2.6; ctx.stroke();
     UI.text(ctx, label, b.x + b.w / 2, b.y + b.h / 2 + 1, { size: 21, align: 'center', fill: edge === '#6a6a7a' ? '#9a9aaa' : '#fff', stroke: 4 });

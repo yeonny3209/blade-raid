@@ -290,6 +290,7 @@ class BZone {
     this.every = o.every || 24; this.life = o.life || 200; this.hd = o.hd || CH.tick; this.col = o.col || owner.elem;
   }
   update() {
+    if (Game.tstopT > 0) return true;
     this.t++;
     const p = Game.player;
     if (this.follow && p) { this.x += clamp(p.x - this.x, -this.follow, this.follow); this.y += clamp(p.y - this.y, -this.follow * 0.5, this.follow * 0.5); }

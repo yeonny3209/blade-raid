@@ -64,6 +64,7 @@ const Sfx = {
     this.musicLP = ctx.createBiquadFilter(); this.musicLP.type = 'lowpass';
     this.musicLP.frequency.value = 20000; this.musicLP.Q.value = 0.7; this.musicLP.connect(this.musicDuck);
     this.musicBus = ctx.createGain(); this.musicBus.gain.value = 0.3; this.musicBus.connect(this.musicLP);
+    if (typeof Opt !== 'undefined' && Save.data) Opt.apply();
   },
 
   toggleMute() {

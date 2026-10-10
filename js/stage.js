@@ -74,13 +74,13 @@ class Room {
     this.ambient = [];
     this.doorOpen = 0;
   }
-  playerMaxX() { return this.cleared && !this.def.boss ? this.width - 10 : this.maxX; }
+  playerMaxX() { return this.cleared && (!this.def.boss || this.def.tower) ? this.width - 10 : this.maxX; }
 
   spawnWave(i, pre) {
     this.wave = i;
     const list = this.def.waves[i];
     list.forEach(([k, x, y], j) => {
-      const BD = BOSS_DEFS[Game.dungeon.def.boss];
+      const BD = BOSS_DEFS[this.def.bossId || Game.dungeon.def.boss];
       const e = k === 'boss' ? (BD.body ? new CBoss(x, y, BD) : new Boss(x, y, BD)) : makeEnemy(k, x, y);
       if (!pre) e.spawnIn(j * 8);
       else { e.aiWait = randi(40, 90) + j * 10; }
@@ -217,7 +217,7 @@ class Room {
 
   // 출구 게이트 (월드 좌표)
   drawDoor(ctx) {
-    if (this.def.boss) return;
+    if (this.def.boss && !this.def.tower) return;
     const x = this.width - 46, y = DEPTH / 2, gy = sy(y, 0), o = this.doorOpen, t = Game.time;
     ctx.save();
     // 바닥 빛

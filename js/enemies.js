@@ -33,8 +33,9 @@ class Enemy extends Entity {
       const sk = SKINS[D.theme];
       if (sk && !T.mob) { this.rig = themedRig(T.rig, D.theme); this.name = sk.pre + T.name; }
       this.lv = D.lv;
-      this.hpMax = Math.round(T.hpMax * D.mul * DIFF.hp);
-      this.atk = Math.round(T.atk * Math.pow(D.mul, 0.62) * DIFF.atk);
+      const DM = Diff.cur();
+      this.hpMax = Math.round(T.hpMax * D.mul * DIFF.hp * DM.hp);
+      this.atk = Math.round(T.atk * Math.pow(D.mul, 0.62) * DIFF.atk * DM.atk);
     }
     this.hp = this.hpMax;
     this.x = this.px = x; this.y = y; this.facing = -1;

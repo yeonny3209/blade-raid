@@ -12,7 +12,7 @@ const KEYMAP = {
   Space: 'jump',
   KeyZ: 'back', KeyL: 'back',
   KeyQ: 's1', KeyE: 's2', KeyT: 's3', KeyF: 's4', KeyG: 's5', KeyR: 's6',
-  KeyB: 'shop', KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
+  KeyB: 'shop', KeyN: 'tower', KeyK: 'codex', KeyO: 'options', KeyH: 'diff', KeyP: 'share', KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
   Escape: 'pause', KeyM: 'mute', Enter: 'confirm', NumpadEnter: 'confirm',
   F2: 'debug',
 };
@@ -40,7 +40,7 @@ const Input = {
     addEventListener('keyup', e => this.release(codeOf(e)));
     // 마우스 좌클릭 = 기본 공격
     addEventListener('mousedown', e => {
-      if (e.button !== 0 || (e.target.closest && e.target.closest('#dlbar'))) return;
+      if (e.button !== 0 || (e.target.closest && e.target.closest('#dlbar')) || (typeof Share !== 'undefined' && Share.swallow(e))) return;
       e.preventDefault();          // 드래그로 텍스트/이미지가 선택되지 않게
       this.press('Mouse0');
     });

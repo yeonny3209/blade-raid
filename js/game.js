@@ -21,8 +21,10 @@ const Game = {
     addEventListener('resize', () => this.resize());
     Input.init();
     UI.init();
+    Ptr.init();
     Touch.init();
     Save.load();
+    Dex.init();
     this.bgScale = clamp(this.ps, 1, IS_MOBILE ? 1 : 2);
     this.stats = this.newStats();
     this.dungeon = buildDungeon(DUNGEONS[0]);
@@ -52,6 +54,10 @@ const Game = {
     this.ps = this.canvas.width / W;
   },
 
+  scene() { return this.state === 'options' ? Opts : this.state === 'codex' ? Codex : null; },
+  openOptions(from) { this.state = 'options'; Opts.enter(from); Touch.release(); Input.clear(); },
+  toCodex() { this.state = 'codex'; Codex.enter(); Touch.release(); Input.clear(); },
+
   newStats() { return { time: 0, maxCombo: 0, hitsTaken: 0, kills: 0, gold: 0, dmg: 0, skills: 0 }; },
 
   // ---------------- 루프 ----------------
@@ -75,15 +81,19 @@ const Game = {
 
   update() {
     this.frame++; this.time++;
+    for (const n of this.notices) n.t++;                                  // 알림은 어느 화면에서든 시간이 흐른다
+    this.notices = this.notices.filter(n => n.t < n.life);
     if (Input.take('mute')) Sfx.toggleMute();
     if (Input.take('debug')) this.debug = !this.debug;
     switch (this.state) {
       case 'title': this.updateTitle(); break;
       case 'lobby': Lobby.update(); break;
       case 'shop': Shop.update(); break;
-      case 'paused': if (Input.take('pause')) { this.state = this.pausedFrom; Sfx.play('ui'); } Input.queue = Input.queue.filter(q => q.a === 'pause'); break;
-      case 'result': this.resT++; if (this.resT > 100 && (Input.take('confirm') || Input.take('attack'))) { Sfx.play('select'); this.toLobby(); } Input.clear(); break;
-      case 'gameover': if (Input.take('confirm') || Input.take('attack')) { Sfx.play('select'); this.coins = 3; this.toLobby(); } Input.clear(); break;
+      case 'options': Opts.update(); break;
+      case 'codex': Codex.update(); break;
+      case 'paused': if (Input.take('pause')) { this.state = this.pausedFrom; Sfx.play('ui'); } else if (Input.take('options')) { this.openOptions('paused'); break; } Input.queue = Input.queue.filter(q => q.a === 'pause'); break;
+      case 'result': if (Input.take('share')) Share.save(); this.resT++; if (this.resT > 100 && (Input.take('confirm') || Input.take('attack'))) { Sfx.play('select'); this.toLobby(); } Input.clear(); break;
+      case 'gameover': if (Input.take('share')) Share.save(); if (Input.take('confirm') || Input.take('attack')) { Sfx.play('select'); this.coins = 3; this.toLobby(); } Input.clear(); break;
       case 'continue': this.updateContinue(); break;
       default:
         if (Input.take('pause') && !this.cutin && this.state === 'play') { this.pausedFrom = this.state; this.state = 'paused'; Sfx.play('ui'); return; }
@@ -133,11 +143,18 @@ const Game = {
     this.combo = { n: 0, t: 0, dmg: 0, pop: 0 };
     this.coins = 3;
     this.dungeonIdx = DUNGEONS.indexOf(d);
+    this.notices = []; this.big = null;
     this.loadRoom(0);
   },
 
   loadRoom(i) {
     this.roomIdx = i;
+    const D0 = this.dungeon.def;
+    if (D0.tower) {                                                      // 무한의 탑 : 층마다 테마 · 난이도가 바뀐다
+      const rm = this.dungeon.rooms[i], DD = DUNGEONS[rm.blk];
+      D0.theme = rm.theme; D0.mul = towerMul(rm.floor); D0.lv = Math.min(160, 60 + rm.floor * 2); D0.pool = DD.pool; D0.boss = rm.bossId || DD.boss;
+    }
+    delete this.bgCache[i - 2];
     Gear.reset(); WS.reset();
     this.room = new Room(i);
     this.enemies = []; this.projectiles = []; this.pickups = [];
@@ -200,8 +217,6 @@ const Game = {
     if (this.combo.t > 0) { this.combo.t--; if (this.combo.t <= 0) { this.combo.n = 0; this.combo.dmg = 0; } }
     if (this.targetT > 0) this.targetT--;
     // 알림
-    for (const n of this.notices) n.t++;
-    this.notices = this.notices.filter(n => n.t < n.life);
     if (this.big) { this.big.t++; if (this.big.t >= this.big.life) this.big = null; }
     // 연출 값
     this.dim = approach(this.dim, this.dimTarget, this.dimSpeed);
@@ -215,7 +230,7 @@ const Game = {
 
     // 방 이동
     const r = this.room;
-    if (r.cleared && !r.def.boss && p.x > r.width - 80 && this.fadeDir === 0 && this.state === 'play' && p.hp > 0) {
+    if (r.cleared && (!r.def.boss || r.def.tower) && p.x > r.width - 80 && this.fadeDir === 0 && this.state === 'play' && p.hp > 0) {
       this.fadeDir = 1; this.state = 'transition'; p.setState('cine'); p.vx = 5; p.play('run', 4);
       Sfx.play('door');
     }
@@ -274,6 +289,8 @@ const Game = {
     if (c.t <= 0 || this.coins <= 0 && c.t < 480) {
       this.state = 'gameover'; Music.stop();
       this.keptGold = this.stats.gold; Save.bank(this.stats.gold); this.stats.gold = 0;      // 클리어하지 못해도 주운 골드는 가져간다
+      Save.data.stat.deaths++;
+      if (this.dungeon.def.tower) { const t = Save.data.tower; t.runs++; t.best = Math.max(t.best, this.roomIdx); this.towerFloor = this.roomIdx; Ach.check(); Save.save(); }
     }
   },
 
@@ -292,6 +309,7 @@ const Game = {
     const c = this.combo;
     c.n++; c.t = 150; c.dmg += dmg; c.pop = 1;
     this.stats.maxCombo = Math.max(this.stats.maxCombo, c.n);
+    const st = Save.data.stat; if (c.n > st.maxCombo) { st.maxCombo = c.n; if (c.n % 10 === 0) Ach.check(); }
     this.stats.dmg += dmg;
     const tier = { 10: 1, 25: 2, 50: 3, 75: 3.5, 100: 4, 150: 4.5, 200: 5 }[c.n];
     if (tier) this.comboMilestone(c.n, tier);
@@ -316,9 +334,11 @@ const Game = {
 
   onEnemyKilled(e) {
     this.stats.kills++;
-    const idx = this.dungeonIdx || 0, gm = idx >= 10 ? 4.5 : 1.6;                  // 지역별 골드 배율
+    Dex.kill(e);
+    const DD = this.dungeon.def, idx = this.dungeonIdx > 0 ? this.dungeonIdx : 0;
+    const gm = (DD.tower ? 1.6 + (this.roomIdx + 1) * 0.15 : idx >= 10 ? 4.5 : 1.6) * Diff.cur().gold;   // 지역 · 난이도별 골드 배율
     let coins, total;
-    if (e.isBoss) { coins = 36; total = Math.round(6000 * (1 + idx * 0.5) * gm); }
+    if (e.isBoss) { coins = 36; total = Math.round(6000 * (1 + (DD.tower ? this.roomIdx / 3 : idx * 0.5)) * gm); }
     else { coins = randi(e.gold[0], e.gold[1]); total = coins * randi(40, 120) * (e.elite ? 2 : 1) * gm; }
     const per = Math.max(1, Math.round(total / coins));
     for (let i = 0; i < coins; i++) this.pickups.push(new Pickup('gold', e.x, e.y, e.z + 40 * e.scale, per));
@@ -339,17 +359,24 @@ const Game = {
     Sfx.play('explode', 1.2, 0.8); Sfx.play('roar', 0.8, 0.7);
     Music.stop();
     for (const e of this.enemies) if (!e.isBoss && !e.dying) e.die({ kx: 5, kz: 8 }, sign(e.x - b.x));
+    if (this.dungeon.def.tower && this.roomIdx < this.dungeon.rooms.length - 1) {            // 탑 : 수호자를 쓰러뜨리면 다음 층으로
+      this.bigText(`${this.roomIdx + 1}층 수호자 격파`, '#fff8d0', '#ffb020', 250, 52);
+      Sfx.play('clear', 0.8);
+      return;
+    }
     this.clearSeq = { t: 0 };
     for (let i = 0; i < 4; i++) this.pickups.push(new Pickup('hp', b.x, b.y, 80, 0));
   },
 
   onRoomClear() {
-    if (this.room.def.boss) return;
+    if (this.room.def.boss && !this.room.def.tower) return;
     Sfx.play('clear', 0.6);
     this.bigText('ROOM CLEAR', '#e8f6ff', '#4ac2ff', 250, 46);
     for (const it of this.pickups) it.magnet = true;
     const p = this.player;
-    if (p.hp > 0) { p.hp = Math.min(p.hpMax, p.hp + p.hpMax * 0.1); p.mp = Math.min(p.mpMax, p.mp + p.mpMax * 0.2); }
+    const tw = this.dungeon.def.tower;
+    if (tw) { Save.data.tower.best = Math.max(Save.data.tower.best, this.roomIdx + 1); Ach.check(); Save.save(); }
+    if (p.hp > 0) { p.hp = Math.min(p.hpMax, p.hp + p.hpMax * (tw ? 0.25 : 0.1)); p.mp = Math.min(p.mpMax, p.mp + p.mpMax * (tw ? 0.4 : 0.2)); }
   },
 
   showResult() {
@@ -368,6 +395,8 @@ const Game = {
     };
     this.result.dungeon = dun.name;
     Save.record(dun.id, rank, this.result.score, s.gold);
+    const dm = Diff.cur(); if (dm.id === 'hard') Save.data.stat.hardClears++; if (dm.id === 'hell') { Save.data.stat.hellClears++; Save.data.stat.hardClears++; }
+    Ach.check(); Save.save();
     this.result.unlockedNew = Save.data.unlocked;
     this.result.newMap = wasOpen <= 10 && Save.data.unlocked > 10;                   // 제2지역 최초 개방
     this.state = 'result'; this.resT = 0;
@@ -375,11 +404,12 @@ const Game = {
   },
 
   // ---------------- 연출 API ----------------
-  addShake(a) { this.shakeA = Math.min(24, Math.max(this.shakeA, a) + a * 0.25); },
+  addShake(a) { a *= Opt.get().shake; this.shakeA = Math.min(24, Math.max(this.shakeA, a) + a * 0.25); },
   // 타격 방향으로 카메라가 한 번 밀렸다 돌아옴 (무작위 흔들림과 달리 방향이 읽힘)
-  kick(x, y) { this.kickX = clamp(this.kickX + x, -16, 16); this.kickY = clamp(this.kickY + y, -10, 10); },
+  kick(x, y) { const k = Opt.get().shake; this.kickX = clamp(this.kickX + x * k, -16, 16); this.kickY = clamp(this.kickY + y * k, -10, 10); },
   freeze(f) { this.freezeT = Math.max(this.freezeT, f); },
   rumble(strength, ms) {
+    if (!Opt.get().vib) return;
     const now = performance.now();
     if (now - this.rumbleT < 40) return;
     this.rumbleT = now;
@@ -413,6 +443,7 @@ const Game = {
 
   render() {
     this.updateDlBar();
+    if (this.state === 'options' || this.state === 'codex') { this.ctx.setTransform(this.ps, 0, 0, this.ps, 0, 0); }
     const ctx = this.ctx;
     ctx.setTransform(this.ps, 0, 0, this.ps, 0, 0);
     ctx.imageSmoothingEnabled = true;
@@ -420,6 +451,8 @@ const Game = {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
     if (this.state === 'title') { UI.drawTitle(ctx); return; }
     if (this.state === 'lobby') { Lobby.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
+    if (this.state === 'options') { Opts.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
+    if (this.state === 'codex') { Codex.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'shop') { Shop.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     const r = this.room, p = this.player, camX = Math.round(this.cam.x * 2) / 2;
 
@@ -471,9 +504,9 @@ const Game = {
     if (this.cutin) UI.drawCutin(ctx, this.cutin);
     if (this.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${this.fade})`; ctx.fillRect(0, 0, W, H); }
     if (this.state === 'paused') UI.drawPause(ctx);
-    if (this.state === 'result') UI.drawResult(ctx);
+    if (this.state === 'result') { UI.drawResult(ctx); if (this.resT > 100) Share.draw(ctx); }
     if (this.state === 'continue') UI.drawContinue(ctx);
-    if (this.state === 'gameover') UI.drawGameOver(ctx);
+    if (this.state === 'gameover') { UI.drawGameOver(ctx); Share.draw(ctx); }
     if (Sfx.muted) UI.text(ctx, '음소거', W - 20, 104, { size: 13, align: 'right', fill: '#aaa', stroke: 3 });
     Touch.draw(ctx);
     if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx);

@@ -564,7 +564,7 @@ CREATURES.crystal = {
 CREATURES.kraken = {
   w: 90, h: 230, d: 40, shadow: 2, stationary: true, keep: 300, rest: 40, roarPitch: 0.5,
   pal: { skin: ['#0a2a3a', '#1e6a8a', '#58b8d8'], sucker: ['#a8d8e8', '#e8f8ff', '#ffffff'] },
-  init(b) { const r = Game.room; b.x = r.maxX - 220; },
+  init(b) { const r = Game.room; if (r) b.x = r.maxX - 220; },
   draw(ctx, b, P, k) {
     const t = k.t, S = P.skin;
     let rise = 0, siphon = 0;

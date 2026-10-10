@@ -161,6 +161,7 @@ const UI = {
   },
 
   drawMinimap(ctx) {
+    if (Game.dungeon.def.tower) return this.drawTowerHud(ctx);
     const rooms = Game.dungeon.rooms, n = rooms.length, cw = Math.min(30, 200 / n | 0), ch = 22, gap = 6;
     const tw = n * cw + (n - 1) * gap, x0 = W - 20 - tw, y0 = 22;
     ctx.save();
@@ -180,6 +181,17 @@ const UI = {
       }
     }
     this.text(ctx, Game.dungeon.name, x0 + tw / 2, y0 + ch + 14, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: '#c9b48a' });
+    ctx.restore();
+  },
+
+  drawTowerHud(ctx) {
+    const f = Game.roomIdx + 1, nb = 5 - ((f - 1) % 5) - 1, x = W - 20, y = 22;
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,8,14,0.72)'; roundRect(ctx, x - 230, y - 10, 230, 70, 8); ctx.fill();
+    ctx.strokeStyle = 'rgba(201,165,92,0.45)'; ctx.lineWidth = 1.2; ctx.stroke();
+    this.text(ctx, '무한의 탑', x - 14, y + 8, { size: 13, align: 'right', font: FONT_B, weight: 700, fill: '#c9b48a', stroke: 3 });
+    this.text(ctx, `${f}층`, x - 14, y + 34, { size: 30, align: 'right', fill: '#ffe9a6', stroke: 5, italic: true });
+    this.text(ctx, f % 5 === 0 ? '수호자의 방' : `수호자까지 ${nb + 1}층`, x - 216, y + 48, { size: 11, font: FONT_B, weight: 700, fill: f % 5 === 0 ? '#ff9a80' : '#9aa4c0', stroke: 3 });
     ctx.restore();
   },
 
@@ -216,9 +228,11 @@ const UI = {
     // 초상화
     ctx.drawImage(this.cached('tp_' + e.kind, 48, 48, g => {
       g.save(); g.beginPath(); g.arc(24, 24, 20, 0, TAU); g.fillStyle = '#1a1414'; g.fill(); g.clip();
+      if (typeof MOBS !== 'undefined' && MOBS[e.kind]) { try { Dex.draw(g, e.kind, 24, 44, 46, true); } catch (err) { } }
       g.translate(26, 28); g.scale(1.2, 1.2);
       const pal = e.rig.pal, opt = {};
-      if (e.kind === 'goblin' || e.kind === 'thrower') goblinHead(g, this.pJ, pal, 1.5, e, opt);
+      if (MOBS && MOBS[e.kind]) { /* 위에서 그림 */ }
+      else if (e.kind === 'goblin' || e.kind === 'thrower') goblinHead(g, this.pJ, pal, 1.5, e, opt);
       else if (e.kind === 'orc') orcHead(g, this.pJ, pal, 1.5, e, opt);
       else if (e.kind === 'mage') mageHead(g, this.pJ, pal, 1.5, e, opt);
       g.restore();
@@ -520,14 +534,14 @@ const UI = {
       ['Q', '어퍼 슬래시 - 적을 띄움 (공중 사용 가능)'], ['E', '돌진참 - 적을 끌고 돌진'], ['T', '삼단베기 - 3연속 돌진 베기 (방향 전환 가능)'],
       ['F', '발도 : 섬 - 순간 이동 베기'], ['G', '지진검 - 공중에서도 사용 가능'], ['R', '극 귀신참 - 각성기'],
       ['C / V', 'HP / MP 물약  (1 · 2 도 가능)'],
-      ['콤보', '평타 ↔ 스킬 서로 캔슬 가능 : 클릭 ×2 → Q → 클릭 ×3 → E → 클릭 ...'],
+      ['콤보', '평타 ↔ 스킬 서로 캔슬 가능 : 클릭 ×2 → Q → 클릭 ×3 → E → 클릭 ...'], ['O', '설정 (음량 · 화면 흔들림 · 난이도)'],
       ['팁', '띄운 적은 평타로 계속 저글 · 적 공격 준비 중 타격 시 COUNTER'],
     ];
     lines.forEach(([a, b], i) => {
       this.text(ctx, a, 330, 262 + i * 27, { size: 17, fill: '#ffd87a', stroke: 3 });
       this.text(ctx, b, 450, 262 + i * 27, { size: 16, font: FONT_B, weight: 700, fill: '#e8ecf8', stroke: 3 });
     });
-    this.text(ctx, Touch.on ? '화면을 터치하면 계속' : 'ESC 를 눌러 계속', W / 2, 620, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
+    this.text(ctx, Touch.on ? '화면을 터치하면 계속' : 'ESC 를 눌러 계속', W / 2, 652, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
   },
 
   // ---------- 결과 ----------
@@ -591,6 +605,7 @@ const UI = {
   drawGameOver(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, H);
     this.text(ctx, 'GAME OVER', W / 2, 300, { size: 80, align: 'center', italic: true, fill: '#ff5a4a', stroke: 8 });
+    if (Game.dungeon && Game.dungeon.def.tower) this.text(ctx, `무한의 탑  ${Game.towerFloor || 0}층 돌파  (최고 ${Save.data.tower.best}층)`, W / 2, 330, { size: 28, align: 'center', fill: '#ffe9a6', stroke: 5, italic: true });
     if (Game.keptGold > 0) this.text(ctx, `주운 골드 ${fmt(Game.keptGold)} 는 그대로 가져갑니다`, W / 2, 360, { size: 20, align: 'center', font: FONT_B, weight: 700, fill: '#ffe9a6', stroke: 4 });
     if (Game.frame % 60 < 44) this.text(ctx, 'Enter : 로비로', W / 2, 420, { size: 22, align: 'center', fill: '#ffd87a', stroke: 4 });
   },

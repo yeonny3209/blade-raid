@@ -28,7 +28,7 @@
   }
   canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block; }
   /* 앱 다운로드 버튼 (웹에서만, 타이틀·로비 화면에 표시) */
-  #dlbar { position: fixed; right: 14px; bottom: 14px; display: none; flex-direction: column; gap: 8px; z-index: 10; font-family: 'Black Han Sans', 'Malgun Gothic', sans-serif; }
+  #dlbar { position: fixed; left: 14px; bottom: 14px; display: none; flex-direction: column; gap: 8px; z-index: 10; font-family: 'Black Han Sans', 'Malgun Gothic', sans-serif; }
   #dlbar a, #dlbar button {
     display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 12px; cursor: pointer;
     background: linear-gradient(180deg, rgba(60,46,18,0.95), rgba(28,22,10,0.95)); color: #ffe9a6; text-decoration: none;
@@ -37,6 +37,12 @@
   #dlbar a:hover, #dlbar button:hover { border-color: #ffd24a; filter: brightness(1.15); }
   #dlbar small { display: block; font-family: 'Malgun Gothic', sans-serif; font-size: 11px; color: #b8a888; font-weight: 700; }
   #dlbar svg { flex: none; }
+  @media (pointer: coarse), (max-height: 520px) {
+    #dlbar { left: 6px; bottom: 6px; gap: 5px; }
+    #dlbar a, #dlbar button { padding: 5px 10px; font-size: 12px; border-radius: 9px; border-width: 1.5px; }
+    #dlbar svg { width: 18px; height: 18px; }
+    #dlbar small { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -71,8 +77,8 @@
 </script>
 <script>
   // 파일이 섞이지 않도록 한 번에 같은 버전으로 로드
-  const BUILD = '20261012b';
-  ['util', 'input', 'audio', 'rig', 'characters', 'anims', 'fx', 'entity', 'player', 'enemies', 'boss', 'themes', 'themes2', 'stage', 'dungeons', 'creatures', 'creatures2', 'creatures3', 'mobs', 'items', 'wskills', 'ui', 'touch', 'lobby', 'shop', 'game']
+  const BUILD = '20261013d';
+  ['util', 'input', 'audio', 'rig', 'characters', 'anims', 'fx', 'entity', 'player', 'enemies', 'boss', 'themes', 'themes2', 'stage', 'dungeons', 'creatures', 'creatures2', 'creatures3', 'mobs', 'items', 'wskills', 'meta', 'scenes', 'ui', 'touch', 'lobby', 'shop', 'game']
     .forEach(n => document.write(`<script src="js/${n}.js?v=${BUILD}"><\/script>`));
 </script>
 </body>
