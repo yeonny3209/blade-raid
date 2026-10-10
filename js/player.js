@@ -370,7 +370,7 @@ class Player extends Entity {
     const P = typeof playerPower === 'function' ? playerPower() : 1;
     this.power = P;
     this.lv = typeof playerLevel === 'function' ? playerLevel() : 70;
-    this.base = { hp: Math.round(34000 * 1.3 * (1 + (P - 1) * 0.35)), atk: Math.round(3000 * P), mpRegen: 48 };
+    this.base = { hp: Math.round(34000 * 0.6 * (1 + (P - 1) * 0.35)), atk: Math.round(3000 * P), mpRegen: 48 };
     this.mpMax = 1500; this.sinceHit = 999; this.novaCd = 0; this.wcd = 0; this.shield = 0;
     this.setGear();
     this.hp = this.hpMax; this.mp = this.mpMax;
