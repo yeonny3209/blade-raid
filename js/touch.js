@@ -72,7 +72,7 @@ const Touch = {
     if ((Game.state === 'result' || Game.state === 'gameover') && Share.swallow(e)) { this.menuPtr = e.pointerId; return; }
     if (Game.state === 'lobby') { this.menuPtr = e.pointerId; Lobby.touchAt(x, y); return; }   // 로비 : 카드 직접 선택
     if (Game.state === 'shop') { this.menuPtr = e.pointerId; Shop.touchDown(x, y); return; }    // 상점 : 드래그 스크롤 / 탭 선택
-    if (Game.state === 'paused') { this.menuPtr = e.pointerId; Input.press('T_pause'); return; }  // 아무 데나 터치 = 계속
+    if (Game.state === 'paused') { this.menuPtr = e.pointerId; Pause.click(x, y); return; }  // 일시정지 : 버튼 터치
     if (!this.playing()) {                                             // 타이틀 / 결과 / 컨티뉴
       this.menuPtr = e.pointerId;
       Input.press('T_attack');

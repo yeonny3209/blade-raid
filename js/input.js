@@ -41,6 +41,8 @@ const Input = {
     // 마우스 좌클릭 = 기본 공격
     addEventListener('mousedown', e => {
       if (e.button !== 0 || (e.target.closest && e.target.closest('#dlbar')) || (typeof Share !== 'undefined' && Share.swallow(e))) return;
+      if (typeof Game !== 'undefined' && Game.state === 'paused') { e.preventDefault(); const [x, y] = Touch.toLogical(e); Pause.click(x, y); return; }
+      if (typeof Game !== 'undefined' && Game.state === 'lobby') { e.preventDefault(); if (Lobby.enterT <= 0) { const [x, y] = Touch.toLogical(e); Lobby.touchAt(x, y); } return; }   // 로비 : 클릭한 버튼만 동작 (빈 곳 클릭으로 입장하지 않는다)
       e.preventDefault();          // 드래그로 텍스트/이미지가 선택되지 않게
       this.press('Mouse0');
     });

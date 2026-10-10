@@ -278,7 +278,7 @@ const Lobby = {
     if (this.msg > 0) {
       UI.text(ctx, this.msgText, W / 2, by + 124, { size: 18, align: 'center', fill: '#ff8a70', stroke: 4 });
     } else if (t % 70 < 50) {
-      const key = Touch.on ? '카드를 터치' : '← →  선택      J / 좌클릭  입장';
+      const key = Touch.on ? '카드를 터치' : '← →  선택      J · Enter  입장      카드 클릭 : 선택 → 다시 클릭 : 입장';
       UI.text(ctx, key, W / 2, by + 124, { size: 18, align: 'center', fill: '#ffe070', stroke: 4 });
     }
     // 제2지역 개방 안내

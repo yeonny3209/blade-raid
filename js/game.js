@@ -91,12 +91,12 @@ const Game = {
       case 'shop': Shop.update(); break;
       case 'options': Opts.update(); break;
       case 'codex': Codex.update(); break;
-      case 'paused': if (Input.take('pause')) { this.state = this.pausedFrom; Sfx.play('ui'); } else if (Input.take('options')) { this.openOptions('paused'); break; } Input.queue = Input.queue.filter(q => q.a === 'pause'); break;
+      case 'paused': Pause.update(); if (this.state !== 'paused') break; if (Input.take('pause')) { this.state = this.pausedFrom; Sfx.play('ui'); } else if (Input.take('options')) { this.openOptions('paused'); break; } Input.queue = Input.queue.filter(q => q.a === 'pause'); break;
       case 'result': if (Input.take('share')) Share.save(); this.resT++; if (this.resT > 100 && (Input.take('confirm') || Input.take('attack'))) { Sfx.play('select'); this.toLobby(); } Input.clear(); break;
       case 'gameover': if (Input.take('share')) Share.save(); if (Input.take('confirm') || Input.take('attack')) { Sfx.play('select'); this.coins = 3; this.toLobby(); } Input.clear(); break;
       case 'continue': this.updateContinue(); break;
       default:
-        if (Input.take('pause') && !this.cutin && this.state === 'play') { this.pausedFrom = this.state; this.state = 'paused'; Sfx.play('ui'); return; }
+        if (Input.take('pause') && !this.cutin && this.state === 'play') { this.pausedFrom = this.state; this.state = 'paused'; Pause.enter(); Sfx.play('ui'); return; }
         this.updateWorld();
     }
   },
@@ -114,6 +114,13 @@ const Game = {
       this.coins = 3;
       this.toLobby();
     }
+  },
+
+  // 전투 도중 로비로 나가기 : 주운 골드는 가져가고 탑 기록은 남긴다
+  quitToLobby() {
+    this.keptGold = this.stats.gold; Save.bank(this.stats.gold); this.stats.gold = 0;
+    if (this.dungeon && this.dungeon.def.tower) { const t = Save.data.tower; t.runs++; t.best = Math.max(t.best, this.roomIdx); Ach.check(); Save.save(); }
+    this.coins = 3; this.toLobby();
   },
 
   // 로비로 (던전 선택 화면)

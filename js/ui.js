@@ -528,7 +528,7 @@ const UI = {
   // ---------- 일시정지 ----------
   drawPause(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(0, 0, W, H);
-    this.text(ctx, 'PAUSE', W / 2, 200, { size: 64, align: 'center', italic: true, fill: '#fff', stroke: 8 });
+    this.text(ctx, 'PAUSE', W / 2, 98, { size: 54, align: 'center', italic: true, fill: '#fff', stroke: 8 });
     const lines = [
       ['W A S D', '이동, 같은 방향 2번 → 대시  (방향키도 가능)'], ['좌클릭', '기본 공격  (J 도 가능)'],
       ['Space', '점프  /  다운 중 누르면 퀵 리바운드'], ['Z', '백스텝 (무적)  (L 도 가능)'],
@@ -542,7 +542,8 @@ const UI = {
       this.text(ctx, a, 330, 262 + i * 27, { size: 17, fill: '#ffd87a', stroke: 3 });
       this.text(ctx, b, 450, 262 + i * 27, { size: 16, font: FONT_B, weight: 700, fill: '#e8ecf8', stroke: 3 });
     });
-    this.text(ctx, Touch.on ? '화면을 터치하면 계속' : 'ESC 를 눌러 계속', W / 2, 652, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
+    Pause.draw(ctx);
+    this.text(ctx, Touch.on ? '버튼을 눌러 선택  ·  우측 위 일시정지 버튼으로도 계속' : 'ESC 계속   방향키 + Enter 선택   Z 로비로 나가기   (마우스 클릭 가능)', W / 2, 652, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
   },
 
   // ---------- 결과 ----------

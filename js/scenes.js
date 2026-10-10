@@ -296,6 +296,39 @@ const Codex = {
 addEventListener('wheel', e => { if (Game.state === 'codex') Codex.wheel(e.deltaY); }, { passive: true });
 
 // ============================================================
+//  일시정지 메뉴 : 계속하기 / 설정 / 로비로 나가기 (마우스 · 터치 · 키보드)
+// ============================================================
+const Pause = {
+  sel: 0, arm: 0,
+  btn(i) { return { x: 294 + i * 236, y: 150, w: 220, h: 46 }; },
+  enter() { this.sel = 0; this.arm = 0; },
+  press(i) {
+    if (i === 0) { Game.state = Game.pausedFrom; Sfx.play('ui'); }
+    else if (i === 1) { Sfx.play('select'); Game.openOptions('paused'); }
+    else if (this.arm > 0) { Sfx.play('select'); this.arm = 0; Game.quitToLobby(); }
+    else { this.arm = 200; this.sel = 2; Sfx.play('ui', 0.8, 0.8); }          // 실수로 나가지 않게 한 번 더 확인
+  },
+  click(x, y) { for (let i = 0; i < 3; i++) if (inR(x, y, this.btn(i))) { this.press(i); return true; } return false; },
+  update() {
+    if (this.arm > 0) this.arm--;
+    if (Input.take('left')) { this.sel = (this.sel + 2) % 3; this.arm = 0; Sfx.play('ui', 0.5, 1.1); }
+    if (Input.take('right')) { this.sel = (this.sel + 1) % 3; this.arm = 0; Sfx.play('ui', 0.5, 1.1); }
+    if (Input.take('confirm')) this.press(this.sel);
+    else if (Input.take('back')) this.press(2);
+  },
+  draw(ctx) {
+    const names = ['계속하기', Touch.on ? '설정' : '설정  [O]', this.arm > 0 ? '정말 나갈까요?  한 번 더' : '로비로 나가기'];
+    for (let i = 0; i < 3; i++) {
+      const r = this.btn(i), on = i === this.sel, warn = i === 2;
+      const col = warn ? (this.arm > 0 ? 'rgba(120,34,28,0.95)' : 'rgba(70,30,26,0.9)') : 'rgba(30,50,86,0.95)';
+      ctx.fillStyle = col; roundRect(ctx, r.x, r.y, r.w, r.h, 12); ctx.fill();
+      ctx.strokeStyle = on ? '#ffd24a' : (warn ? '#ff8a70' : '#9ac8ff'); ctx.lineWidth = on ? 3.2 : 2; ctx.stroke();
+      UI.text(ctx, names[i], r.x + r.w / 2, r.y + r.h / 2 + 1, { size: 18, align: 'center', fill: '#fff', stroke: 4 });
+    }
+  },
+};
+
+// ============================================================
 //  기록 카드 (이미지로 저장 · 공유)
 // ============================================================
 const Share = {
