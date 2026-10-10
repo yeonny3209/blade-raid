@@ -606,9 +606,9 @@ const UI = {
   drawGameOver(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, H);
     this.text(ctx, 'GAME OVER', W / 2, 300, { size: 80, align: 'center', italic: true, fill: '#ff5a4a', stroke: 8 });
-    if (Game.dungeon && Game.dungeon.def.tower) this.text(ctx, `무한의 탑  ${Game.towerFloor || 0}층 돌파  (최고 ${Save.data.tower.best}층)`, W / 2, 330, { size: 28, align: 'center', fill: '#ffe9a6', stroke: 5, italic: true });
-    if (Game.keptGold > 0) this.text(ctx, `주운 골드 ${fmt(Game.keptGold)} 는 그대로 가져갑니다`, W / 2, 360, { size: 20, align: 'center', font: FONT_B, weight: 700, fill: '#ffe9a6', stroke: 4 });
-    if (Game.frame % 60 < 44) this.text(ctx, 'Enter : 로비로', W / 2, 420, { size: 22, align: 'center', fill: '#ffd87a', stroke: 4 });
+    if (Game.dungeon && Game.dungeon.def.tower) this.text(ctx, `무한의 탑  ${Game.towerFloor || 0}층 돌파  (최고 ${Save.data.tower.best}층)`, W / 2, 352, { size: 28, align: 'center', fill: '#ffe9a6', stroke: 5, italic: true });
+    if (Game.keptGold > 0) this.text(ctx, `주운 골드 ${fmt(Game.keptGold)} 는 그대로 가져갑니다`, W / 2, 392, { size: 20, align: 'center', font: FONT_B, weight: 700, fill: '#ffe9a6', stroke: 4 });
+    if (Game.frame % 60 < 44) this.text(ctx, 'Enter : 로비로', W / 2, 450, { size: 22, align: 'center', fill: '#ffd87a', stroke: 4 });
   },
 
   drawBossIntro(ctx, t) {
