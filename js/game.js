@@ -151,6 +151,7 @@ const Game = {
     this.coins = d.tower ? 0 : 3;                // 무한의 탑에는 부활이 없다 (대신 중간에 나가도 이어하기)
     this.dungeonIdx = DUNGEONS.indexOf(d);
     this.notices = []; this.big = null;
+    if (d.tower) this.stats.time = from > 0 ? Math.max(0, Save.data.tower.time | 0) : 0;      // 이어하기 : 플레이 타임도 이어서 센다
     this.loadRoom(d.tower ? Math.max(0, from | 0) : 0);
     if (d.tower) {                               // 나갔다 이어하기로 돌아와도 쿨타임은 그대로 (궁극기가 다시 차 있지 않게)
       const t = Save.data.tower;
@@ -161,7 +162,7 @@ const Game = {
   saveTowerCd() {                                // 탑 : 남은 스킬 쿨타임을 저장한다
     if (!this.dungeon || !this.dungeon.def.tower || !this.player) return;
     const cd = {}; for (const k in this.player.cd) if (this.player.cd[k] > 0) cd[k] = Math.round(this.player.cd[k] * 100) / 100;
-    Save.data.tower.cd = Object.keys(cd).length ? cd : null; Save.save();
+    Save.data.tower.cd = Object.keys(cd).length ? cd : null; Save.data.tower.time = this.stats.time; Save.save();
   },
 
   loadRoom(i) {
@@ -170,7 +171,7 @@ const Game = {
     if (D0.tower) {                                                      // 무한의 탑 : 층마다 테마 · 난이도가 바뀐다
       ensureTowerRooms(this.dungeon, i);
       const rm = this.dungeon.rooms[i], DD = DUNGEONS[rm.blk];
-      Save.data.tower.run = i > 0 ? i : null; Save.save();                 // 이어하기 지점
+      Save.data.tower.run = i > 0 ? i : null; Save.data.tower.time = this.stats.time; Save.save();                 // 이어하기 지점 (플레이 타임 포함)
       D0.theme = rm.theme; D0.mul = towerMul(rm.floor); D0.lv = Math.min(160, 60 + rm.floor * 2); D0.pool = DD.pool; D0.boss = rm.bossId || DD.boss;
     }
     delete this.bgCache[i - 2];

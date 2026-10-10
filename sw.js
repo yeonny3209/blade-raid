@@ -1,6 +1,6 @@
 // 오프라인 캐시 : 한 번 실행하면 인터넷 없이도 플레이 가능
 const CACHE = 'blade-raid-v17';
-const BUILD = '20261013p';
+const BUILD = '20261013q';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './js/util.js?v=' + BUILD, './js/input.js?v=' + BUILD, './js/audio.js?v=' + BUILD, './js/rig.js?v=' + BUILD, './js/characters.js?v=' + BUILD,
@@ -39,7 +39,9 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       try {
         const res = await fetch(req);
-        if (res.ok && (res.headers.get('content-type') || '').includes('text/html')) { const c = await caches.open(CACHE); c.put('./index.html', res.clone()).catch(() => { }); }
+        // 게임 본문(루트 / index.html)만 오프라인용으로 저장한다 (event.html 같은 다른 문서가 덮어쓰지 않게)
+        const path = new URL(req.url).pathname;
+        if (res.ok && (path.endsWith('/') || path.endsWith('/index.html')) && (res.headers.get('content-type') || '').includes('text/html')) { const c = await caches.open(CACHE); c.put('./index.html', res.clone()).catch(() => { }); }
         return res;
       } catch (err) {
         return (await caches.match('./index.html')) || Response.error();
