@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
         s.setBuiltInZoomControls(false);
         s.setTextZoom(100);                             // 기기 글꼴 크기 설정에 영향받지 않게
         web.setWebViewClient(new WebViewClient());
-        web.addJavascriptInterface(new Bridge(), "AndroidApp");
+        web.addJavascriptInterface(new Bridge(this), "AndroidApp");
         web.setBackgroundColor(0xFF000000);
         web.setVerticalScrollBarEnabled(false);
         web.setHorizontalScrollBarEnabled(false);
@@ -54,33 +54,6 @@ public class MainActivity extends Activity {
 
         web.loadUrl("file:///android_asset/www/index.html");
         hideSystemBars();
-    }
-
-    /** 웹의 '기록 카드 저장' 버튼이 이미지를 갤러리(Pictures/BladeRaid)에 저장한다 */
-    private class Bridge {
-        @JavascriptInterface
-        public boolean saveImage(String base64, String name) {
-            try {
-                byte[] data = Base64.decode(base64, Base64.DEFAULT);
-                if (Build.VERSION.SDK_INT >= 29) {
-                    ContentValues v = new ContentValues();
-                    v.put(MediaStore.Images.Media.DISPLAY_NAME, name);
-                    v.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
-                    v.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/BladeRaid");
-                    Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
-                    OutputStream os = getContentResolver().openOutputStream(uri);
-                    os.write(data); os.close();
-                } else {
-                    File dir = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "BladeRaid");
-                    dir.mkdirs();
-                    FileOutputStream os = new FileOutputStream(new File(dir, name));
-                    os.write(data); os.close();
-                }
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
-        }
     }
 
     private void hideSystemBars() {
