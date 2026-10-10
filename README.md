@@ -4,7 +4,7 @@
 
 - 바로 플레이: https://yeonny3209.github.io/blade-raid/
 - 안드로이드 앱(APK): [Releases](https://github.com/yeonny3209/blade-raid/releases/latest)
-- 진행 중인 이벤트: [탑을 오르는 자들](EVENT.md)
+- 진행 중인 이벤트: [탑을 오르는 자들](https://yeonny3209.github.io/blade-raid/event.html)
 
 ## 특징
 - **던전 20개 + 무한의 탑 (200층까지 + 그 위로 끝없는 수호자)** — 던전마다 테마·보스가 다르고, 보스 20종은 몸과 패턴이 전부 다르다.

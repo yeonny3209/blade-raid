@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>탑을 오르는 자들 - BLADE RAID 이벤트</title>
+<meta name="description" content="BLADE RAID 무한의 탑 최고층 챌린지. 가장 높이 오른 사람에게 상금 5피스!">
+<meta property="og:title" content="탑을 오르는 자들 - BLADE RAID 이벤트">
+<meta property="og:description" content="무한의 탑을 가장 높이 오른 사람에게 상금 5피스! 기간 1개월.">
+<meta property="og:image" content="img/event-hero.jpg">
+<style>
+  @font-face { font-family: 'Black Han Sans'; src: url('fonts/BlackHanSans-Regular.ttf') format('truetype'); font-display: swap; }
+  :root {
+    --bg: #080b17; --bg2: #101528; --card: rgba(18, 23, 44, 0.86); --line: rgba(201, 165, 92, 0.45);
+    --gold: #ffd66e; --gold2: #e8a93a; --ink: #eef1fb; --soft: #a9b3d4; --red: #ff8a70;
+    --font: 'Black Han Sans', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    --body: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); line-height: 1.65; -webkit-text-size-adjust: 100%; }
+  body::before { content: ''; position: fixed; inset: 0; z-index: -1; background:
+    radial-gradient(900px 500px at 80% -10%, rgba(255, 190, 70, 0.14), transparent 60%),
+    radial-gradient(800px 600px at 0% 40%, rgba(90, 70, 200, 0.12), transparent 60%), linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .wrap { width: min(920px, 100% - 32px); margin: 0 auto; }
+  h1, h2, h3 { font-family: var(--font); font-weight: 400; margin: 0; letter-spacing: 0.01em; }
+
+  /* 히어로 */
+  .hero { position: relative; min-height: min(78vh, 640px); display: grid; align-items: end; overflow: hidden; border-bottom: 2px solid var(--line); }
+  .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+  .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 11, 23, 0.25) 0%, rgba(8, 11, 23, 0.1) 35%, var(--bg) 100%); }
+  .hero .wrap { position: relative; z-index: 1; padding: 0 0 38px; text-align: center; }
+  .tag { display: inline-block; padding: 6px 16px; border: 2px solid var(--gold); border-radius: 999px; background: rgba(8, 11, 23, 0.78); color: var(--gold); font-family: var(--font); font-size: 15px; letter-spacing: 0.08em; }
+  .hero h1 { margin: 16px 0 6px; font-size: clamp(44px, 11vw, 96px); line-height: 1.05; color: var(--gold);
+    text-shadow: 0 4px 0 #000, 0 0 30px rgba(255, 190, 70, 0.55), -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000; }
+  .hero .sub { font-family: var(--font); font-size: clamp(18px, 4.2vw, 28px); text-shadow: 0 2px 0 #000; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 24px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 24px; border-radius: 14px; text-decoration: none; font-family: var(--font); font-size: 18px; border: 2px solid var(--gold); transition: transform .15s, filter .15s; }
+  .btn:hover { transform: translateY(-2px); filter: brightness(1.12); }
+  .btn.primary { background: linear-gradient(180deg, #ffd66e, #e8a93a); color: #2a1800; }
+  .btn.ghost { background: rgba(8, 11, 23, 0.78); color: var(--gold); }
+
+  /* 핵심 정보 */
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: -26px auto 0; position: relative; z-index: 2; }
+  .fact { background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 18px 20px; text-align: center; backdrop-filter: blur(6px); }
+  .fact small { display: block; color: var(--soft); font-size: 13px; letter-spacing: 0.1em; }
+  .fact b { display: block; margin-top: 4px; font-family: var(--font); font-weight: 400; font-size: 30px; color: var(--gold); }
+  .fact span { color: var(--soft); font-size: 13px; }
+
+  section { padding: 54px 0 0; }
+  h2 { font-size: clamp(26px, 5.5vw, 36px); color: var(--gold); margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+  h2::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, var(--line), transparent); }
+  p { margin: 0 0 12px; color: #d6dcf2; }
+
+  /* 참가 방법 */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: s; }
+  .steps li { position: relative; counter-increment: s; background: var(--card); border: 2px solid rgba(120, 130, 170, 0.35); border-radius: 18px; padding: 18px 20px 18px 84px; }
+  .steps li::before { content: counter(s); position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center;
+    background: linear-gradient(180deg, #ffd66e, #e8a93a); color: #3a2000; font-family: var(--font); font-size: 24px; border: 3px solid #7a5010; }
+  .steps b { display: block; font-family: var(--font); font-weight: 400; font-size: 21px; color: #fff; }
+  .steps span { color: var(--soft); font-size: 15px; }
+  .steps a { color: var(--gold); }
+  .steps .kakao { border-color: rgba(255, 214, 110, 0.7); box-shadow: 0 0 0 4px rgba(255, 214, 110, 0.08); }
+
+  /* 카드 격자 */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 2px solid rgba(120, 130, 170, 0.35); border-radius: 18px; padding: 20px; }
+  .card h3 { font-size: 20px; color: #fff; margin-bottom: 8px; }
+  .card p { font-size: 15px; color: var(--soft); margin: 0; }
+  .card.hot { border-color: var(--line); }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: bold; margin-right: 6px; }
+  .pill.ok { background: rgba(110, 230, 150, 0.15); color: #7dffa0; border: 1px solid rgba(125, 255, 160, 0.5); }
+  .pill.no { background: rgba(255, 138, 112, 0.12); color: var(--red); border: 1px solid rgba(255, 138, 112, 0.5); }
+
+  /* 타임라인 */
+  .tower { display: grid; gap: 0; border: 2px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--card); }
+  .tower > div { display: grid; grid-template-columns: 130px 1fr; gap: 14px; padding: 15px 20px; border-top: 1px solid rgba(120, 130, 170, 0.25); align-items: center; }
+  .tower > div:first-child { border-top: 0; }
+  .tower b { font-family: var(--font); font-weight: 400; color: var(--gold); font-size: 20px; }
+  .tower span { color: #d6dcf2; font-size: 15px; }
+
+  .note { margin-top: 14px; padding: 16px 18px; border-left: 4px solid var(--gold2); background: rgba(255, 214, 110, 0.06); border-radius: 0 12px 12px 0; color: #d6dcf2; font-size: 15px; }
+  .note b { color: var(--gold); }
+
+  footer { margin-top: 64px; padding: 30px 0 46px; border-top: 2px solid var(--line); text-align: center; color: var(--soft); font-size: 14px; }
+  footer .big { font-family: var(--font); font-size: 26px; color: var(--gold); margin-bottom: 10px; }
+
+  @media (max-width: 560px) {
+    .steps li { padding: 16px 16px 16px 72px; }
+    .steps li::before { left: 14px; width: 42px; height: 42px; }
+    .tower > div { grid-template-columns: 1fr; gap: 2px; }
+    .hero { min-height: 520px; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <img src="img/event-hero.jpg" alt="무한의 탑 30층 수호자와 맞서는 검사">
+  <div class="wrap">
+    <span class="tag">BLADE RAID EVENT</span>
+    <h1>탑을 오르는 자들</h1>
+    <div class="sub">무한의 탑 최고층 챌린지</div>
+    <div class="cta">
+      <a class="btn primary" href="./" target="_blank" rel="noopener">지금 플레이</a>
+      <a class="btn ghost" href="https://github.com/yeonny3209/blade-raid/releases/latest" target="_blank" rel="noopener">안드로이드 APK</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="facts">
+    <div class="fact"><small>상금</small><b>5피스</b><span>가장 높이 오른 사람에게</span></div>
+    <div class="fact"><small>기간</small><b>1개월</b><span>시작일은 추후 공지</span></div>
+    <div class="fact"><small>인정 난이도</small><b>보통</b><span>보통 난이도 기록만 인정</span></div>
+  </div>
+
+  <section>
+    <h2>참가 방법</h2>
+    <ol class="steps">
+      <li><b>게임을 켜고 던전 3개 클리어</b><span>웹 또는 안드로이드 앱 · 클리어하면 <b style="display:inline;font-size:inherit;color:var(--gold)">무한의 탑</b>이 열려요.</span></li>
+      <li><b>무한의 탑에 도전</b><span>최대한 높이 올라가세요. 쓰러지면 게임오버 화면에 돌파한 층수와 <b style="display:inline;font-size:inherit;color:var(--gold)">[기록 카드 저장]</b> 버튼이 나와요.</span></li>
+      <li class="kakao"><b>세윤에게 개인 카톡으로 보내기</b><span>저장한 기록 카드 이미지와 닉네임을 보내 주세요.</span></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>순위는 이렇게</h2>
+    <div class="grid">
+      <div class="card hot"><h3>1순위 · 돌파 층수</h3><p>더 높은 층을 돌파한 사람이 앞서요.</p></div>
+      <div class="card hot"><h3>2순위 · 클리어 타임</h3><p>층수가 같으면 클리어 타임이 짧은 쪽이 앞서요. 그래도 같으면 먼저 보낸 사람이 앞서요.</p></div>
+      <div class="card"><h3>난이도</h3><p><span class="pill ok">인정</span>보통<br><span class="pill no">제외</span>쉬움 · 어려움 · 지옥</p></div>
+      <div class="card"><h3>여러 번 도전 OK</h3><p>몇 번을 보내도 되고, 가장 높은 기록 하나만 인정해요.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>무한의 탑이란?</h2>
+    <div class="tower">
+      <div><b>1 ~ 200층</b><span>층마다 몬스터가 강해지고, 5층마다 수호자(보스)가 기다려요.</span></div>
+      <div><b>201층 ~</b><span>매 층이 수호자의 방. 보스 패턴은 그대로, 스펙만 계속 강해져요. 끝이 없어요.</span></div>
+      <div><b>부활 없음</b><span>쓰러지면 거기서 끝. 대신 일시정지 메뉴의 <b style="color:var(--gold)">저장하고 나가기</b>를 하면 다음에 그 층부터 이어할 수 있어요.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>일정</h2>
+    <div class="grid">
+      <div class="card"><h3>이벤트 기간</h3><p>[시작일]부터 1개월</p></div>
+      <div class="card"><h3>중간 순위</h3><p>2주 차 말에 한 번 공개해요.</p></div>
+      <div class="card"><h3>최종 발표</h3><p>이벤트 종료 후 3일 이내에 발표해요.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>인증 안내</h2>
+    <p>기록 카드에는 돌파 층수, 클리어 타임, 최대 콤보, 장비, 난이도, 날짜와 <b style="color:var(--gold)">인증 코드</b>가 들어 있어요.</p>
+    <div class="note"><b>상위 기록은 플레이 영상을 따로 요청할 수 있어요.</b> 영상에 무한의 탑 층 표시와 게임오버 화면이 이어서 보여야 하고, 영상과 기록 카드가 다르거나 확인에 응하지 않으면 순위에서 제외될 수 있어요.</div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="big">탑 꼭대기에서 만나요</div>
+    <div>BLADE RAID · <a href="./" style="color:var(--gold)">yeonny3209.github.io/blade-raid</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
