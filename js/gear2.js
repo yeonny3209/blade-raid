@@ -457,17 +457,17 @@ class WSunBig {
 
 // ---------- 타격 정의 ----------
 Object.assign(WH, {
-  ichi: WS.hd({ dmg: 8, kx: 5, kz: 3, airKz: 4, stun: 50, stop: 8, shake: 9, fx: 'slash', power: 1.8 }),
+  ichi: WS.hd({ dmg: 4.5, kx: 5, kz: 3, airKz: 4, stun: 50, stop: 8, shake: 9, fx: 'slash', power: 1.8 }),
   counterIai: WS.hd({ dmg: 9, kx: 6, kz: 5, airKz: 6, stun: 50, stop: 10, shake: 10, fx: 'slash', power: 2 }),
-  thorn: WS.hd({ dmg: 0.9, kx: 0, airKz: 0.5, stun: 10, stop: 1, shake: 0, fx: 'none', sfx: 'none' }),
-  bloom: WS.hd({ dmg: 9, kx: 6, kz: 9, airKz: 8, stun: 50, stop: 8, shake: 8, fx: 'blunt', power: 1.6 }),
+  thorn: WS.hd({ dmg: 1.4, kx: 0, airKz: 0.5, stun: 10, stop: 1, shake: 0, fx: 'none', sfx: 'none' }),
+  bloom: WS.hd({ dmg: 12, kx: 6, kz: 9, airKz: 8, stun: 50, stop: 8, shake: 8, fx: 'blunt', power: 1.6 }),
   vineGrab: WS.hd({ dmg: 3.2, kx: 0, kz: 2, airKz: 2, stun: 40, stop: 5, shake: 4, fx: 'pierce', power: 1.3 }),
-  cannon: WS.hd({ dmg: 6, kx: 7, kz: 9, airKz: 8, stun: 50, stop: 8, shake: 8, fx: 'heavy', power: 1.6 }),
+  cannon: WS.hd({ dmg: 4, kx: 7, kz: 9, airKz: 8, stun: 50, stop: 8, shake: 8, fx: 'heavy', power: 1.6 }),
   coinHit: WS.hd({ dmg: 1.5, kx: 1, airKz: 2, stun: 12, stop: 1, shake: 1, fx: 'none', sfx: 'light' }),
   chestBlast: WS.hd({ dmg: 13, kx: 9, kz: 11, airKz: 10, stun: 60, stop: 14, shake: 14, fx: 'heavy', power: 2.2 }),
   gearSaw: WS.hd({ dmg: 1.9, kx: 2, airKz: 2, stun: 22, stop: 2, shake: 2, fx: 'slash' }),
   bullet: WS.hd({ dmg: 0.85, kx: 1.5, airKz: 1, stun: 14, stop: 1, shake: 1, fx: 'pierce', sfx: 'light' }),
-  beam: WS.hd({ dmg: 1.5, kx: 2, airKz: 2, stun: 20, stop: 1, shake: 1.5, fx: 'none', sfx: 'none' }),
+  beam: WS.hd({ dmg: 1, kx: 2, airKz: 2, stun: 20, stop: 1, shake: 1.5, fx: 'none', sfx: 'none' }),
   sunFlare: WS.hd({ dmg: 30, kx: 8, kz: 13, airKz: 12, stun: 70, stop: 18, shake: 18, fx: 'heavy', power: 2.6 }),
   slotWin: WS.hd({ dmg: 6, kx: 6, kz: 8, airKz: 8, stun: 50, stop: 8, shake: 8, fx: 'heavy', power: 1.6 }),
 });
@@ -636,7 +636,7 @@ Object.assign(WSK, {
         if (f === 70) {
           const mul = p.slotMul || 1;
           Sfx.wlayer('coin', 3, true); Game.flashScreen(0.4, '255,230,150'); Game.addShake(8 + mul * 2);
-          const hd = WS.hd({ dmg: 6 * mul, kx: 6, kz: 8, airKz: 8, stun: 50, stop: 8 + mul, shake: 8 + mul, fx: 'heavy', power: 1.4 + mul * 0.15 });
+          const hd = WS.hd({ dmg: 8 * mul, kx: 6, kz: 8, airKz: 8, stun: 50, stop: 8 + mul, shake: 8 + mul, fx: 'heavy', power: 1.4 + mul * 0.15 });
           for (const e of WS.onScreen()) {
             FX.add('world', new Flash(e.x, sy(e.y, e.z + e.h * 0.5), 14, 120, 14, '255,215,90', 0.9));
             for (let i = 0; i < Math.min(8, Math.round(mul * 2)); i++) Game.pickups.push(new Pickup('gold', e.x, e.y, 60, randi(30, 80) * Math.ceil(mul / 2)));
