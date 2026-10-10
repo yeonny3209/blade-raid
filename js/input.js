@@ -12,7 +12,7 @@ const KEYMAP = {
   Space: 'jump',
   KeyZ: 'back', KeyL: 'back',
   KeyQ: 's1', KeyE: 's2', KeyT: 's3', KeyF: 's4', KeyG: 's5', KeyR: 's6',
-  KeyB: 'shop', KeyN: 'tower', KeyK: 'codex', KeyO: 'options', KeyH: 'diff', KeyP: 'share', KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
+  KeyB: 'shop', KeyN: 'tower', KeyU: 'tower2', KeyK: 'codex', KeyO: 'options', KeyH: 'diff', KeyP: 'share', KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
   Escape: 'pause', KeyM: 'mute', Enter: 'confirm', NumpadEnter: 'confirm',
   F2: 'debug',
 };

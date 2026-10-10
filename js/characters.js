@@ -378,6 +378,25 @@ function gearDeco(ctx, J, pal, ent, opt, layer) {
           ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -6, L * 0.2)); ctx.lineTo(...tp(Hh, F, -1, L * 0.5)); ctx.lineTo(...tp(Hh, F, -6, L * 0.8)); ctx.moveTo(...tp(Hh, F, 6, L * 0.3)); ctx.lineTo(...tp(Hh, F, 2, L * 0.62)); ctx.lineTo(...tp(Hh, F, 7, L * 0.95)); ctx.stroke();
           ctx.globalCompositeOperation = 'source-over';
         } break;
+      case 'samurai': olPoly(ctx, chest(0.08), d[1], ol, 1.4); shine(0.25);
+        ctx.strokeStyle = tr[1]; ctx.lineWidth = 1.3;
+        for (let r = 1; r <= 4; r++) { ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -12, L * (0.12 + r * 0.17))); ctx.lineTo(...tp(Hh, F, 12, L * (0.12 + r * 0.17))); ctx.stroke(); }
+        ctx.strokeStyle = a.look.coat[2]; ctx.lineWidth = 2.2;
+        for (const f of [-6, 6]) { ctx.beginPath(); ctx.moveTo(...tp(Hh, F, f, L * 0.2)); ctx.lineTo(...tp(Hh, F, f, L + 2)); ctx.stroke(); }
+        break;
+      case 'druid': olPoly(ctx, chest(0.1), d[1], ol, 1.3);
+        ctx.fillStyle = d[2]; ctx.strokeStyle = ol; ctx.lineWidth = 0.8;
+        for (let r = 0; r < 4; r++) for (let f = -9 + (r % 2) * 4.5; f < 12; f += 9) { const p = tp(Hh, F, f, L * (0.22 + r * 0.19)); ctx.beginPath(); ctx.ellipse(p[0], p[1], 5, 2.8, 0.7 - r * 0.3, 0, TAU); ctx.fill(); ctx.stroke(); }
+        if (fx && glow) { const p = tp(Hh, F, 0, L * 0.6); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 14, glow, 0.5 + Math.sin(Game.time * 0.08) * 0.15); ctx.globalCompositeOperation = 'source-over'; } break;
+      case 'pirate': olPoly(ctx, chest(0.05), d[1], ol, 1.4);
+        olPoly(ctx, [...tp(Hh, F, -5, L * 0.95), ...tp(Hh, F, 5, L * 0.95), ...tp(Hh, F, 0, L * 0.3)], '#efe8d4', ol, 0.9);
+        ctx.strokeStyle = tr[1]; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -13, L * 0.12)); ctx.lineTo(...tp(Hh, F, 13, L * 0.12)); ctx.stroke();
+        rivets([[-8, 0.4], [-8, 0.62], [-8, 0.84], [8, 0.4], [8, 0.62], [8, 0.84]]); break;
+      case 'steam': olPoly(ctx, chest(0.1), d[1], ol, 1.4); shine(0.25);
+        { const c0 = tp(Hh, F, 0, L * 0.6);
+          ctx.strokeStyle = tr[2]; ctx.lineWidth = 1.6; ctx.beginPath(); for (let i = 0; i < 12; i++) { const a2 = i / 12 * TAU + Game.time * 0.02, r2 = i % 2 ? 6 : 8.5; ctx.lineTo(c0[0] + Math.cos(a2) * r2, c0[1] + Math.sin(a2) * r2); } ctx.closePath(); ctx.stroke();
+          ctx.strokeStyle = tr[1]; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -10, L * 0.2)); ctx.lineTo(...tp(Hh, F, -10, L * 0.95)); ctx.moveTo(...tp(Hh, F, 10, L * 0.2)); ctx.lineTo(...tp(Hh, F, 10, L * 0.95)); ctx.stroke();
+          if (fx && glow) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, c0[0], c0[1], 12, glow, 0.7 + Math.sin(Game.time * 0.1) * 0.2); ctx.globalCompositeOperation = 'source-over'; } } break;
       case 'horns': olPoly(ctx, chest(0.05), d[1], ol, 1.4); shine(0.25);
         olPoly(ctx, [...tp(Hh, F, -12, -4), ...tp(Hh, F, 12, -4), ...tp(Hh, F, 8, -18), ...tp(Hh, F, 0, -12), ...tp(Hh, F, -8, -18)], d[1], ol, 1.2);
         if (fx && glow) { const p = tp(Hh, F, 0, L * 0.55); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 14, glow, 0.7 + Math.sin(Game.time * 0.12) * 0.2); ctx.globalCompositeOperation = 'source-over'; } break;
@@ -388,8 +407,8 @@ function gearDeco(ctx, J, pal, ent, opt, layer) {
     const s = J.sh1;
     switch (k) {
       case 'spikes': for (let i = 0; i < 4; i++) spike(s.x, s.y, -2.4 + i * 0.55, 15 - (i % 2) * 3, 3, d[2]); break;
-      case 'plate': case 'wings': case 'halo': ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 12, 9, -0.2, 0, TAU); ctx.fillStyle = ol; ctx.fill(); ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 10.6, 7.6, -0.2, 0, TAU); ctx.fillStyle = d[1]; ctx.fill(); ctx.strokeStyle = tr[1]; ctx.lineWidth = 1.3; ctx.stroke(); break;
-      case 'scales': case 'obsidian': case 'horns':
+      case 'plate': case 'wings': case 'halo': case 'samurai': case 'pirate': case 'steam': ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 12, 9, -0.2, 0, TAU); ctx.fillStyle = ol; ctx.fill(); ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 10.6, 7.6, -0.2, 0, TAU); ctx.fillStyle = d[1]; ctx.fill(); ctx.strokeStyle = tr[1]; ctx.lineWidth = 1.3; ctx.stroke(); break;
+      case 'scales': case 'obsidian': case 'horns': case 'druid':
         for (let i = 0; i < 3; i++) spike(s.x, s.y, -2.2 + i * 0.6, 12 + (i === 1 ? 5 : 0), 3.2, d[2]);
         if (fx && glow && k !== 'scales') { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, s.x, s.y, 14, glow, 0.35); ctx.globalCompositeOperation = 'source-over'; } break;
     }
@@ -407,6 +426,22 @@ function gearDeco(ctx, J, pal, ent, opt, layer) {
       olPoly(ctx, [-16, 4, -17, -10, -6, -18, 4, -16, -2, -8, -3, 6], d[1], ol, 1.2);
     } else if (k === 'cloak') {
       olPoly(ctx, [-17, 8, -18, -8, -8, -17, 5, -16, 0, -8, -2, 8], d[1], ol, 1.2);
+    } else if (k === 'samurai') {
+      olPoly(ctx, [-15, -2, -14, -14, -5, -21, 6, -20, 15, -13, 16, -3, 9, -9, -6, -9], d[1], ol, 1.3);
+      olPoly(ctx, [-2, -20, -11, -35, 0, -25, 11, -35, 3, -20], tr[2], ol, 1.1);
+    } else if (k === 'pirate') {
+      olPoly(ctx, [-20, -6, -14, -15, -2, -27, 12, -15, 22, -6, 8, -10, -4, -11], d[1], ol, 1.3);
+      ctx.fillStyle = tr[1]; ctx.beginPath(); ctx.arc(1, -16, 2.6, 0, TAU); ctx.fill();
+    } else if (k === 'druid') {
+      for (const s2 of [-1, 1]) {
+        ctx.strokeStyle = ol; ctx.lineWidth = 4.4; ctx.beginPath(); ctx.moveTo(s2 * 5, -13); ctx.quadraticCurveTo(s2 * 12, -26, s2 * 8, -38); ctx.moveTo(s2 * 10, -23); ctx.lineTo(s2 * 20, -28); ctx.stroke();
+        ctx.strokeStyle = '#7a5a2c'; ctx.lineWidth = 2.4; ctx.stroke();
+        ctx.fillStyle = d[2]; ctx.beginPath(); ctx.ellipse(s2 * 9, -37, 4, 2.4, s2 * 0.6, 0, TAU); ctx.fill();
+      }
+    } else if (k === 'steam') {
+      ctx.fillStyle = ol; ctx.beginPath(); ctx.arc(5, -4, 7.4, 0, TAU); ctx.arc(-4, -4, 6.6, 0, TAU); ctx.fill();
+      ctx.fillStyle = d[2]; ctx.beginPath(); ctx.arc(5, -4, 5.4, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(-4, -4, 4.8, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#9ad8ff'; ctx.beginPath(); ctx.arc(6, -4.5, 2.6, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(-3.5, -4.5, 2.2, 0, TAU); ctx.fill();
     }
   }
 }

@@ -119,7 +119,7 @@ const Game = {
   // 전투 도중 로비로 나가기 : 주운 골드는 가져가고 탑 기록은 남긴다
   quitToLobby() {
     this.keptGold = this.stats.gold; Save.bank(this.stats.gold); this.stats.gold = 0;
-    if (this.dungeon && this.dungeon.def.tower) { const t = Save.data.tower; t.runs++; t.best = Math.max(t.best, this.roomIdx); Ach.check(); Save.save(); }
+    if (this.dungeon && this.dungeon.def.tower) { const t = Save.data.tower; t.best = Math.max(t.best, this.roomIdx); Ach.check(); Save.save(); }   // 탑 : 진행 지점은 loadRoom 에서 이미 저장됨 (이어하기)
     this.coins = 3; this.toLobby();
   },
 
@@ -141,17 +141,17 @@ const Game = {
     Shop.enter();
   },
 
-  startDungeon(id) {
+  startDungeon(id, from = 0) {
     const d = DUNGEON_BY_ID[id] || DUNGEONS[0];
     this.dungeon = buildDungeon(d);
     this.bgCache = {};                      // 던전마다 배경이 다르므로 캐시 초기화
     this.stats = this.newStats();
     this.player = new Player();
     this.combo = { n: 0, t: 0, dmg: 0, pop: 0 };
-    this.coins = 3;
+    this.coins = d.tower ? 0 : 3;                // 무한의 탑에는 부활이 없다 (대신 중간에 나가도 이어하기)
     this.dungeonIdx = DUNGEONS.indexOf(d);
     this.notices = []; this.big = null;
-    this.loadRoom(0);
+    this.loadRoom(d.tower ? clamp(from | 0, 0, this.dungeon.rooms.length - 1) : 0);
   },
 
   loadRoom(i) {
@@ -159,6 +159,7 @@ const Game = {
     const D0 = this.dungeon.def;
     if (D0.tower) {                                                      // 무한의 탑 : 층마다 테마 · 난이도가 바뀐다
       const rm = this.dungeon.rooms[i], DD = DUNGEONS[rm.blk];
+      Save.data.tower.run = i > 0 ? i : null; Save.save();                 // 이어하기 지점
       D0.theme = rm.theme; D0.mul = towerMul(rm.floor); D0.lv = Math.min(160, 60 + rm.floor * 2); D0.pool = DD.pool; D0.boss = rm.bossId || DD.boss;
     }
     delete this.bgCache[i - 2];
@@ -246,7 +247,7 @@ const Game = {
     // 사망 처리
     if (this.deadT !== undefined && this.deadT >= 0) {
       this.deadT++;
-      if (this.deadT > 70) { this.deadT = -1; this.state = 'continue'; this.cont = { t: 600 }; }
+      if (this.deadT > 70) { this.deadT = -1; this.state = 'continue'; this.cont = { t: this.dungeon.def.tower ? 480 : 600 }; }
     }
     // 클리어 연출
     if (this.clearSeq) {
@@ -297,7 +298,7 @@ const Game = {
       this.state = 'gameover'; Music.stop();
       this.keptGold = this.stats.gold; Save.bank(this.stats.gold); this.stats.gold = 0;      // 클리어하지 못해도 주운 골드는 가져간다
       Save.data.stat.deaths++;
-      if (this.dungeon.def.tower) { const t = Save.data.tower; t.runs++; t.best = Math.max(t.best, this.roomIdx); this.towerFloor = this.roomIdx; Ach.check(); Save.save(); }
+      if (this.dungeon.def.tower) { const t = Save.data.tower; t.runs++; t.run = null; t.best = Math.max(t.best, this.roomIdx); this.towerFloor = this.roomIdx; Ach.check(); Save.save(); }
     }
   },
 
@@ -389,6 +390,7 @@ const Game = {
   showResult() {
     const s = this.stats, sec = s.time / 60 | 0;
     const dun = this.dungeon.def;
+    if (dun.tower) { Save.data.tower.run = null; Save.save(); }
     const wasOpen = Save.data.unlocked || 1;
     let score = 0;
     score += clamp(100 - Math.max(0, sec - 180) / 3, 20, 100) * 40;

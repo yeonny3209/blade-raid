@@ -176,6 +176,7 @@ function newSwing() { return { id: ++_swingId, set: new Set() }; }
 // 타격 적용 (손맛의 핵심)
 function applyHit(att, tgt, hit, o = {}) {
   if (tgt.isPlayer && tgt.guardT > 0 && tgt.onGuard) { tgt.onGuard(att); return 0; }   // 성스러운 반격
+  if (tgt.isPlayer && tgt.stanceT > 0 && tgt.onStance) { tgt.onStance(att); return 0; }   // 무념무상 : 맞는 순간 피하고 반격
   if (tgt.isPlayer && tgt.rollDodge && tgt.rollDodge(att)) return 0;           // 방어구 : 회피
   const dir = o.dir ?? (tgt.x >= att.x ? 1 : -1);
   let dmg = (att.atk || 1000) * hit.dmg * rand(0.93, 1.07);

@@ -464,6 +464,7 @@ class Player extends Entity {
     if (this.slowT > 0) { this.slowT--; if (Game.frame % 6 === 0) FX.add('world', new Mote(this.x + rand(-20, 20), sy(this.y, rand(20, 120)), 0, 0.4, { col: '200,200,140', life: 20, r: 5, grav: 0 })); }
     if (this.cloneT > 0) this.cloneT--;
     if (this.guardT > 0) this.guardT--;
+    if (this.stanceT > 0) this.stanceT--;
     if (this.hasteT > 0) { this.hasteT--; if (Game.frame % 4 === 0) this.afterOn = Math.max(this.afterOn, 3); }
     if (this.angelT > 0) {                                  // 대천사 : 무적 + 회복 + 성광 고리
       this.angelT--; this.invul = Math.max(this.invul, 2);
@@ -502,6 +503,8 @@ class Player extends Entity {
       case 'star': M(rand(-0.6, 0.6), rand(-0.8, 0.2), { life: 24, r: rand(3, 5.5) }); break;
       case 'feather': M(rand(-0.6, 0.6) - f * 0.4, rand(-0.4, 0.2), { life: 52, r: rand(4, 6), grav: 0.05 }); break;
       case 'chaos': M(rand(-1.5, 1.5), rand(-1.5, 1), { col: this.wcol, life: 22, r: rand(4, 7), grav: 0 }); break;
+      case 'steam': M(rand(-0.3, 0.3), rand(-1.3, -0.5), { life: 34, r: rand(5, 9), grav: 0 }); break;
+      case 'leaf': M(rand(-0.8, 0.8) - f * 0.3, rand(-0.2, 0.5), { life: 46, r: rand(3, 5), grav: 0.03 }); break;
     }
   }
 

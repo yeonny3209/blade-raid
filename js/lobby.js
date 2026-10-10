@@ -85,7 +85,7 @@ const Lobby = {
     if (this.enterT > 0) {
       this.enterT--;
       p.vx = 6; p.play('run', 4);
-      if (this.enterT === 0) Game.startDungeon(this.enterId || DUNGEONS[this.sel].id);
+      if (this.enterT === 0) Game.startDungeon(this.enterId || DUNGEONS[this.sel].id, this.enterId ? this.enterFrom : 0);
       p.px = p.x; p.stepAnim(); p.updateChains(); p.physicsLobby ? 0 : (p.x += p.vx);
       return;
     }
@@ -99,6 +99,7 @@ const Lobby = {
       else if (q.a === 'down') this.setPage(1);
       else if (q.a === 'shop') { Sfx.play('select'); Game.toShop(); Input.queue.push(...evs.slice(i + 1)); return; }
       else if (q.a === 'tower') this.enterTower();
+      else if (q.a === 'tower2') this.enterTower(true);
       else if (q.a === 'codex') { Sfx.play('select'); Game.toCodex(); return; }
       else if (q.a === 'options') { Sfx.play('select'); Game.openOptions('lobby'); return; }
       else if (q.a === 'diff') { Diff.cycle(1); Sfx.play('ui', 0.7, 1.2); }
@@ -122,9 +123,12 @@ const Lobby = {
   },
 
   towerOpen() { return Object.keys(Save.data.cleared).length >= 3; },
-  enterTower() {
+  towerRun() { return Save.data.tower.run > 0 ? Save.data.tower.run : 0; },
+  newTowerRect() { return { x: this.btnRect(0).x, y: 692, w: 208, h: 22 }; },
+  enterTower(fresh) {
     if (!this.towerOpen()) { Sfx.play('ui', 0.6, 0.5); this.msg = 110; this.msgText = '던전을 3개 클리어하면 무한의 탑이 열립니다'; return; }
-    Sfx.play('select'); this.enterId = 'tower'; this.enterT = 40;
+    if (fresh) { Save.data.tower.run = null; Save.save(); }
+    Sfx.play('select'); this.enterId = 'tower'; this.enterFrom = this.towerRun(); this.enterT = 40;
     Game.flashScreen(0.25, '255,230,160');
     const p = Game.player; p.setState('cine'); p.facing = 1;
   },
@@ -266,7 +270,7 @@ const Lobby = {
     ctx.strokeStyle = `rgb(${dm.col})`; ctx.lineWidth = 2; ctx.stroke();
     UI.text(ctx, `난이도  ◀ ${dm.name} ▶`, dr.x + dr.w / 2, dr.y + 19, { size: 16, align: 'center', fill: `rgb(${dm.col})`, stroke: 4 });
     // 하단 메뉴
-    const labels = [['무한의 탑', Save.data.tower.best ? `최고 ${Save.data.tower.best}층` : (this.towerOpen() ? '' : '잠김'), 'N', !this.towerOpen()], ['도감 · 업적', Ach.claimable() ? `보상 ${Ach.claimable()}` : `${Dex.found()}/${Dex.total()}`, 'K', false], ['설정', '', 'O', false]];
+    const labels = [['무한의 탑', this.towerRun() ? `이어하기 ${this.towerRun() + 1}층  ·  최고 ${Save.data.tower.best}층` : Save.data.tower.best ? `최고 ${Save.data.tower.best}층` : (this.towerOpen() ? '' : '잠김'), 'N', !this.towerOpen()], ['도감 · 업적', Ach.claimable() ? `보상 ${Ach.claimable()}` : `${Dex.found()}/${Dex.total()}`, 'K', false], ['설정', '', 'O', false]];
     labels.forEach(([nm, sub, key, lock], i) => {
       const r = this.btnRect(i);
       ctx.fillStyle = lock ? 'rgba(20,20,28,0.8)' : 'rgba(40,30,12,0.92)'; roundRect(ctx, r.x, r.y, r.w, r.h, 10); ctx.fill();
@@ -274,6 +278,12 @@ const Lobby = {
       UI.text(ctx, nm + (Touch.on ? '' : `  [${key}]`), r.x + r.w / 2, r.y + (sub ? 18 : 24), { size: 17, align: 'center', fill: lock ? '#7a7a8a' : '#ffe9a6', stroke: 3 });
       if (sub) UI.text(ctx, sub, r.x + r.w / 2, r.y + 36, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: lock ? '#6a6a7a' : '#9aa4c0', stroke: 3 });
     });
+    if (this.towerRun() && this.towerOpen()) {
+      const nr = this.newTowerRect();
+      ctx.fillStyle = 'rgba(40,20,20,0.9)'; roundRect(ctx, nr.x, nr.y, nr.w, nr.h, 8); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,140,120,0.6)'; ctx.lineWidth = 1.4; ctx.stroke();
+      UI.text(ctx, Touch.on ? '1층부터 다시 도전' : '1층부터 다시  [U]', nr.x + nr.w / 2, nr.y + 12, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: '#ffa090', stroke: 3 });
+    }
     // 안내
     if (this.msg > 0) {
       UI.text(ctx, this.msgText, W / 2, by + 124, { size: 18, align: 'center', fill: '#ff8a70', stroke: 4 });
@@ -332,6 +342,7 @@ const Lobby = {
       }
     }
     if (lx >= this.diffRect().x && lx <= this.diffRect().x + this.diffRect().w && ly >= this.diffRect().y && ly <= this.diffRect().y + this.diffRect().h) { Diff.cycle(1); Sfx.play('ui', 0.7, 1.2); return true; }
+    if (this.towerRun() && this.towerOpen() && inR(lx, ly, this.newTowerRect())) { this.enterTower(true); return true; }
     for (let i = 0; i < 3; i++) {
       const r = this.btnRect(i);
       if (lx >= r.x && lx <= r.x + r.w && ly >= r.y && ly <= r.y + r.h) { Sfx.play('select'); if (i === 0) this.enterTower(); else if (i === 1) Game.toCodex(); else Game.openOptions('lobby'); return true; }

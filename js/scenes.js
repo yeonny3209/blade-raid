@@ -317,7 +317,7 @@ const Pause = {
     else if (Input.take('back')) this.press(2);
   },
   draw(ctx) {
-    const names = ['계속하기', Touch.on ? '설정' : '설정  [O]', this.arm > 0 ? '정말 나갈까요?  한 번 더' : '로비로 나가기'];
+    const names = ['계속하기', Touch.on ? '설정' : '설정  [O]', this.arm > 0 ? '정말 나갈까요?  한 번 더' : (Game.dungeon && Game.dungeon.def.tower ? '저장하고 나가기' : '로비로 나가기')];
     for (let i = 0; i < 3; i++) {
       const r = this.btn(i), on = i === this.sel, warn = i === 2;
       const col = warn ? (this.arm > 0 ? 'rgba(120,34,28,0.95)' : 'rgba(70,30,26,0.9)') : 'rgba(30,50,86,0.95)';
