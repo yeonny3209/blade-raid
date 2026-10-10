@@ -1,6 +1,6 @@
 // 오프라인 캐시 : 한 번 실행하면 인터넷 없이도 플레이 가능
-const CACHE = 'blade-raid-v13';
-const BUILD = '20261013d';
+const CACHE = 'blade-raid-v14';
+const BUILD = '20261013e';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './js/util.js?v=' + BUILD, './js/input.js?v=' + BUILD, './js/audio.js?v=' + BUILD, './js/rig.js?v=' + BUILD, './js/characters.js?v=' + BUILD,

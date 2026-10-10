@@ -228,10 +228,11 @@ const UI = {
     // 초상화
     ctx.drawImage(this.cached('tp_' + e.kind, 48, 48, g => {
       g.save(); g.beginPath(); g.arc(24, 24, 20, 0, TAU); g.fillStyle = '#1a1414'; g.fill(); g.clip();
-      if (typeof MOBS !== 'undefined' && MOBS[e.kind]) { try { Dex.draw(g, e.kind, 24, 44, 46, true); } catch (err) { } }
+      const isMob = typeof MOBS !== 'undefined' && !!MOBS[e.kind];
+      if (isMob) { try { Dex.draw(g, e.kind, 24, 44, 46, true); } catch (err) { } }
       g.translate(26, 28); g.scale(1.2, 1.2);
       const pal = e.rig.pal, opt = {};
-      if (MOBS && MOBS[e.kind]) { /* 위에서 그림 */ }
+      if (isMob) { /* 위에서 그림 */ }
       else if (e.kind === 'goblin' || e.kind === 'thrower') goblinHead(g, this.pJ, pal, 1.5, e, opt);
       else if (e.kind === 'orc') orcHead(g, this.pJ, pal, 1.5, e, opt);
       else if (e.kind === 'mage') mageHead(g, this.pJ, pal, 1.5, e, opt);

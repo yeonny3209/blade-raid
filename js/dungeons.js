@@ -385,7 +385,7 @@ const Save = {
     d2.opt = Object.assign({}, Opt.defaults, d2.opt || {});
     d2.diff = d2.diff || 'normal';
     d2.up = d2.up || {}; d2.dex = d2.dex || {}; d2.ach = d2.ach || {}; d2.achSeen = d2.achSeen || {};
-    d2.stat = Object.assign({ kills: 0, bosses: 0, maxCombo: 0, skills: 0, goldEarned: 0, deaths: 0, hardClears: 0, hellClears: 0 }, d2.stat || {});
+    d2.stat = Object.assign({ kills: 0, bosses: 0, maxCombo: 0, skills: 0, deaths: 0, hardClears: 0, hellClears: 0 }, d2.stat || {});
     d2.tower = Object.assign({ best: 0, runs: 0 }, d2.tower || {});
     return this.data;
   },

@@ -443,7 +443,6 @@ const Game = {
 
   render() {
     this.updateDlBar();
-    if (this.state === 'options' || this.state === 'codex') { this.ctx.setTransform(this.ps, 0, 0, this.ps, 0, 0); }
     const ctx = this.ctx;
     ctx.setTransform(this.ps, 0, 0, this.ps, 0, 0);
     ctx.imageSmoothingEnabled = true;

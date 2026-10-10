@@ -117,24 +117,27 @@ const Dex = {
   inst(key) {
     if (this.insts[key]) return this.insts[key];
     let e;
+    try {
     if (key.startsWith('b:')) { const d = BOSS_DEFS[key.slice(2)]; e = d.body ? new CBoss(0, 0, d) : new Boss(0, 0, d); }
     else e = makeEnemy(key, 0, 0);
     e.facing = 1; e.alpha = 1; e.visible = true; e.state = 'idle'; e.hitstop = 0; e.invul = 0;
     for (let i = 0; i < 3; i++) e.stepAnim();
+    } catch (err) { e = null; }                                   // 방 밖에서 만들 수 없는 크리처는 미리보기를 건너뛴다
     return (this.insts[key] = e);
   },
   sil: null,
   draw(ctx, key, cx, base, size, known) {
     const e = this.inst(key);
+    if (!e) return;
     const k = clamp(size * 0.85 / Math.max(e.h || 120, (e.w || 20) * 2.6, 110), 0.45, 1.7);
     let g = ctx;
-    if (!known) { if (!this.sil) this.sil = makeCanvas(W, H); g = this.sil.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H); }
+    if (!known) { if (!this.sil) this.sil = makeCanvas(W, H); g = this.sil.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(cx - size, base - size * 1.4, size * 2, size * 1.6); }
     g.save(); g.translate(cx, base); g.scale(k, k); g.translate(0, -GROUND_Y);
     e.x = 0; e.y = 0; e.z = 0; e.stepAnim(); e.draw(g);
     g.restore();
     if (!known) {
-      g.globalCompositeOperation = 'source-atop'; g.fillStyle = '#10142a'; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'source-over';
-      ctx.drawImage(this.sil, 0, 0);
+      g.globalCompositeOperation = 'source-atop'; g.fillStyle = '#10142a'; g.fillRect(cx - size, base - size * 1.4, size * 2, size * 1.6); g.globalCompositeOperation = 'source-over';
+      ctx.drawImage(this.sil, cx - size, base - size * 1.4, size * 2, size * 1.6, cx - size, base - size * 1.4, size * 2, size * 1.6);
     }
   },
 };

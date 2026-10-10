@@ -304,7 +304,7 @@ const Share = {
   info() {
     const dun = Game.dungeon && Game.dungeon.def, s = Game.stats, R = Game.result, tower = dun && dun.tower;
     const sec = s.time / 60 | 0, w = Gear.w(), a = Gear.a(), d = Diff.cur();
-    const floor = tower ? Game.roomIdx : 0;
+    const floor = tower ? Game.roomIdx + (Game.state === 'result' ? 1 : 0) : 0;      // 결과 화면 = 마지막 층까지 클리어
     const title = tower ? `무한의 탑  ${floor}층 돌파` : `${(R && R.dungeon) || (dun && dun.name) || '던전'}  클리어`;
     const rows = [
       tower ? ['돌파한 층', `${floor}층  (최고 ${Save.data.tower.best}층)`] : ['랭크 / 점수', R ? `${R.rank}  /  ${fmt(R.score)}` : '-'],
@@ -313,8 +313,8 @@ const Share = {
       ['장비', `${Gear.label(w)}  /  ${Gear.label(a)}`],
     ];
     const date = new Date(), ds = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const code = this.hash([title, s.kills, s.maxCombo, sec, floor, d.id, ds, w.id, a.id].join('|'));
-    return { title, rows, ds, code, tower, rank: R && R.rank, diff: d };
+    const code = this.hash(['BR1:7c3e', title, s.kills, s.maxCombo, sec, floor, d.id, ds, w.id, a.id].join('|'));
+    return { title, rows, ds, code, tower, floor, rank: R && R.rank, diff: d };
   },
   render() {
     const I = this.info(), S = 1080, c = makeCanvas(S, S), g = c.getContext('2d');
@@ -336,11 +336,14 @@ const Share = {
     T(`${I.ds}   ·   yeonny3209.github.io/blade-raid`, S / 2, 1015, 22, '#7a84a4', FONT_B);
     return { canvas: c, info: I };
   },
+  busy: false,
   async save() {
+    if (this.busy) return;
+    this.busy = true;
     try {
       const { canvas, info } = this.render();
       const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-      const name = `BladeRaid_${info.tower ? 'Tower' + Game.roomIdx : 'Clear'}_${info.code}.png`;
+      const name = `BladeRaid_${info.tower ? 'Tower' + info.floor : 'Clear'}_${info.code}.png`;
       if (window.AndroidApp && AndroidApp.saveImage) {                       // 안드로이드 앱 : 갤러리에 저장
         const ok = AndroidApp.saveImage(canvas.toDataURL('image/png').split(',')[1], name);
         Game.notice(ok ? '갤러리(Pictures/BladeRaid)에 저장했습니다' : '기록 카드를 저장하지 못했습니다'); return;
@@ -350,6 +353,7 @@ const Share = {
       else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
       Game.notice('기록 카드를 저장했습니다');
     } catch (e) { if (!(e && e.name === 'AbortError')) Game.notice('기록 카드를 저장하지 못했습니다'); }
+    finally { this.busy = false; }
   },
   active() { return Game.state === 'result' || Game.state === 'gameover'; },
   // 버튼 위를 눌렀으면 true (이 입력은 "계속하기"로 쓰이지 않게 막는다)
