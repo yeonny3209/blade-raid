@@ -119,7 +119,7 @@ const Game = {
   // 전투 도중 로비로 나가기 : 주운 골드는 가져가고 탑 기록은 남긴다
   quitToLobby() {
     this.keptGold = this.stats.gold; Save.bank(this.stats.gold); this.stats.gold = 0;
-    if (this.dungeon && this.dungeon.def.tower) { const t = Save.data.tower; t.best = Math.max(t.best, this.roomIdx); Ach.check(); Save.save(); }   // 탑 : 진행 지점은 loadRoom 에서 이미 저장됨 (이어하기)
+    if (this.dungeon && this.dungeon.def.tower) { const t = Save.data.tower; t.best = Math.max(t.best, this.roomIdx); Ach.check(); this.saveTowerCd(); }   // 탑 : 진행 지점은 loadRoom 에서 이미 저장됨 (이어하기)
     this.coins = 3; this.toLobby();
   },
 
@@ -152,6 +152,16 @@ const Game = {
     this.dungeonIdx = DUNGEONS.indexOf(d);
     this.notices = []; this.big = null;
     this.loadRoom(d.tower ? Math.max(0, from | 0) : 0);
+    if (d.tower) {                               // 나갔다 이어하기로 돌아와도 쿨타임은 그대로 (궁극기가 다시 차 있지 않게)
+      const t = Save.data.tower;
+      if (from > 0 && t.cd) { for (const k in t.cd) if (k in this.player.cd) this.player.cd[k] = Math.max(0, +t.cd[k] || 0); }
+      else t.cd = null;
+    }
+  },
+  saveTowerCd() {                                // 탑 : 남은 스킬 쿨타임을 저장한다
+    if (!this.dungeon || !this.dungeon.def.tower || !this.player) return;
+    const cd = {}; for (const k in this.player.cd) if (this.player.cd[k] > 0) cd[k] = Math.round(this.player.cd[k] * 100) / 100;
+    Save.data.tower.cd = Object.keys(cd).length ? cd : null; Save.save();
   },
 
   loadRoom(i) {

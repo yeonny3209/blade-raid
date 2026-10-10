@@ -662,6 +662,7 @@ class Player extends Entity {
         continue;
       }
       this.mp -= s.mp; this.cd[s.key] = s.cd;
+      if (Game.dungeon && Game.dungeon.def.tower) Game.saveTowerCd();
       Game.stats.skills++; Save.data.stat.skills++;
       this.startAct(this.actOf(s));
       return true;
