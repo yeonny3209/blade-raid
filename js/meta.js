@@ -48,31 +48,35 @@ Gear.upgrade = function (it) {
 };
 
 // ---------- 무한의 탑 ----------
-const TOWER = { id: 'tower', name: '무한의 탑', theme: 'forest', lv: 100, seed: 777, tower: true, rooms: 100, boss: 'varkas', mul: 2, pool: [['goblin', 1]], desc: '끝없이 올라가는 탑. 층마다 몬스터가 강해지고 5층마다 수호자가 기다린다.' };
+const TOWER = { id: 'tower', name: '무한의 탑', theme: 'forest', lv: 100, seed: 777, tower: true, rooms: 200, boss: 'varkas', mul: 2, pool: [['goblin', 1]], desc: '끝없이 올라가는 탑. 200층까지는 5층마다, 그 위로는 매 층 수호자가 기다리며 점점 강해진다.' };
 DUNGEON_BY_ID.tower = TOWER;
-const towerMul = floor => Math.max(1.4, playerPower() * 0.9) * Math.pow(1.06, floor - 1);
+// 200층까지는 층마다 4%씩, 그 위로는 매 층 보스가 5%씩 강해진다 (끝이 없다)
+const towerMul = floor => Math.max(1.4, playerPower() * 0.9) * (floor <= 200 ? Math.pow(1.04, floor - 1) : Math.pow(1.04, 199) * Math.pow(1.05, floor - 200));
 
-function buildTower(d) {
-  const rooms = [], ALL = Object.keys(ENEMY_TYPES).filter(k => k !== 'boss' && k !== 'slimelet');
-  for (let f = 1; f <= d.rooms; f++) {
-    const blk = Math.floor((f - 1) / 5) % DUNGEONS.length, DD = DUNGEONS[blk], rnd = mulberry(f * 7919 + 31);
-    if (f % 5 === 0) {
-      rooms.push({ name: `${f}층 · 수호자`, theme: DD.theme, width: 1800, seed: DD.seed + f, boss: true, tower: true, bossId: DD.boss, blk, floor: f, waves: [[['boss', 1300, 115]]] });
-      continue;
-    }
-    const own = DD.pool.map(q => q[0]), pick = [];
-    for (let i = 0; i < 3; i++) pick.push(own[(rnd() * own.length) | 0]);
-    for (let i = 0; i < 3; i++) pick.push(ALL[(rnd() * ALL.length) | 0]);
-    const width = 1800 + Math.round(rnd() * 600), cnt = Math.min(10, 4 + Math.floor(f / 8) + Math.round(rnd() * 2)), waves = [];
-    for (let wv = 0; wv < 2; wv++) {
-      const list = [];
-      for (let k = 0; k < cnt; k++) list.push([pick[(rnd() * 6) | 0], Math.round(700 + rnd() * (width - 900)), Math.round(40 + rnd() * (DEPTH - 80))]);
-      waves.push(list);
-    }
-    rooms.push({ name: `${f}층`, theme: DD.theme, width, seed: DD.seed + f * 13, tower: true, blk, floor: f, waves });
+// 200층 이후는 매 층이 수호자의 방 (스펙만 강해지는 보스가 계속 나온다)
+const towerBossFloor = f => f % 5 === 0 || f > 200;
+function towerRoom(d, f) {
+  const ALL = Object.keys(ENEMY_TYPES).filter(k => k !== 'boss' && k !== 'slimelet');
+  const blk = (f <= 200 ? Math.floor((f - 1) / 5) : f - 201) % DUNGEONS.length, DD = DUNGEONS[blk], rnd = mulberry(f * 7919 + 31);
+  if (towerBossFloor(f)) return { name: `${f}층 · 수호자`, theme: DD.theme, width: 1800, seed: DD.seed + f, boss: true, tower: true, bossId: DD.boss, blk, floor: f, waves: [[['boss', 1300, 115]]] };
+  const own = DD.pool.map(q => q[0]), pick = [];
+  for (let i = 0; i < 3; i++) pick.push(own[(rnd() * own.length) | 0]);
+  for (let i = 0; i < 3; i++) pick.push(ALL[(rnd() * ALL.length) | 0]);
+  const width = 1800 + Math.round(rnd() * 600), cnt = Math.min(10, 4 + Math.floor(f / 8) + Math.round(rnd() * 2)), waves = [];
+  for (let wv = 0; wv < 2; wv++) {
+    const list = [];
+    for (let k = 0; k < cnt; k++) list.push([pick[(rnd() * 6) | 0], Math.round(700 + rnd() * (width - 900)), Math.round(40 + rnd() * (DEPTH - 80))]);
+    waves.push(list);
   }
+  return { name: `${f}층`, theme: DD.theme, width, seed: DD.seed + f * 13, tower: true, blk, floor: f, waves };
+}
+function buildTower(d) {
+  const rooms = [];
+  for (let f = 1; f <= d.rooms; f++) rooms.push(towerRoom(d, f));
   return { id: 'tower', name: d.name, def: d, rooms };
 }
+// 앞으로 갈 층을 미리 만들어 둔다 (끝이 없으므로 필요할 때 이어서 생성)
+function ensureTowerRooms(dun, i) { while (dun.rooms.length < i + 4) dun.rooms.push(towerRoom(dun.def, dun.rooms.length + 1)); }
 
 // ---------- 도감 / 업적 ----------
 const DEX_LORE = {
@@ -161,6 +165,8 @@ const ACHS = [
   { id: 't10', name: '탑의 초입', desc: '무한의 탑 10층', goal: 10, val: () => Save.data.tower.best, gold: 40000 },
   { id: 't30', name: '탑의 중턱', desc: '무한의 탑 30층', goal: 30, val: () => Save.data.tower.best, gold: 200000 },
   { id: 't50', name: '탑의 정상', desc: '무한의 탑 50층', goal: 50, val: () => Save.data.tower.best, gold: 600000 },
+  { id: 't100', name: '구름 위의 탑', desc: '무한의 탑 100층', goal: 100, val: () => Save.data.tower.best, gold: 1500000 },
+  { id: 't200', name: '끝없는 계단', desc: '무한의 탑 200층', goal: 200, val: () => Save.data.tower.best, gold: 5000000 },
   { id: 'u5', name: '대장장이의 손길', desc: '장비 +5 강화', goal: 5, val: () => Math.max(0, ...Object.values(Save.data.up)), gold: 20000 },
   { id: 'u15', name: '전설의 단련', desc: '장비 +15 강화', goal: 15, val: () => Math.max(0, ...Object.values(Save.data.up)), gold: 400000 },
   { id: 'sk100', name: '스킬 난사', desc: '스킬 100회 사용', goal: 100, val: s => s.skills, gold: 15000 },

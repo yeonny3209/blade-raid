@@ -151,13 +151,14 @@ const Game = {
     this.coins = d.tower ? 0 : 3;                // 무한의 탑에는 부활이 없다 (대신 중간에 나가도 이어하기)
     this.dungeonIdx = DUNGEONS.indexOf(d);
     this.notices = []; this.big = null;
-    this.loadRoom(d.tower ? clamp(from | 0, 0, this.dungeon.rooms.length - 1) : 0);
+    this.loadRoom(d.tower ? Math.max(0, from | 0) : 0);
   },
 
   loadRoom(i) {
     this.roomIdx = i;
     const D0 = this.dungeon.def;
     if (D0.tower) {                                                      // 무한의 탑 : 층마다 테마 · 난이도가 바뀐다
+      ensureTowerRooms(this.dungeon, i);
       const rm = this.dungeon.rooms[i], DD = DUNGEONS[rm.blk];
       Save.data.tower.run = i > 0 ? i : null; Save.save();                 // 이어하기 지점
       D0.theme = rm.theme; D0.mul = towerMul(rm.floor); D0.lv = Math.min(160, 60 + rm.floor * 2); D0.pool = DD.pool; D0.boss = rm.bossId || DD.boss;

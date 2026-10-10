@@ -185,13 +185,13 @@ const UI = {
   },
 
   drawTowerHud(ctx) {
-    const f = Game.roomIdx + 1, nb = 5 - ((f - 1) % 5) - 1, x = W - 20, y = 22;
+    const f = Game.roomIdx + 1, nb = 5 - ((f - 1) % 5) - 1, x = W - 20, y = 22, bossF = towerBossFloor(f);
     ctx.save();
     ctx.fillStyle = 'rgba(8,8,14,0.72)'; roundRect(ctx, x - 230, y - 10, 230, 70, 8); ctx.fill();
     ctx.strokeStyle = 'rgba(201,165,92,0.45)'; ctx.lineWidth = 1.2; ctx.stroke();
     this.text(ctx, '무한의 탑', x - 14, y + 8, { size: 13, align: 'right', font: FONT_B, weight: 700, fill: '#c9b48a', stroke: 3 });
     this.text(ctx, `${f}층`, x - 14, y + 34, { size: 30, align: 'right', fill: '#ffe9a6', stroke: 5, italic: true });
-    this.text(ctx, f % 5 === 0 ? '수호자의 방' : `수호자까지 ${nb + 1}층`, x - 216, y + 48, { size: 11, font: FONT_B, weight: 700, fill: f % 5 === 0 ? '#ff9a80' : '#9aa4c0', stroke: 3 });
+    this.text(ctx, bossF ? '수호자의 방' : `수호자까지 ${nb + 1}층`, x - 216, y + 48, { size: 11, font: FONT_B, weight: 700, fill: bossF ? '#ff9a80' : '#9aa4c0', stroke: 3 });
     ctx.restore();
   },
 
