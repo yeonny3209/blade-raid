@@ -192,7 +192,8 @@ const Lobby = {
     UI.text(ctx, '원 정 대  야 영 지', 40, 48, { size: 30, fill: '#ffe9a6', stroke: 5 });
     UI.text(ctx, '던전을 선택하세요', 40, 80, { size: 15, font: FONT_B, weight: 700, fill: '#9aa4c0' });
     // 내 캐릭터 상태
-    UI.text(ctx, `검귀 카엘   Lv.${playerLevel()}`, 40, 104, { size: 17, fill: '#fff', stroke: 3 });
+    UI.text(ctx, `${Nick.name()}   Lv.${playerLevel()}`, 40, 104, { size: 17, fill: '#fff', stroke: 3 });
+    Nick.pencil(ctx, 252, 103);
     UI.text(ctx, `공격력 ${fmt(Math.round(3000 * playerPower() * (W_.atk || 1)))}`, 40, 126, { size: 14, font: FONT_B, weight: 700, fill: '#ffb0a0', stroke: 3 });
     UI.text(ctx, `검  ${W_.name}`, 40, 148, { size: 13, font: FONT_B, weight: 700, fill: `rgb(${W_.col})`, stroke: 3 });
     UI.text(ctx, `방어구  ${A_.name}`, 40, 168, { size: 13, font: FONT_B, weight: 700, fill: '#cfd8ff', stroke: 3 });
@@ -327,6 +328,7 @@ const Lobby = {
 
   // 터치 : 카드 / 지역 탭 / 상점 버튼 직접 선택
   touchAt(lx, ly) {
+    if (lx >= 36 && lx <= 270 && ly >= 88 && ly <= 114) { Sfx.play('ui', 0.7, 1.2); Nick.ask(); return true; }          // 이름을 누르면 닉네임 변경
     const sb = this.shopBtn;
     if (lx >= sb.x && lx <= sb.x + sb.w && ly >= sb.y && ly <= sb.y + sb.h) { Sfx.play('select'); Game.toShop(); return true; }
     for (let i = 0; i < MAPS.length; i++) {

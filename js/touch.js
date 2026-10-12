@@ -68,6 +68,7 @@ const Touch = {
     if (this.playing() || Game.state === 'paused') {
       if (Math.hypot(x - pb.x, y - pb.y) < pb.r * 1.4) { pb.ptr = e.pointerId; pb.glow = 1; Input.press('T_pause'); return; }
     }
+    if (!Nick.open && Nick.hudHit(x, y)) { this.menuPtr = e.pointerId; Nick.openFromHud(); return; }       // 이름 누르기 : 닉네임 변경
     if (Game.state === 'options' || Game.state === 'codex') { this.menuPtr = e.pointerId; return; }          // 포인터 이벤트로 직접 처리
     if ((Game.state === 'result' || Game.state === 'gameover') && Share.swallow(e)) { this.menuPtr = e.pointerId; return; }
     if (Game.state === 'lobby') { this.menuPtr = e.pointerId; Lobby.touchAt(x, y); return; }   // 로비 : 카드 직접 선택
