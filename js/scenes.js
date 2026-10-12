@@ -3,6 +3,38 @@
 //  장면 : 설정 / 도감·업적  +  기록 카드(공유)
 // ============================================================
 
+// ---------- 닉네임 입력창 (HTML 입력창을 화면 위에 띄운다 : 폰 키보드도 열린다) ----------
+const Nick = {
+  open: false, cb: null,
+  $(id) { return document.getElementById(id); },
+  get() { return (Save.data && Save.data.nick) || ''; },
+  init() {
+    this.$('nbOk').addEventListener('click', () => this.done(true));
+    this.$('nbCancel').addEventListener('click', () => this.done(false));
+    this.$('nbInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); this.done(true); } else if (e.key === 'Escape') { e.preventDefault(); this.done(false); } e.stopPropagation(); });
+    this.$('nickbox').addEventListener('pointerdown', e => { if (e.target === this.$('nickbox')) this.done(false); });
+  },
+  ask(cb) {
+    this.open = true; this.cb = cb || null;
+    Touch.release(); Input.clear();
+    const box = this.$('nickbox'), inp = this.$('nbInput');
+    inp.value = this.get(); this.$('nbErr').textContent = '';
+    box.style.display = 'flex'; setTimeout(() => { inp.focus(); inp.select(); }, 30);
+  },
+  done(ok) {
+    const inp = this.$('nbInput');
+    if (ok) {
+      const v = Array.from(inp.value).filter(c => c.charCodeAt(0) >= 32 && c !== '<' && c !== '>').join('').trim().slice(0, 12);
+      if (!v) { this.$('nbErr').textContent = '닉네임을 입력해 주세요.'; inp.focus(); return; }
+      Save.data.nick = v; Save.save();
+    }
+    this.$('nickbox').style.display = 'none'; inp.blur();
+    this.open = false;
+    const cb = this.cb; this.cb = null;
+    if (ok && cb) cb();
+  },
+};
+
 // ---------- 포인터 (마우스·터치 공용) : 상점 외의 장면들이 쓴다 ----------
 const Ptr = {
   down: false, x: 0, y: 0, last: 0,
@@ -10,6 +42,7 @@ const Ptr = {
     for (const t of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']) {
       addEventListener(t, e => {
         const S = Game.scene && Game.scene();
+        if (Nick.open) return;
         if (!S) { if (t !== 'pointermove') this.down = false; return; }
         const [x, y] = Touch.toLogical(e);
         this.x = x; this.y = y; this.last = performance.now();
@@ -46,6 +79,7 @@ const Opts = {
     { k: 'vib', label: '진동 (휴대폰 · 패드)', type: 'toggle' },
     { k: 'voice', label: '몬스터 목소리', type: 'toggle' },
     { k: 'diff', label: '난이도', type: 'diff' },
+    { k: 'nick', label: '닉네임', type: 'nick' },
     { k: 'back', label: '돌아가기', type: 'back' },
   ],
   RY: 168, RH: 50,
@@ -63,7 +97,7 @@ const Opts = {
     else if (r.type === 'toggle') { this.setVal(r, !o[r.k]); Sfx.play('ui', 0.6, o[r.k] ? 1.3 : 0.8); }
     else if (r.type === 'diff') { Diff.cycle(d || 1); Sfx.play('ui', 0.6, 1.2); }
   },
-  act(i) { const r = this.rows[i]; if (r.type === 'back') this.leave(); else if (r.type === 'toggle' || r.type === 'diff') this.adjust(i, 1); },
+  act(i) { const r = this.rows[i]; if (r.type === 'back') this.leave(); else if (r.type === 'toggle' || r.type === 'diff') this.adjust(i, 1); else if (r.type === 'nick') Nick.ask(); },
 
   update() {
     if (this.msgT > 0) this.msgT--;
@@ -119,6 +153,10 @@ const Opts = {
         ctx.fillStyle = on2 ? 'rgba(60,150,90,0.9)' : 'rgba(70,70,84,0.9)'; roundRect(ctx, x, y, 88, 26, 13); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(on2 ? x + 75 : x + 13, y + 13, 10, 0, TAU); ctx.fill();
         UI.text(ctx, on2 ? '켜짐' : '꺼짐', on2 ? x + 30 : x + 58, y + 14, { size: 13, align: 'center', stroke: 3 });
+      } else if (r.type === 'nick') {
+        const nm = Nick.get();
+        UI.text(ctx, nm || '(미설정)', rr.x + rr.w - 150, rr.y + 23, { size: 19, align: 'center', fill: nm ? '#ffe9a6' : '#6a7494', stroke: 4 });
+        UI.text(ctx, '탭 / Enter 로 변경', rr.x + 190, rr.y + 23, { size: 12, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
       } else if (r.type === 'diff') {
         const d = Diff.cur();
         UI.text(ctx, `◀  ${d.name}  ▶`, rr.x + rr.w - 150, rr.y + 23, { size: 19, align: 'center', fill: `rgb(${d.col})`, stroke: 4 });
@@ -346,8 +384,8 @@ const Share = {
       ['장비', `${Gear.label(w)}  /  ${Gear.label(a)}`],
     ];
     const date = new Date(), ds = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const code = this.hash(['BR1:7c3e', title, s.kills, s.maxCombo, sec, floor, d.id, ds, w.id, a.id].join('|'));
-    return { title, rows, ds, code, tower, floor, rank: R && R.rank, diff: d };
+    const nick = Nick.get(), code = this.hash(['BR1:7c3e', nick, title, s.kills, s.maxCombo, sec, floor, d.id, ds, w.id, a.id].join('|'));
+    return { title, nick, rows, ds, code, tower, floor, rank: R && R.rank, diff: d };
   },
   render() {
     const I = this.info(), S = 1080, c = makeCanvas(S, S), g = c.getContext('2d');
@@ -361,6 +399,7 @@ const Share = {
     const T = (t, x, y, size, fill, font = FONT_T, align = 'center') => { g.font = `${size}px ${font}`; g.textAlign = align; g.lineWidth = size / 6; g.strokeStyle = 'rgba(0,0,0,0.85)'; g.strokeText(t, x, y); g.fillStyle = fill; g.fillText(t, x, y); };
     T('BLADE RAID', S / 2, 140, 84, '#ffe9a6');
     T('블레이드 레이드', S / 2, 205, 32, '#9aa4c0', FONT_B);
+    if (I.nick) T(`플레이어  ${I.nick}`, S / 2, 268, 36, '#9ad0ff');
     T(I.title, S / 2, 330, 64, '#ffffff');
     if (I.rank) T(I.rank, S / 2, 450, 150, ({ SSS: '#ff4ad8', SS: '#ffb020', S: '#ffd24a', A: '#4ac2ff', B: '#4adf6a', C: '#999' })[I.rank] || '#fff');
     const y0 = I.rank ? 560 : 470;
@@ -372,6 +411,7 @@ const Share = {
   busy: false,
   async save() {
     if (this.busy) return;
+    if (!Nick.get()) { Nick.ask(() => this.save()); return; }                  // 처음 저장할 때 닉네임을 먼저 받는다
     this.busy = true;
     try {
       const { canvas, info } = this.render();

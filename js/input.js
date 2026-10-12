@@ -31,16 +31,17 @@ const Input = {
     // 일부 환경(원격 입력 등)은 e.code 를 비워 보내므로 e.key 로 보충한다
     const codeOf = e => e.code || (e.key && e.key.length === 1 && /[a-z0-9]/i.test(e.key) ? (/[0-9]/.test(e.key) ? 'Digit' : 'Key') + e.key.toUpperCase() : (e.key === ' ' ? 'Space' : e.key || ''));
     addEventListener('keydown', e => {
+      if (e.target && e.target.tagName === 'INPUT') return;          // 닉네임 입력 중에는 게임 키로 쓰지 않는다
       if (e.ctrlKey || e.metaKey) return;   // Ctrl+R 새로고침 등 브라우저 단축키는 그대로 둠
       const code = codeOf(e);
       if (KEYMAP[code] || code.startsWith('Arrow') || code === 'Space' || code === 'Tab') e.preventDefault();
       if (e.repeat) return;
       this.press(code);
     });
-    addEventListener('keyup', e => this.release(codeOf(e)));
+    addEventListener('keyup', e => { if (e.target && e.target.tagName === 'INPUT') return; this.release(codeOf(e)); });
     // 마우스 좌클릭 = 기본 공격
     addEventListener('mousedown', e => {
-      if (e.button !== 0 || (e.target.closest && e.target.closest('#dlbar')) || (typeof Share !== 'undefined' && Share.swallow(e))) return;
+      if (e.button !== 0 || (e.target.closest && e.target.closest('#dlbar, #nickbox')) || (typeof Share !== 'undefined' && Share.swallow(e))) return;
       if (typeof Game !== 'undefined' && Game.state === 'paused') { e.preventDefault(); const [x, y] = Touch.toLogical(e); Pause.click(x, y); return; }
       if (typeof Game !== 'undefined' && Game.state === 'lobby') { e.preventDefault(); if (Lobby.enterT <= 0) { const [x, y] = Touch.toLogical(e); Lobby.touchAt(x, y); } return; }   // 로비 : 클릭한 버튼만 동작 (빈 곳 클릭으로 입장하지 않는다)
       e.preventDefault();          // 드래그로 텍스트/이미지가 선택되지 않게

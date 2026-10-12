@@ -21,7 +21,7 @@ const Game = {
     addEventListener('resize', () => this.resize());
     Input.init();
     UI.init();
-    Ptr.init();
+    Ptr.init(); Nick.init();
     Touch.init();
     Save.load();
     Dex.init();
