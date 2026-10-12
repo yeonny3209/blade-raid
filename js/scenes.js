@@ -9,10 +9,6 @@ const Nick = {
   $(id) { return document.getElementById(id); },
   get() { return (Save.data && Save.data.nick) || ''; },
   name() { return this.get() || '검귀 카엘'; },                           // 화면에 보이는 이름 (닉네임이 없으면 기본 이름)
-  hudRect: { x: 128, y: 10, w: 170, h: 36 },
-  hudHit(x, y) { return (Game.state === 'play' || Game.state === 'paused') && inR(x, y, this.hudRect); },
-  // 전투 중 이름을 누르면 일시정지하고 닉네임 창을 연다
-  openFromHud() { if (Game.state === 'play') { Game.pausedFrom = 'play'; Game.state = 'paused'; Pause.enter(); Sfx.play('ui'); } this.ask(); },
   // 이름 옆의 작은 연필 (눌러서 바꿀 수 있다는 표시)
   pencil(ctx, x, y) {
     ctx.save(); ctx.translate(x, y); ctx.rotate(-0.78); ctx.lineJoin = 'round';

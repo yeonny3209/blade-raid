@@ -149,7 +149,6 @@ const UI = {
     }), x - 34, y - 34, 68, 68);
     this.text(ctx, 'Lv.' + (p.lv || 70), 92, 30, { size: 15, fill: '#ffd87a', stroke: 3 });
     this.text(ctx, Nick.name(), 140, 30, { size: 18, stroke: 3 });
-    Nick.pencil(ctx, 276, 30);
     // 골드
     ctx.fillStyle = '#f5c542'; ctx.beginPath(); ctx.arc(100, 58, 7, 0, TAU); ctx.fill();
     ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.arc(98, 56, 2.5, 0, TAU); ctx.fill();
