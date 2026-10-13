@@ -353,7 +353,7 @@ const SFX = {
   //  재질 타격음 위에 한 겹 더 얹는다 (불=파직, 얼음=쨍, 번개=지직 …). pw : 0~3 타격 강도
   wlayer(s, v, p, kind, pw = 1, crit = false) {
     // 음색마다 원래 음량이 달라서(노이즈 위주는 작고 서브베이스 위주는 큼) 측정값으로 맞춘 보정치
-    const KG = { fire: 2.8, ice: 1.55, elec: 1.4, blood: 1.15, quake: 0.9, wind: 5.5, poison: 1.45, holy: 2.1, void: 1.1, magma: 0.9, clock: 2.9, exec: 0.82, moon: 1.9, star: 3.1, shadow: 3.1, wing: 3.2, chaos: 1.75, katana: 2.4, thorn: 1.6, dice: 1.5, coin: 2.2, steam: 1.8, sun: 2.0, candy: 2.0, knight: 1.2, bone: 1.4, taegeuk: 1.5, arcane: 2.0, curse: 1.4, prism: 2.4, cyber: 1.8, dragon: 1.0, requiem: 2.0 };
+    const KG = { fire: 2.8, ice: 1.55, elec: 1.4, blood: 1.15, quake: 0.9, wind: 5.5, poison: 1.45, holy: 2.1, void: 1.1, magma: 0.9, clock: 2.9, exec: 0.82, moon: 1.9, star: 3.1, shadow: 3.1, wing: 3.2, chaos: 1.75, katana: 2.4, thorn: 1.6, dice: 1.5, coin: 2.2, steam: 1.8, sun: 2.0, candy: 2.0, knight: 1.2, bone: 1.4, taegeuk: 1.5, arcane: 2.0, curse: 1.4, prism: 2.4, cyber: 1.8, dragon: 1.0, requiem: 2.0, myth: 1.3 };
     const g = v * (0.72 + pw * 0.2) * (KG[kind] || 1), r = () => 0.9 + Math.random() * 0.2;
     switch (kind) {
       case 'fire':
@@ -514,6 +514,12 @@ const SFX = {
         s.sub({ f0: 90 * p, f1: 40, dur: 0.5, gain: 1.0 * g, drive: true });
         s.noise({ type: 'bandpass', f0: 500, f1: 1800, q: 1, dur: 0.4, gain: 0.5 * g, attack: 0.04 });
         s.tone({ type: 'sawtooth', f0: 140 * p, f1: 70, dur: 0.35, gain: 0.1 * g, lp: 900, dist: true });
+        break;
+      case 'myth':                                         // 신화 : 천둥 같은 저음 + 황금빛 종소리
+        s.sub({ f0: 80 * p, f1: 32, dur: 0.6, drop: 0.14, gain: 1.1 * g, drive: true });
+        s.metal({ f: 1046 * p, gain: 0.2 * g, dur: 0.9, parts: [1, 2, 3, 4.2], dest: s.wet });
+        s.noise({ type: 'lowpass', f0: 2600, f1: 200, q: 0.8, dur: 0.4, gain: 0.55 * g, attack: 0.002 });
+        s.tone({ type: 'sawtooth', f0: 1800 * p, f1: 200, dur: 0.1, gain: 0.08 * g, dist: true, lp: 4000 });
         break;
       case 'requiem':                                      // 레퀴엠 : 현악기 음
         s.tone({ type: 'sawtooth', f0: 440 * p, f1: 466 * p, dur: 0.45, gain: 0.1 * g, lp: 3000, attack: 0.02, dest: s.wet });
