@@ -558,7 +558,7 @@ class Pickup {
       Game.stats.gold += this.value; Sfx.play('coin', 1, rand(0.95, 1.15));
       FX.add('world', new Flash(x, y, 4, 22, 8, '255,220,120', 0.8));
     } else {
-      const heal = Math.round(pl.hpMax * 0.2);
+      const heal = Math.round(pl.hpMax * (this.kind === 'candy' ? 0.06 : 0.2));
       pl.hp = Math.min(pl.hpMax, pl.hp + heal);
       Sfx.play('potion');
       FX.add('top', new DmgText(pl.x, sy(pl.y, pl.z) - 140, heal, 'h'));
@@ -573,6 +573,12 @@ class Pickup {
       ctx.fillStyle = '#f5c542'; ctx.beginPath(); ctx.ellipse(x, y - 7, w, 7, 0, 0, TAU); ctx.fill();
       ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.ellipse(x - w * 0.3, y - 9, w * 0.35, 2.5, 0, 0, TAU); ctx.fill();
       ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, x, y - 7, 16, '255,200,80', 0.35); ctx.globalCompositeOperation = 'source-over';
+    } else if (this.kind === 'candy') {
+      ctx.fillStyle = '#6a1a4a'; ctx.beginPath(); ctx.arc(x, y - 9, 8.5, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#ff7ac0'; ctx.beginPath(); ctx.arc(x, y - 9, 7, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y - 9, 3.6, 0.5, 5.2); ctx.stroke();
+      ctx.fillStyle = '#ff7ac0'; ctx.beginPath(); ctx.moveTo(x - 8, y - 9); ctx.lineTo(x - 14, y - 14); ctx.lineTo(x - 14, y - 4); ctx.fill(); ctx.beginPath(); ctx.moveTo(x + 8, y - 9); ctx.lineTo(x + 14, y - 14); ctx.lineTo(x + 14, y - 4); ctx.fill();
+      ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, x, y - 9, 20 + Math.sin(this.t * 0.2) * 3, '255,130,200', 0.45); ctx.globalCompositeOperation = 'source-over';
     } else {
       ctx.fillStyle = '#1a0a0a'; ctx.beginPath(); ctx.arc(x, y - 10, 9, 0, TAU); ctx.fill(); ctx.fillRect(x - 4, y - 24, 8, 8);
       ctx.fillStyle = '#e02a2a'; ctx.beginPath(); ctx.arc(x, y - 10, 7.5, 0, TAU); ctx.fill();

@@ -397,6 +397,38 @@ function gearDeco(ctx, J, pal, ent, opt, layer) {
           ctx.strokeStyle = tr[2]; ctx.lineWidth = 1.6; ctx.beginPath(); for (let i = 0; i < 12; i++) { const a2 = i / 12 * TAU + Game.time * 0.02, r2 = i % 2 ? 6 : 8.5; ctx.lineTo(c0[0] + Math.cos(a2) * r2, c0[1] + Math.sin(a2) * r2); } ctx.closePath(); ctx.stroke();
           ctx.strokeStyle = tr[1]; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -10, L * 0.2)); ctx.lineTo(...tp(Hh, F, -10, L * 0.95)); ctx.moveTo(...tp(Hh, F, 10, L * 0.2)); ctx.lineTo(...tp(Hh, F, 10, L * 0.95)); ctx.stroke();
           if (fx && glow) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, c0[0], c0[1], 12, glow, 0.7 + Math.sin(Game.time * 0.1) * 0.2); ctx.globalCompositeOperation = 'source-over'; } } break;
+      case 'monk': olPoly(ctx, chest(0.05), d[1], ol, 1.4);
+        ctx.strokeStyle = tr[1]; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -9, L * 0.95)); ctx.lineTo(...tp(Hh, F, 0, L * 0.4)); ctx.lineTo(...tp(Hh, F, 9, L * 0.95)); ctx.stroke();
+        ctx.strokeStyle = d[0]; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -13, L * 0.2)); ctx.lineTo(...tp(Hh, F, 13, L * 0.2)); ctx.stroke(); break;
+      case 'bone': olPoly(ctx, chest(0.1), d[1], ol, 1.3);
+        ctx.strokeStyle = d[2]; ctx.lineWidth = 2; for (let r = 0; r < 4; r++) { ctx.beginPath(); ctx.moveTo(...tp(Hh, F, 0, L * (0.3 + r * 0.17))); ctx.quadraticCurveTo(...tp(Hh, F, 11, L * (0.27 + r * 0.17)), ...tp(Hh, F, 11, L * (0.38 + r * 0.17))); ctx.moveTo(...tp(Hh, F, 0, L * (0.3 + r * 0.17))); ctx.quadraticCurveTo(...tp(Hh, F, -11, L * (0.27 + r * 0.17)), ...tp(Hh, F, -11, L * (0.38 + r * 0.17))); ctx.stroke(); }
+        ctx.beginPath(); ctx.moveTo(...tp(Hh, F, 0, L * 0.15)); ctx.lineTo(...tp(Hh, F, 0, L + 2)); ctx.stroke(); break;
+      case 'knight': olPoly(ctx, chest(0.08), d[1], ol, 1.4); shine(0.25);
+        olPoly(ctx, [...tp(Hh, F, -4, L * 0.15), ...tp(Hh, F, 4, L * 0.15), ...tp(Hh, F, 5, L + 6), ...tp(Hh, F, -5, L + 6)], a.look.coat[2], ol, 1);
+        ctx.strokeStyle = tr[2]; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, 0, L * 0.3)); ctx.lineTo(...tp(Hh, F, 0, L * 0.85)); ctx.moveTo(...tp(Hh, F, -3.4, L * 0.5)); ctx.lineTo(...tp(Hh, F, 3.4, L * 0.5)); ctx.stroke();
+        rivets([[-9, 0.45], [9, 0.45], [-9, 0.85], [9, 0.85]]); break;
+      case 'mermaid': olPoly(ctx, chest(0.1), d[1], ol, 1.4);
+        ctx.strokeStyle = d[2]; ctx.lineWidth = 1; for (let r = 0; r < 5; r++) for (let f = -10 + (r % 2) * 3.5; f < 12; f += 7) { const p = tp(Hh, F, f, L * (0.2 + r * 0.17)); ctx.beginPath(); ctx.arc(p[0], p[1], 3.2, 0.3, Math.PI - 0.3); ctx.stroke(); }
+        if (fx && glow) { const p = tp(Hh, F, 0, L * 0.55); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 12, glow, 0.45 + Math.sin(Game.time * 0.09) * 0.15); ctx.globalCompositeOperation = 'source-over'; } break;
+      case 'arcane': olPoly(ctx, chest(0.0), d[1], ol, 1.3);
+        olPoly(ctx, [...tp(Hh, F, 3, L * 0.5), ...tp(Hh, F, 12, L * 0.5), ...tp(Hh, F, 6, L + 3.5)], d[2], ol, 0.8);
+        if (fx && glow) for (let i = 0; i < 3; i++) { const p = tp(Hh, F, -6 + i * 6, L * (0.35 + i * 0.2)); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 9 + Math.sin(Game.time * 0.12 + i * 2) * 2, glow, 0.8); ctx.globalCompositeOperation = 'source-over'; } break;
+      case 'shroud': olPoly(ctx, chest(0.0), d[1], ol, 1.3);
+        olPoly(ctx, [...tp(Hh, F, -13, -2), ...tp(Hh, F, -4, -8), ...tp(Hh, F, 0, -2), ...tp(Hh, F, 6, -10), ...tp(Hh, F, 13, -2)], d[2], ol, 1);
+        if (fx && glow) { const p = tp(Hh, F, 0, L * 0.6); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 13, glow, 0.5 + Math.sin(Game.time * 0.1) * 0.2); ctx.globalCompositeOperation = 'source-over'; } break;
+      case 'cyber': olPoly(ctx, chest(0.1), d[1], ol, 1.4);
+        ctx.strokeStyle = tr[2]; ctx.lineWidth = 1.6; if (fx && glow) ctx.globalCompositeOperation = 'lighter';
+        ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -8, L * 0.2)); ctx.lineTo(...tp(Hh, F, -8, L * 0.7)); ctx.lineTo(...tp(Hh, F, 0, L * 0.9)); ctx.lineTo(...tp(Hh, F, 8, L * 0.7)); ctx.lineTo(...tp(Hh, F, 8, L * 0.2)); ctx.stroke(); ctx.globalCompositeOperation = 'source-over'; break;
+      case 'drake': olPoly(ctx, chest(0.1), d[1], ol, 1.4);
+        ctx.strokeStyle = d[2]; ctx.lineWidth = 1.1; for (let r = 0; r < 5; r++) for (let f = -10 + (r % 2) * 3.5; f < 12; f += 7) { const p = tp(Hh, F, f, L * (0.2 + r * 0.17)); ctx.beginPath(); ctx.arc(p[0], p[1], 3.4, 0.4, Math.PI - 0.4); ctx.stroke(); }
+        if (fx && glow) { const p = tp(Hh, F, 0, L * 0.58); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 13, glow, 0.6 + Math.sin(Game.time * 0.1) * 0.2); ctx.globalCompositeOperation = 'source-over'; } break;
+      case 'tux': olPoly(ctx, chest(0.05), d[1], ol, 1.4);
+        olPoly(ctx, [...tp(Hh, F, -4.5, L * 0.95), ...tp(Hh, F, 4.5, L * 0.95), ...tp(Hh, F, 0, L * 0.35)], '#f2f2f6', ol, 0.9);
+        olPoly(ctx, [...tp(Hh, F, -4, L * 0.92), ...tp(Hh, F, 4, L * 0.92), ...tp(Hh, F, 2, L * 0.82), ...tp(Hh, F, -2, L * 0.82)], tr[1], ol, 0.8); rivets([[0, 0.55], [0, 0.7]]);
+        { const m = [(J.knee1.x + J.knee2.x) / 2, (J.knee1.y + J.knee2.y) / 2]; olPoly(ctx, [...tp(Hh, F, -9, -1), ...tp(Hh, F, 9, -1), m[0] + 6, m[1] + 4, m[0] - 6, m[1] + 4], d[1], ol, 1.2); } break;
+      case 'sunrobe': olPoly(ctx, chest(0.0), d[1], ol, 1.3);
+        { const p = tp(Hh, F, 0, L * 0.55); ctx.fillStyle = tr[2]; ctx.beginPath(); ctx.arc(p[0], p[1], 6, 0, TAU); ctx.fill(); ctx.strokeStyle = tr[1]; ctx.lineWidth = 1.6; for (let i = 0; i < 8; i++) { const a2 = i / 8 * TAU; ctx.beginPath(); ctx.moveTo(p[0] + Math.cos(a2) * 8, p[1] + Math.sin(a2) * 8); ctx.lineTo(p[0] + Math.cos(a2) * 12, p[1] + Math.sin(a2) * 12); ctx.stroke(); }
+          if (fx && glow) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 20, glow, 0.7); ctx.globalCompositeOperation = 'source-over'; } } break;
       case 'horns': olPoly(ctx, chest(0.05), d[1], ol, 1.4); shine(0.25);
         olPoly(ctx, [...tp(Hh, F, -12, -4), ...tp(Hh, F, 12, -4), ...tp(Hh, F, 8, -18), ...tp(Hh, F, 0, -12), ...tp(Hh, F, -8, -18)], d[1], ol, 1.2);
         if (fx && glow) { const p = tp(Hh, F, 0, L * 0.55); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, p[0], p[1], 14, glow, 0.7 + Math.sin(Game.time * 0.12) * 0.2); ctx.globalCompositeOperation = 'source-over'; } break;
@@ -407,8 +439,8 @@ function gearDeco(ctx, J, pal, ent, opt, layer) {
     const s = J.sh1;
     switch (k) {
       case 'spikes': for (let i = 0; i < 4; i++) spike(s.x, s.y, -2.4 + i * 0.55, 15 - (i % 2) * 3, 3, d[2]); break;
-      case 'plate': case 'wings': case 'halo': case 'samurai': case 'pirate': case 'steam': ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 12, 9, -0.2, 0, TAU); ctx.fillStyle = ol; ctx.fill(); ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 10.6, 7.6, -0.2, 0, TAU); ctx.fillStyle = d[1]; ctx.fill(); ctx.strokeStyle = tr[1]; ctx.lineWidth = 1.3; ctx.stroke(); break;
-      case 'scales': case 'obsidian': case 'horns': case 'druid':
+      case 'plate': case 'wings': case 'halo': case 'samurai': case 'pirate': case 'steam': case 'knight': case 'cyber': case 'tux': case 'sunrobe': case 'monk': ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 12, 9, -0.2, 0, TAU); ctx.fillStyle = ol; ctx.fill(); ctx.beginPath(); ctx.ellipse(s.x + 1, s.y + 1, 10.6, 7.6, -0.2, 0, TAU); ctx.fillStyle = d[1]; ctx.fill(); ctx.strokeStyle = tr[1]; ctx.lineWidth = 1.3; ctx.stroke(); break;
+      case 'scales': case 'obsidian': case 'horns': case 'druid': case 'bone': case 'mermaid': case 'drake': case 'arcane': case 'shroud':
         for (let i = 0; i < 3; i++) spike(s.x, s.y, -2.2 + i * 0.6, 12 + (i === 1 ? 5 : 0), 3.2, d[2]);
         if (fx && glow && k !== 'scales') { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, s.x, s.y, 14, glow, 0.35); ctx.globalCompositeOperation = 'source-over'; } break;
     }
@@ -442,6 +474,35 @@ function gearDeco(ctx, J, pal, ent, opt, layer) {
       ctx.fillStyle = ol; ctx.beginPath(); ctx.arc(5, -4, 7.4, 0, TAU); ctx.arc(-4, -4, 6.6, 0, TAU); ctx.fill();
       ctx.fillStyle = d[2]; ctx.beginPath(); ctx.arc(5, -4, 5.4, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(-4, -4, 4.8, 0, TAU); ctx.fill();
       ctx.fillStyle = '#9ad8ff'; ctx.beginPath(); ctx.arc(6, -4.5, 2.6, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(-3.5, -4.5, 2.2, 0, TAU); ctx.fill();
+    } else if (k === 'monk') {
+      olPoly(ctx, [-14, -6, 14, -5, 14, -1, -14, -2], tr[1], ol, 1);
+    } else if (k === 'bone') {
+      olPoly(ctx, [-15, -2, -14, -14, -5, -21, 6, -20, 15, -13, 16, -3, 9, -9, -6, -9], d[1], ol, 1.3);
+      olPoly(ctx, [-9, -19, -14, -30, -4, -21], d[2], ol, 1); olPoly(ctx, [6, -20, 12, -31, 12, -19], d[2], ol, 1);
+    } else if (k === 'knight') {
+      olPoly(ctx, [-15, -1, -14, -14, -5, -21, 6, -20, 15, -13, 16, -2, 8, -9, -6, -9], d[1], ol, 1.3);
+      olPoly(ctx, [-4, -21, -22, -26, -26, -14, -10, -16], a.look.coat[2], ol, 1.1);
+    } else if (k === 'mermaid') {
+      for (const s2 of [-1, 0, 1]) olPoly(ctx, [s2 * 7 - 4, -14, s2 * 9, -30 + Math.abs(s2) * 6, s2 * 7 + 4, -14], d[2], ol, 1);
+    } else if (k === 'arcane') {
+      olPoly(ctx, [-18, -9, 18, -9, 10, -13, 4, -36, -6, -13], d[1], ol, 1.3);
+      ctx.fillStyle = d[2]; ctx.beginPath(); ctx.arc(2, -24, 2.2, 0, TAU); ctx.fill();
+    } else if (k === 'shroud') {
+      olPoly(ctx, [-18, 10, -20, -9, -9, -21, 5, -20, 14, -9, 10, 10, 0, -3, -9, 6], d[1], ol, 1.3);
+      if (fx && glow) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 7, 0.5, 8, glow, 0.8); ctx.globalCompositeOperation = 'source-over'; }
+    } else if (k === 'cyber') {
+      ctx.fillStyle = ol; ctx.fillRect(-1, -7, 17, 8); ctx.fillStyle = d[2]; ctx.fillRect(0, -6, 15, 6);
+      if (fx && glow) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 8, -3, 14, glow, 0.7); ctx.globalCompositeOperation = 'source-over'; }
+      ctx.strokeStyle = ol; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-6, -13); ctx.lineTo(-10, -26); ctx.stroke(); ctx.strokeStyle = d[2]; ctx.lineWidth = 1.4; ctx.stroke();
+    } else if (k === 'drake') {
+      olPoly(ctx, [-6, -13, -20, -32, -2, -17], d[2], ol, 1.2); olPoly(ctx, [3, -14, 15, -34, 10, -13], d[2], ol, 1.2);
+    } else if (k === 'tux') {
+      olPoly(ctx, [-12, -13, -11, -34, 11, -34, 12, -13], d[1], ol, 1.3); olPoly(ctx, [-19, -12, 19, -12, 15, -16, -15, -16], d[1], ol, 1.2);
+      ctx.fillStyle = tr[1]; ctx.fillRect(-11, -20, 22, 3);
+    } else if (k === 'sunrobe') {
+      if (fx) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 0, -27, 34, glow || '255,225,110', 0.4); ctx.globalCompositeOperation = 'source-over'; }
+      ctx.strokeStyle = ol; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, -26, 13, 0, TAU); ctx.stroke(); ctx.strokeStyle = '#ffd860'; ctx.lineWidth = 2.6; ctx.stroke();
+      for (let i = 0; i < 8; i++) { const a2 = i / 8 * TAU; ctx.beginPath(); ctx.moveTo(Math.cos(a2) * 15, -26 + Math.sin(a2) * 15); ctx.lineTo(Math.cos(a2) * 20, -26 + Math.sin(a2) * 20); ctx.stroke(); }
     }
   }
 }

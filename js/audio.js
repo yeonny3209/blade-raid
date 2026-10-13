@@ -353,7 +353,7 @@ const SFX = {
   //  재질 타격음 위에 한 겹 더 얹는다 (불=파직, 얼음=쨍, 번개=지직 …). pw : 0~3 타격 강도
   wlayer(s, v, p, kind, pw = 1, crit = false) {
     // 음색마다 원래 음량이 달라서(노이즈 위주는 작고 서브베이스 위주는 큼) 측정값으로 맞춘 보정치
-    const KG = { fire: 2.8, ice: 1.55, elec: 1.4, blood: 1.15, quake: 0.9, wind: 5.5, poison: 1.45, holy: 2.1, void: 1.1, magma: 0.9, clock: 2.9, exec: 0.82, moon: 1.9, star: 3.1, shadow: 3.1, wing: 3.2, chaos: 1.75, katana: 2.4, thorn: 1.6, dice: 1.5, coin: 2.2, steam: 1.8, sun: 2.0 };
+    const KG = { fire: 2.8, ice: 1.55, elec: 1.4, blood: 1.15, quake: 0.9, wind: 5.5, poison: 1.45, holy: 2.1, void: 1.1, magma: 0.9, clock: 2.9, exec: 0.82, moon: 1.9, star: 3.1, shadow: 3.1, wing: 3.2, chaos: 1.75, katana: 2.4, thorn: 1.6, dice: 1.5, coin: 2.2, steam: 1.8, sun: 2.0, candy: 2.0, knight: 1.2, bone: 1.4, taegeuk: 1.5, arcane: 2.0, curse: 1.4, prism: 2.4, cyber: 1.8, dragon: 1.0, requiem: 2.0 };
     const g = v * (0.72 + pw * 0.2) * (KG[kind] || 1), r = () => 0.9 + Math.random() * 0.2;
     switch (kind) {
       case 'fire':
@@ -470,6 +470,55 @@ const SFX = {
         s.tone({ type: 'triangle', f0: 660 * p, f1: 1320 * p, dur: 0.3, gain: 0.12 * g, dest: s.wet });
         s.metal({ f: 1320 * p, gain: 0.16 * g, dur: 0.7, parts: [1, 2, 3], dest: s.wet });
         s.noise({ type: 'lowpass', f0: 2200, f1: 300, q: 0.8, dur: 0.3, gain: 0.35 * g, attack: 0.002 });
+        break;
+      case 'candy':                                        // 사탕 : 통통 튀는 팝 소리
+        s.tone({ type: 'sine', f0: 520 * p, f1: 1500 * p, dur: 0.09, gain: 0.16 * g });
+        s.tone({ type: 'triangle', f0: 1568 * p, dur: 0.08, gain: 0.1 * g, at: 0.05, dest: s.wet });
+        s.tick({ f: 3000, gain: 0.25 * g, dur: 0.01 });
+        break;
+      case 'knight':                                       // 방패검 : 묵직한 방패 두드림
+        s.metal({ f: 380 * p, gain: 0.26 * g, dur: 0.5, parts: [1, 1.9, 3.1], dest: s.wet });
+        s.sub({ f0: 120 * p, f1: 50, dur: 0.2, gain: 0.7 * g, drive: true });
+        s.tick({ f: 1500, gain: 0.4 * g, dur: 0.02 });
+        break;
+      case 'bone':                                         // 뼈 : 딱딱 부딪히는 소리
+        for (let i = 0; i < 3; i++) s.tick({ f: 1100 + Math.random() * 900, q: 1.5, gain: 0.45 * g, dur: 0.03, at: i * 0.035 });
+        s.noise({ type: 'bandpass', f0: 900, f1: 400, q: 2, dur: 0.14, gain: 0.25 * g });
+        s.tone({ type: 'triangle', f0: 240 * p, f1: 120, dur: 0.12, gain: 0.14 * g });
+        break;
+      case 'taegeuk':                                      // 음양 : 징 소리와 맑은 종소리
+        s.metal({ f: 220 * p, gain: 0.3 * g, dur: 0.9, parts: [1, 2.3, 3.6, 5.2], dest: s.wet });
+        s.tone({ type: 'sine', f0: 1760 * p, dur: 0.3, gain: 0.07 * g, at: 0.04, dest: s.wet });
+        s.noise({ type: 'lowpass', f0: 1200, f1: 200, q: 0.8, dur: 0.2, gain: 0.3 * g });
+        break;
+      case 'arcane':                                       // 마법 : 반짝이는 마력 파열
+        [880, 1318, 1760].forEach((f, i) => s.tone({ type: 'sine', f0: f * p, f1: f * 1.5 * p, dur: 0.1, gain: 0.13 * g, at: i * 0.03, dest: s.wet }));
+        s.noise({ type: 'highpass', f0: 5000, dur: 0.12, gain: 0.2 * g });
+        break;
+      case 'curse':                                        // 저주 : 속삭이는 어두운 울림
+        s.noise({ type: 'bandpass', f0: 600, f1: 200, q: 3, dur: 0.3, gain: 0.34 * g, attack: 0.05, dest: s.wet });
+        s.tone({ type: 'sawtooth', f0: 160 * p, f1: 60, dur: 0.25, gain: 0.08 * g, lp: 500 });
+        s.metal({ f: 520 * p, gain: 0.08 * g, dur: 0.5, parts: [1, 1.06, 1.5], dest: s.wet });
+        break;
+      case 'prism':                                        // 수정 : 유리 종소리
+        s.metal({ f: 3200 * p * r(), gain: 0.2 * g, dur: 0.8, parts: [1, 2.76, 5.4, 8.9], dest: s.wet });
+        s.tone({ type: 'sine', f0: 4200 * p, dur: 0.2, gain: 0.06 * g, dest: s.wet });
+        s.noise({ type: 'highpass', f0: 9000, dur: 0.08, gain: 0.18 * g });
+        break;
+      case 'cyber':                                        // 사이버 : 전자 지지직 + 레이저
+        s.tone({ type: 'square', f0: 1800 * p, f1: 300, dur: 0.1, gain: 0.1 * g, lp: 4000, dist: true });
+        s.tone({ type: 'sawtooth', f0: 90 * p, f1: 70, dur: 0.12, gain: 0.08 * g, lp: 600 });
+        for (let i = 0; i < 3; i++) s.tick({ f: 5000 + i * 800, gain: 0.25 * g, dur: 0.008, at: i * 0.02 });
+        break;
+      case 'dragon':                                       // 용 : 낮은 포효 + 불길
+        s.sub({ f0: 90 * p, f1: 40, dur: 0.5, gain: 1.0 * g, drive: true });
+        s.noise({ type: 'bandpass', f0: 500, f1: 1800, q: 1, dur: 0.4, gain: 0.5 * g, attack: 0.04 });
+        s.tone({ type: 'sawtooth', f0: 140 * p, f1: 70, dur: 0.35, gain: 0.1 * g, lp: 900, dist: true });
+        break;
+      case 'requiem':                                      // 레퀴엠 : 현악기 음
+        s.tone({ type: 'sawtooth', f0: 440 * p, f1: 466 * p, dur: 0.45, gain: 0.1 * g, lp: 3000, attack: 0.02, dest: s.wet });
+        s.tone({ type: 'sawtooth', f0: 659 * p, dur: 0.4, gain: 0.07 * g, lp: 3500, attack: 0.03, at: 0.02, dest: s.wet });
+        s.metal({ f: 880 * p, gain: 0.08 * g, dur: 0.6, parts: [1, 2, 3], dest: s.wet });
         break;
     }
     if (crit) s.tone({ type: 'sine', f0: 2200 * p, f1: 3300 * p, dur: 0.1, gain: 0.07 * g });
