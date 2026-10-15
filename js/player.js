@@ -468,6 +468,7 @@ class Player extends Entity {
     if (this.absorbT > 0) this.absorbT--;
     if (this.overT > 0) this.overT--;
     if (this.rageT > 0) this.rageT--;
+    if (this.feralT > 0) this.feralT--;
     if (this.hasteT > 0) { this.hasteT--; if (Game.frame % 4 === 0) this.afterOn = Math.max(this.afterOn, 3); }
     if (this.angelT > 0) {                                  // 대천사 : 무적 + 회복 + 성광 고리
       this.angelT--; this.invul = Math.max(this.invul, 2);
