@@ -235,7 +235,9 @@ const Shop = {
   },
 
   bladeIcon(ctx, Wp, x, y, s) {
-    const Lk = Wp.look, c = Lk.c, S = bladeShape(Lk, 80);
+    const Lk = Wp.look, c = Lk.c;
+    if (Lk.karam) { ctx.save(); ctx.translate(x - 12, y - 12); ctx.scale(s * 0.74, s * 0.74); drawKarambit(ctx, Lk, c, Lk.grip || ['#1a120c', '#2e2016', '#5a4a3a'], Lk.trim || ['', '#c9a55c', '#fff'], '#120f18', 0, true); ctx.restore(); return; }
+    const S = bladeShape(Lk, 80);
     ctx.save(); ctx.translate(x, y); ctx.rotate(-0.78); ctx.scale(s, s); ctx.translate(-34, 0);
     olPoly(ctx, [-12, -2.4, 10, -2.4, 10, 2.4, -12, 2.4], (Lk.hilt || ['#1a120c', '#2e2016'])[1], '#120f18', 1.2);
     olPoly(ctx, [8, -8, 12, -8, 12, 8, 8, 8], (Lk.trim || ['', '#c9a55c'])[1], '#120f18', 1);
@@ -388,13 +390,13 @@ const Shop = {
     drawGlow(ctx, cx, cy, 240, col, 0.22);
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(cx, S.y + S.h - 92, 96, 16, 0, 0, TAU); ctx.fill();
     if (k === 'w') {
-      const Lk = it.look || {}, len = RIG_PLAYER.wlen * (Lk.L || 1), sc = clamp(330 / (len + 24), 1.4, 4);
+      const Lk = it.look || {}, len = RIG_PLAYER.wlen * (Lk.L || 1), sc = clamp(330 / (len + 24), 1.4, 4) * (Lk.karam ? 0.68 : 1);
       const ph = t % 320;
       let ang = -Math.PI / 2 + Math.sin(t * 0.02) * 0.1, flat = Math.cos(t * 0.028);
       if (ph < 80) { const u = ph / 80, e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; ang += e * TAU; flat = 1; }      // 한 바퀴 휘두르는 연출
       const fl = Math.abs(flat) < 0.2 ? (flat < 0 ? -0.2 : 0.2) : flat;
       const ent = { wlook: Lk, bladeGlow: 0.7 + Math.sin(t * 0.08) * 0.3, id: 3 };
-      ctx.save(); ctx.translate(cx, cy + Math.sin(t * 0.05) * 8); ctx.rotate(ang); ctx.scale(sc, sc * fl); ctx.translate(-(len - 16) / 2, 0);
+      ctx.save(); ctx.translate(cx, cy + (Lk.karam ? 24 : 0) + Math.sin(t * 0.05) * 8); ctx.rotate(ang); ctx.scale(sc, sc * fl); ctx.translate(-(len - 16) / 2, 0);
       drawPlayerBlade(ctx, { hand1: { x: 0, y: 0 }, wAng: 90 }, RIG_PLAYER.pal, ent, {});
       const u = (t % 110) / 110;                                                      // 칼날을 훑는 빛
       ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, u * len, (Lk.bend || 0) * u * u * len * 0.32, 12, '255,255,255', 0.95 * Math.sin(u * Math.PI));

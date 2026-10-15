@@ -238,6 +238,49 @@ function hslRgb(h, s, l) {
   return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
 }
 
+// 카람빗 : 손가락 고리 + 호크빌(매 부리) 곡선 칼날. 칼끝이 안쪽으로 크게 휘고, 날은 오목한 안쪽에 있다.
+function drawKarambit(ctx, Lk, c, hilt, trim, ol, glowAmt, plain) {
+  ctx.save(); ctx.scale(1.35, 1.35);
+  const R = 30, SW = 1.75, N = 18, cx = 9, cy = R;
+  const P = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  // 손잡이 : 쥐기 좋게 살짝 굽은 몸통 + 홈
+  const hc = Lk.grip || hilt;
+  olPoly(ctx, [-14, -3.4, -8, -4.6, 0, -4.6, 7, -3.8, 7, 3.8, 0, 4.8, -8, 4.8, -14, 3.6], hc[1], ol, 1.4);
+  ctx.strokeStyle = hc[2]; ctx.lineWidth = 1;
+  ctx.beginPath(); for (let x = -11; x < 5; x += 4) { ctx.moveTo(x, -4); ctx.lineTo(x + 1.2, 4.2); } ctx.stroke();
+  // 손가락 고리
+  ctx.beginPath(); ctx.arc(-19.5, 0, 6.6, 0, TAU); ctx.lineWidth = 4.8; ctx.strokeStyle = ol; ctx.stroke();
+  ctx.lineWidth = 3; ctx.strokeStyle = trim[1]; ctx.stroke();
+  ctx.beginPath(); ctx.arc(-19.5, -1.6, 5.2, 3.6, 5.2); ctx.lineWidth = 1; ctx.strokeStyle = trim[2]; ctx.stroke();
+  // 칼날 뿌리 (가드)
+  olPoly(ctx, [6, -5.6, 11, -6.4, 11.5, 6.4, 6, 5.6], trim[1], ol, 1.3);
+  // 칼날 : 스파인(등) 바깥쪽 호 → 칼끝 → 날(안쪽 오목한 호)
+  const outer = [], inner = [];
+  for (let i = 0; i <= N; i++) {
+    const u = i / N, a = -Math.PI / 2 + SW * u, w = 7.4 * Math.pow(1 - u, 0.75) + 0.2;
+    outer.push(P(R + w * 0.55, a)); inner.push(P(R - w * 0.45, a));
+  }
+  const poly = []; outer.forEach(p => poly.push(p[0], p[1])); for (let i = inner.length - 1; i >= 0; i--) poly.push(inner[i][0], inner[i][1]);
+  olPoly(ctx, poly, c[0], ol, 1.7);
+  ctx.fillStyle = c[1]; ctx.beginPath();
+  const mid = []; for (let i = 0; i <= N; i++) { const u = i / N, a = -Math.PI / 2 + SW * u, w = 7.4 * Math.pow(1 - u, 0.75) + 0.2; mid.push(P(R + w * 0.1, a)); }
+  const poly2 = []; outer.forEach((p, i) => { const q = mid[i]; poly2.push((p[0] + q[0]) / 2, (p[1] + q[1]) / 2); }); for (let i = inner.length - 1; i >= 0; i--) poly2.push(inner[i][0] * 0.9 + mid[i][0] * 0.1, inner[i][1] * 0.9 + mid[i][1] * 0.1);
+  polyPath(ctx, poly2); ctx.fill();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = c[2]; ctx.lineWidth = 1.5; ctx.beginPath(); inner.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();      // 날빛
+  ctx.strokeStyle = c[0]; ctx.lineWidth = 0.9; ctx.beginPath(); for (let i = 2; i <= N - 5; i++) { const u = i / N, a = -Math.PI / 2 + SW * u, p = P(R + 0.4, a); i === 2 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); } ctx.stroke();   // 피(홈)
+  ctx.fillStyle = '#0a0608'; ctx.beginPath(); { const p = P(R + 0.4, -Math.PI / 2 + SW * 0.1); ctx.arc(p[0], p[1], 1.9, 0, TAU); } ctx.fill();                                  // 구멍
+  ctx.strokeStyle = trim[2]; ctx.lineWidth = 0.9; ctx.beginPath(); for (let i = 1; i <= 5; i++) { const a = -Math.PI / 2 + SW * (0.02 + i * 0.012), p = P(R + 5.2, a), q = P(R + 7, a); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); } ctx.stroke();      // 스파인 톱니(지밍)
+  if (!plain && Lk.rune) {                                              // 붉은 날빛 발광
+    ctx.globalCompositeOperation = 'lighter';
+    const pu = 0.55 + Math.sin(Game.time * 0.12) * 0.25;
+    ctx.strokeStyle = `rgba(${Lk.rune},${0.9 * pu})`; ctx.lineWidth = 1.8; ctx.beginPath(); inner.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();
+    for (const u of [0.35, 0.7]) { const p = P(R, -Math.PI / 2 + SW * u); drawGlow(ctx, p[0], p[1], 12, Lk.rune, 0.3 * pu + glowAmt * 0.4); }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.restore();
+}
+
 function drawPlayerBlade(ctx, J, pal, ent, opt) {
   const ol = pal.ol, Lk = ent.wlook || {};
   const plain = opt.ghost || opt.flash;
@@ -251,6 +294,17 @@ function drawPlayerBlade(ctx, J, pal, ent, opt) {
   }
   const len = RIG_PLAYER.wlen * (Lk.L || 1);
   weaponFrame(ctx, J.hand1, J.wAng);
+  if (Lk.karam) {                                                         // 카람빗 : 두 손에 한 자루씩
+    drawKarambit(ctx, Lk, c, hilt, trim, ol, ent.bladeGlow || 0, plain);
+    ctx.restore();
+    if (J.elbow2 && J.hand2 && !opt.single) {
+      const th = Math.atan2(J.hand2.y - J.elbow2.y, J.hand2.x - J.elbow2.x);
+      weaponFrame(ctx, J.hand2, 90 - th / DEG); ctx.scale(1, -1);
+      drawKarambit(ctx, Lk, c, hilt, trim, ol, ent.bladeGlow || 0, plain);
+      ctx.restore();
+    }
+    return;
+  }
   // 칼자루
   olPoly(ctx, [-15, -2.7, 8, -2.7, 8, 2.7, -15, 2.7], hilt[1], ol, 1.5);
   ctx.strokeStyle = hilt[2]; ctx.lineWidth = 1;
