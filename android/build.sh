@@ -32,7 +32,7 @@ echo "[3/6] 리소스 링크 + 매니페스트"
   --manifest "$HERE/AndroidManifest.xml" \
   --java "$OUT/gen" \
   --min-sdk-version 23 --target-sdk-version 34 \
-  --version-code 12 --version-name 3.9 \
+  --version-code 13 --version-name 3.10 \
   "$OUT/res.zip"
 
 echo "[4/6] 자바 컴파일 → DEX"
