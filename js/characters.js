@@ -294,15 +294,9 @@ function drawPlayerBlade(ctx, J, pal, ent, opt) {
   }
   const len = RIG_PLAYER.wlen * (Lk.L || 1);
   weaponFrame(ctx, J.hand1, J.wAng);
-  if (Lk.karam) {                                                         // 카람빗 : 두 손에 한 자루씩
+  if (Lk.karam) {                                                         // 카람빗 : 한 자루
     drawKarambit(ctx, Lk, c, hilt, trim, ol, ent.bladeGlow || 0, plain);
     ctx.restore();
-    if (J.elbow2 && J.hand2 && !opt.single) {
-      const th = Math.atan2(J.hand2.y - J.elbow2.y, J.hand2.x - J.elbow2.x);
-      weaponFrame(ctx, J.hand2, 90 - th / DEG); ctx.scale(1, -1);
-      drawKarambit(ctx, Lk, c, hilt, trim, ol, ent.bladeGlow || 0, plain);
-      ctx.restore();
-    }
     return;
   }
   // 칼자루
