@@ -240,8 +240,8 @@ function hslRgb(h, s, l) {
 
 // 카람빗 : 손가락 고리 + 호크빌(매 부리) 곡선 칼날. 칼끝이 안쪽으로 크게 휘고, 날은 오목한 안쪽에 있다.
 function drawKarambit(ctx, Lk, c, hilt, trim, ol, glowAmt, plain) {
-  ctx.save(); ctx.scale(1.35, 1.35);
-  const R = 30, SW = 1.75, N = 18, cx = 9, cy = R;
+  ctx.save(); ctx.scale(1.12, 1.12);
+  const R = 27, SW = 1.58, N = 18, cx = 9, cy = R;
   const P = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
   // 손잡이 : 쥐기 좋게 살짝 굽은 몸통 + 홈
   const hc = Lk.grip || hilt;
