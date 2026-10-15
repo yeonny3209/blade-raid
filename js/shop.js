@@ -5,6 +5,7 @@
 //   - ↑↓ 고르기  ←→ 검·방어구 전환  Enter·Space 구매/장착  Esc 돌아가기  (마우스·터치 가능)
 // ============================================================
 const Shop = {
+  inspect: false, inspT: 0, inspIdle: false,
   tab: 0, sel: [0, 0, 0], scroll: [0, 0, 0], t: 0, msg: '', msgT: 0, msgCol: '#fff',
   pp: null, step: 0, hitDone: false, dummyHit: 0, swingK: 0, mx: 0, my: 0, mouseT: 0, inited: false,
   ROWS: 8, ROW_H: 62, LX: 40, LY: 144, LW: 470,
@@ -18,9 +19,10 @@ const Shop = {
   btnRect() { const D = this.DET; return { x: D.x + 20, y: D.y + D.h - 70, w: D.w - 40, h: 52 }; },
   tabRect(i) { return { x: this.LX + i * 100, y: 92, w: 94, h: 38 }; },
   backRect() { return { x: W - 220, y: 54, w: 180, h: 34 }; },
+  inspectRect() { return { x: this.STAGE.x + 60, y: this.STAGE.y + this.STAGE.h - 54, w: 190, h: 38 }; },
 
   enter() {
-    this.t = 0; this.msgT = 0; this.step = 0; this.hitDone = true;
+    this.t = 0; this.msgT = 0; this.step = 0; this.hitDone = true; this.inspect = false; this.inspIdle = false;
     if (!this.inited) {
       this.inited = true;
       addEventListener('wheel', e => { if (Game.state === 'shop') this.scrollBy(e.deltaY > 0 ? 1 : -1); }, { passive: true });
@@ -104,6 +106,7 @@ const Shop = {
     const inR = r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
     if (inR(this.backRect())) { this.leave(); return true; }
     for (let i = 0; i < 3; i++) if (inR(this.tabRect(i))) { this.setTab(i); return true; }
+    if (inR(this.inspectRect())) { this.toggleInspect(); return true; }
     if (inR(this.upRect())) { this.scrollBy(-3); return true; }
     if (inR(this.downRect())) { this.scrollBy(3); return true; }
     if (inR(this.btnRect())) { this.act(); return true; }
@@ -152,6 +155,7 @@ const Shop = {
       else if (q.a === 'right') this.setTab((this.tab + 1) % 3);
       else if (q.a === 'confirm' || q.a === 'jump') this.act();
       else if (q.a === 'attack') { if (this.mouseT > 0) this.clickAt(this.mx, this.my); else this.act(); }
+      else if (q.a === 'pot2') this.toggleInspect();
       else if (q.a === 'shop' || q.a === 'back') { this.leave(); return; }
     }
     // 마우스를 올리면 목록 선택
@@ -166,9 +170,29 @@ const Shop = {
     FX.update();
   },
 
+  // 자세히 보기 : 무기를 크게 돌려 보여주고, 방어구는 캐릭터가 천천히 돌아선다
+  toggleInspect() {
+    this.inspect = !this.inspect; this.inspT = 0; this.inspIdle = false; FX.clear();
+    Sfx.play('ui', 0.7, this.inspect ? 1.3 : 0.9);
+    if (!this.inspect) this.refresh();
+  },
+  emitInspect() {
+    if (this.inspT % 3 !== 0 || FX.world.length > 160) return;
+    const S = this.STAGE, W_ = this.kind() === 'w' ? this.cur() : Gear.w(), a = rand(0, TAU), r = rand(40, 170);
+    FX.add('world', new Mote(S.x + S.w / 2 + Math.cos(a) * r, S.y + S.h / 2 + Math.sin(a) * r * 1.3, rand(-0.4, 0.4), rand(-1.4, -0.4), { col: (W_.amb && W_.amb[1]) || W_.col || '200,220,255', life: 50, r: rand(3, 6), grav: 0 }));
+  },
+
   // 미리보기 : 휘두르고 → 허수아비를 때리고 → 대기, 를 반복
   updatePreview() {
     const pp = this.pp, it = this.cur(), isW = this.kind() === 'w';
+    if (this.inspect) {
+      this.inspT++; pp.px = pp.x; pp.pz = pp.z;
+      if (!this.inspIdle) { this.inspIdle = true; pp.play('idle', 6); pp.trailOn = false; pp.bladeGlow = 0; this.step = 0; this.hitDone = true; }
+      pp.stepAnim(); pp.updateChains(); pp.updateTrailAfter(); pp.gearTick();
+      this.emitInspect();
+      return;
+    }
+    this.inspIdle = false;
     const W_ = isW ? it : Gear.w();
     pp.px = pp.x; pp.pz = pp.z;
     this.step++;
@@ -218,7 +242,7 @@ const Shop = {
     olPoly(ctx, S.outer, c[0], '#120f18', 1.3);
     ctx.fillStyle = c[1]; ctx.beginPath(); polyPath(ctx, S.inner); ctx.fill();
     ctx.strokeStyle = c[2]; ctx.lineWidth = 1; ctx.beginPath(); S.bot.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();
-    if (Lk.rune) { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${Lk.rune},0.8)`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(66, 0); ctx.stroke(); }
+    if (Lk.rune && !Lk.bend) { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${Lk.rune},0.8)`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(66, 0); ctx.stroke(); }
     ctx.restore();
   },
   armorIcon(ctx, A, x, y, s) {
@@ -337,14 +361,52 @@ const Shop = {
     const W_ = this.kind() === 'w' ? this.cur() : Gear.w();
     drawGlow(ctx, 670, 430, 260, W_.col || '140,200,255', 0.16);
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.beginPath(); ctx.ellipse(606, 560, 90, 18, 0, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(this.TX, 560, 54, 12, 0, 0, TAU); ctx.fill();
-    FX.draw(ctx, 'ground');
-    this.drawDummy(ctx);
-    pp.draw(ctx); pp.drawTrail(ctx);
+    if (this.inspect) this.drawInspect(ctx);
+    else {
+      ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.beginPath(); ctx.ellipse(606, 560, 90, 18, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(this.TX, 560, 54, 12, 0, 0, TAU); ctx.fill();
+      FX.draw(ctx, 'ground');
+      this.drawDummy(ctx);
+      pp.draw(ctx); pp.drawTrail(ctx);
+    }
     FX.draw(ctx, 'world');
     ctx.restore();
-    UI.text(ctx, '미리보기', S.x + S.w / 2, S.y + 22, { size: 14, align: 'center', fill: '#6a7494', stroke: 3 });
+    UI.text(ctx, this.inspect ? '자세히 보기' : '미리보기', S.x + S.w / 2, S.y + 22, { size: 14, align: 'center', fill: '#6a7494', stroke: 3 });
+    const ir = this.inspectRect(), on = this.inspect;
+    ctx.fillStyle = on ? 'rgba(60,46,18,0.95)' : 'rgba(18,24,44,0.92)'; roundRect(ctx, ir.x, ir.y, ir.w, ir.h, 10); ctx.fill();
+    ctx.strokeStyle = on ? '#ffd24a' : 'rgba(150,175,230,0.7)'; ctx.lineWidth = 2; ctx.stroke();
+    UI.text(ctx, (on ? '돌아가기' : '자세히 보기') + (Touch.on ? '' : '  [V]'), ir.x + ir.w / 2, ir.y + ir.h / 2 + 1, { size: 16, align: 'center', fill: on ? '#ffe9a6' : '#cfe0ff', stroke: 3.5 });
+  },
+
+  // 자세히 보기 화면 : 무기를 크게 띄워 돌린다 / 방어구는 캐릭터를 크게 보여주며 돌아선다
+  drawInspect(ctx) {
+    const S = this.STAGE, k = this.kind(), it = this.cur(), t = this.inspT, cx = S.x + S.w / 2, cy = S.y + S.h / 2 - 20;
+    const col = (k === 'w' ? it.col : Gear.w().col) || '140,200,255';
+    ctx.save(); ctx.translate(cx, cy); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 10; i++) { const a = i / 10 * TAU + t * 0.004; ctx.fillStyle = `rgba(${col},0.05)`; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 420, a, a + 0.18); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+    drawGlow(ctx, cx, cy, 240, col, 0.22);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(cx, S.y + S.h - 92, 96, 16, 0, 0, TAU); ctx.fill();
+    if (k === 'w') {
+      const Lk = it.look || {}, len = RIG_PLAYER.wlen * (Lk.L || 1), sc = clamp(330 / (len + 24), 1.4, 4);
+      const ph = t % 320;
+      let ang = -Math.PI / 2 + Math.sin(t * 0.02) * 0.1, flat = Math.cos(t * 0.028);
+      if (ph < 80) { const u = ph / 80, e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; ang += e * TAU; flat = 1; }      // 한 바퀴 휘두르는 연출
+      const fl = Math.abs(flat) < 0.2 ? (flat < 0 ? -0.2 : 0.2) : flat;
+      const ent = { wlook: Lk, bladeGlow: 0.7 + Math.sin(t * 0.08) * 0.3, id: 3 };
+      ctx.save(); ctx.translate(cx, cy + Math.sin(t * 0.05) * 8); ctx.rotate(ang); ctx.scale(sc, sc * fl); ctx.translate(-(len - 16) / 2, 0);
+      drawPlayerBlade(ctx, { hand1: { x: 0, y: 0 }, wAng: 90 }, RIG_PLAYER.pal, ent, {});
+      const u = (t % 110) / 110;                                                      // 칼날을 훑는 빛
+      ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, u * len, (Lk.bend || 0) * u * u * len * 0.32, 12, '255,255,255', 0.95 * Math.sin(u * Math.PI));
+      ctx.restore();
+      UI.text(ctx, it.name, cx, S.y + 52, { size: 20, align: 'center', fill: `rgb(${it.col})`, stroke: 4 });
+      UI.text(ctx, it.feel || '', cx, S.y + S.h - 72, { size: 12.5, align: 'center', font: FONT_B, weight: 700, fill: '#9aa4c0', stroke: 3 });
+    } else {
+      const pp = this.pp, tx = Math.cos(t * 0.022), turn = Math.abs(tx) < 0.25 ? (tx < 0 ? -0.25 : 0.25) : tx;
+      ctx.save(); ctx.translate(cx, S.y + S.h - 74); ctx.scale(1.35 * turn, 1.35); ctx.translate(-606, -560);
+      pp.draw(ctx); ctx.restore();
+      UI.text(ctx, it.name, cx, S.y + 52, { size: 20, align: 'center', fill: '#e8ecff', stroke: 4 });
+    }
   },
 
   drawDummy(ctx) {

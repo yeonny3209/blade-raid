@@ -207,7 +207,8 @@ function bladeShape(Lk, len) {
       case 'notch': bw += (i % 2 ? 0 : 3); break;
       case 'crystal': bw += (i % 2 ? 3.4 : 0); tw += (i % 2 ? 0 : 1.8); break;
     }
-    top.push([x, -tw]); bot.push([x, bw]);
+    const bo = (Lk.bend || 0) * u * u * len * 0.32;                          // 휘어진 칼날 (카람빗)
+    top.push([x, -tw + bo]); bot.push([x, bw + bo]);
   }
   const tw1 = top[top.length - 1][1], bw1 = bot[bot.length - 1][1];
   let tip;
@@ -218,6 +219,8 @@ function bladeShape(Lk, len) {
     case 'round': tip = [[len - 3, tw1 * 0.85], [len, 0.2], [len - 3.5, bw1 * 0.85]]; break;
     default: tip = [[len, 0.5]];
   }
+  const bo1 = (Lk.bend || 0) * len * 0.32;
+  tip.forEach(p => { p[1] += bo1; });
   const outer = [];
   top.forEach(p => outer.push(p[0], p[1]));
   tip.forEach(p => outer.push(p[0], p[1]));
@@ -225,7 +228,7 @@ function bladeShape(Lk, len) {
   // 안쪽 면 (중앙 선 기준으로 줄인 다각형)
   const inner = [];
   top.forEach(p => inner.push(p[0] + 1, p[1] * 0.45));
-  inner.push(len - tipL * 0.35, 0.4);
+  inner.push(len - tipL * 0.35, 0.4 + bo1 * 0.82);
   for (let i = bot.length - 1; i >= 0; i--) inner.push(bot[i][0] + 1, bot[i][1] * 0.62);
   return { outer, inner, bot, top, len };
 }
@@ -276,10 +279,10 @@ function drawPlayerBlade(ctx, J, pal, ent, opt) {
   ctx.fillStyle = c[1]; ctx.beginPath(); polyPath(ctx, S.inner); ctx.fill();
   ctx.strokeStyle = c[2]; ctx.lineWidth = 1.3; ctx.lineJoin = 'round';
   ctx.beginPath(); S.bot.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.lineTo(len - 1, 0.5); ctx.stroke();
-  ctx.strokeStyle = c[0]; ctx.lineWidth = 0.9;
-  ctx.beginPath(); ctx.moveTo(14, -0.4); ctx.lineTo(len - 22, -0.4); ctx.stroke();
+  if (!Lk.bend) { ctx.strokeStyle = c[0]; ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.moveTo(14, -0.4); ctx.lineTo(len - 22, -0.4); ctx.stroke(); }
   // 룬 빛 (칼날 중앙선이 은은하게 발광)
-  if (rune && !opt.flash && !opt.ghost) {
+  if (rune && !Lk.bend && !opt.flash && !opt.ghost) {
     ctx.globalCompositeOperation = 'lighter';
     const pu = 0.55 + Math.sin(Game.time * 0.12 + (ent.id || 0)) * 0.25;
     ctx.strokeStyle = `rgba(${rune},${0.85 * pu})`; ctx.lineWidth = 1.6;
