@@ -17,7 +17,7 @@ Object.assign(WH, {
 
 const WEAPON_KARAM = {
   id: 'w35', name: '카람빗 새벽발톱', sub: '손가락에 걸어 휘두르는 짐승의 발톱', price: 2200000, map: 2,
-  atk: 1.55, crit: 0.16, critDmg: 1.9, stop: 0.5, shake: 0.8, move: 1.12, col: '255,100,80', snd: 'talon', part: 'talon', pitch: 1.25, swingPitch: 1.3,
+  atk: 0.78, crit: 0.16, critDmg: 1.9, stop: 0.5, shake: 0.8, move: 1.12, col: '255,100,80', snd: 'talon', part: 'talon', pitch: 1.25, swingPitch: 1.3,
   feel: '짧고 날카로운 연속 할퀴는 소리', desc: '1.5초 안에 이어서 적중할 때마다 피해가 5%씩 쌓인다(최대 +50%). 모든 적중이 출혈을 일으킨다. 치명타율 +16%, 치명타 피해 x1.9, 이동속도 +12%.',
   look: { karam: true, L: 0.68, c: ['#1c1218', '#9aa4b8', '#ffffff'], grip: ['#0a0a10', '#1c1c26', '#4a4a5c'], glow: '255,90,70', rune: '255,70,60', trim: ['#5a0e0e', '#e03a2a', '#ffb8a8'] },
   amb: ['ember', '255,90,70', 0.1],
