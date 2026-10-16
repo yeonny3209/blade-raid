@@ -380,7 +380,7 @@ class Player extends Entity {
     this.pots = { hp: 5, mp: 5 }; this.potCd = 0;
     this.swing = newSwing(); this.hitCount = 0;
     this.tail = new Chain(4, 9, 0.42, 0.86);
-    this.ribbon = new Chain(4, 7, 0.3, 0.84);
+    this.ribbon = new Chain(5, 9, 0.3, 0.84);
     this.bladeGlow = 0; this.ghostGlow = 0; this.armorF = false; this.landT = 0;
     this.play('idle', 0);
   }

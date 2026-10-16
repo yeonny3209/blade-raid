@@ -36,13 +36,16 @@ const RIG_PLAYER = {
     ol: '#120f18',
     skin: ['#c08a6c', '#efc3a3', '#ffe3cf'],
     hair: ['#141219', '#2a2633', '#4a4458'],
-    coat: ['#10172a', '#1f2e4f', '#3a5288'],
-    coatIn: ['#5b5e6b', '#9ea1ad', '#d4d6de'],
+    coat: ['#080b18', '#141c36', '#2a3868'],
+    coatIn: ['#14162a', '#262a44', '#40456a'],
     trim: ['#8a6a2c', '#c9a55c', '#f3dd9a'],
-    sash: ['#5e0e0e', '#a91f1c', '#e0504a'],
-    pants: ['#121217', '#25252e', '#3e3e4a'],
-    boots: ['#23150e', '#43291c', '#6b4631'],
-    bracer: ['#34261a', '#57412c', '#80664a'],
+    pipe: ['#6e0c12', '#c8202a', '#ff5a52'],
+    pauldron: ['#8a8470', '#d8d0b8', '#f8f2e2'],
+    buckle: ['#5a5a66', '#b4b8c6', '#ffffff'],
+    sash: ['#0a0a0e', '#1a1a22', '#363642'],
+    pants: ['#0c0e1a', '#181c30', '#2a3050'],
+    boots: ['#08080f', '#161622', '#2c2c3e'],
+    bracer: ['#0e0e16', '#1e1e28', '#363646'],
     ghost: ['#3e0a0d', '#861a1d', '#cf3a3a'],
     bandage: ['#b9a88a', '#e8d9c0', '#fff4e0'],
     metal: ['#353b48', '#667085', '#a8b3c9'],
@@ -80,7 +83,7 @@ function drawPlayer(ctx, J, pal, ent, opt) {
   }
 
   // --- 코트 자락 ---
-  if (!ghost && ent.tail) drawRibbon(ctx, ent, ent.tail, 10, 4, pal.coat[1], ol, ow);
+  if (!ghost && ent.tail) drawRibbon(ctx, ent, ent.tail, 11, 5, pal.coat[1], ol, ow);
 
   // --- 뒷다리 ---
   limb(ctx, J.hip, J.knee2, J.foot2, 8.6, 7, 5.8, pal.pants, pal.boots, ol, ow);
@@ -101,9 +104,11 @@ function drawPlayer(ctx, J, pal, ent, opt) {
   // 이너 셔츠 V
   ctx.fillStyle = pal.coatIn[1];
   ctx.beginPath(); polyPath(ctx, [...tp(Hh, F, 11, L * 0.35), ...tp(Hh, F, 12.3, L - 1), ...tp(Hh, F, 6.5, L + 3.5), ...tp(Hh, F, 5, L * 0.6)]); ctx.fill();
-  // 트림 라인
-  ctx.strokeStyle = pal.trim[1]; ctx.lineWidth = 1.6;
+  // 트림 라인 (붉은 파이핑)
+  const pipe = pal.pipe || pal.trim;
+  ctx.strokeStyle = pipe[1]; ctx.lineWidth = 1.7; ctx.lineJoin = 'round';
   ctx.beginPath(); ctx.moveTo(...tp(Hh, F, 5, L * 0.6)); ctx.lineTo(...tp(Hh, F, 6.5, L + 3.5)); ctx.lineTo(...tp(Hh, F, -6, L + 4)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(...tp(Hh, F, -14.5, L - 2)); ctx.lineTo(...tp(Hh, F, -7, L + 4.5)); ctx.lineTo(...tp(Hh, F, 7, L + 4.5)); ctx.lineTo(...tp(Hh, F, 14.5, L - 1)); ctx.stroke();
   // 하이라이트
   ctx.fillStyle = pal.coat[2];
   ctx.beginPath(); polyPath(ctx, [...tp(Hh, F, 2, L * 0.55), ...tp(Hh, F, 4, L - 1), ...tp(Hh, F, 1, L + 1), ...tp(Hh, F, 0, L * 0.6)]); ctx.fill();
@@ -112,16 +117,32 @@ function drawPlayer(ctx, J, pal, ent, opt) {
   ctx.fillStyle = pal.sash[2];
   ctx.beginPath(); polyPath(ctx, [...tp(Hh, F, -6, 5), ...tp(Hh, F, 10, 5), ...tp(Hh, F, 10.5, 7), ...tp(Hh, F, -6, 7)]); ctx.fill();
   olPoly(ctx, [...tp(Hh, F, -12, 6), ...tp(Hh, F, -15, -6), ...tp(Hh, F, -19, -12), ...tp(Hh, F, -14, -4), ...tp(Hh, F, -11, 2)], pal.sash[0], ol, 1.2);
+  if (pal.buckle) {                                                                       // 은색 버클 + 어깨에서 허리로 가로지르는 가죽끈
+    olPoly(ctx, [...tp(Hh, F, 9, L + 2), ...tp(Hh, F, 12.4, L - 2), ...tp(Hh, F, -5, 3), ...tp(Hh, F, -9, 6)], pal.sash[1], ol, 1.1);
+    olPoly(ctx, [...tp(Hh, F, -2.4, 0.4), ...tp(Hh, F, 4, 0.4), ...tp(Hh, F, 4, 8.6), ...tp(Hh, F, -2.4, 8.6)], pal.buckle[1], ol, 1);
+    ctx.fillStyle = pal.sash[0]; ctx.beginPath(); polyPath(ctx, [...tp(Hh, F, -0.6, 2.6), ...tp(Hh, F, 2.4, 2.6), ...tp(Hh, F, 2.4, 6.4), ...tp(Hh, F, -0.6, 6.4)]); ctx.fill();
+  }
+  if (!(ent.adef && ent.adef.look && ent.adef.look.coat) && pal.pipe) {                    // 기본 복장 : 붉은 테두리 옷깃
+    olPoly(ctx, [...tp(Hh, F, -10, L - 2), ...tp(Hh, F, -6.5, L + 8), ...tp(Hh, F, 0, L + 3.5), ...tp(Hh, F, 6.5, L + 8), ...tp(Hh, F, 11, L - 2), ...tp(Hh, F, 0, L - 5)], pal.coat[1], pal.pipe[1], 1.5);
+  }
   gearDeco(ctx, J, pal, ent, opt, 'body');
 
   // --- 앞다리 ---
   limb(ctx, J.hip, J.knee1, J.foot1, 9, 7.4, 6.1, pal.pants, pal.boots, ol, ow);
   footShape(ctx, J.knee1, J.foot1, pal.boots, ol, 12, 4.8, ow);
-  // 무릎 보호대
-  circleOl(ctx, J.knee1.x, J.knee1.y, 4.5, pal.metal[1], ol, 1.2);
+  // 무릎 보호대 / 기본 복장은 무릎까지 내려오는 롱코트 자락
+  if (!(ent.adef && ent.adef.look && ent.adef.look.coat) && pal.pipe) {
+    const m = [(J.knee1.x + J.knee2.x) / 2, (J.knee1.y + J.knee2.y) / 2];
+    const sw = ent.tail && ent.tail.p && ent.tail.p[1] ? clamp((ent.tail.p[1].x - ent.x) / (ent.scale * ent.facing) * 0.12, -3, 3) : 0;
+    const poly = [...tp(Hh, F, -12.8, 2), ...tp(Hh, F, 12.2, 2), m[0] + 13.5 + sw, m[1] + 6, m[0] + 7 + sw, m[1] + 11, m[0] - 1 + sw, m[1] + 7, m[0] - 7 + sw, m[1] + 11, m[0] - 14 + sw, m[1] + 5];
+    olPoly(ctx, poly, pal.coat[1], ol, ow);
+    ctx.strokeStyle = pal.pipe[1]; ctx.lineWidth = 1.7; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(m[0] - 14 + sw, m[1] + 5); ctx.lineTo(m[0] - 7 + sw, m[1] + 11); ctx.lineTo(m[0] - 1 + sw, m[1] + 7); ctx.lineTo(m[0] + 7 + sw, m[1] + 11); ctx.lineTo(m[0] + 13.5 + sw, m[1] + 6); ctx.stroke();
+    ctx.strokeStyle = pal.pipe[0]; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(...tp(Hh, F, 0.5, 2)); ctx.lineTo(m[0] - 1 + sw, m[1] + 7); ctx.stroke();
+  } else circleOl(ctx, J.knee1.x, J.knee1.y, 4.5, pal.metal[1], ol, 1.2);
 
   // --- 머리 ---
-  if (!ghost && ent.ribbon) drawRibbon(ctx, ent, ent.ribbon, 2.6, 1.2, pal.band[1], ol, 1.2);
+  if (!ghost && ent.ribbon) drawRibbon(ctx, ent, ent.ribbon, 4.2, 1.6, pal.band[1], ol, 1.3);
   drawPlayerHead(ctx, J, pal, ow, opt);
   if (ent.adef && ent.adef.look && ent.adef.look.deco && !ghost) {
     ctx.save(); ctx.translate(J.head.x, J.head.y); ctx.rotate(J.headRot); ctx.scale(1.1, 1.1);
@@ -139,9 +160,10 @@ function drawPlayer(ctx, J, pal, ent, opt) {
     const dx = J.elbow1.x - J.sh1.x, dy = J.elbow1.y - J.sh1.y, a = Math.atan2(dy, dx);
     const cx = J.sh1.x + dx * 0.12, cy = J.sh1.y + dy * 0.12;
     ctx.beginPath(); ctx.ellipse(cx, cy, 10.5, 8.5, a, 0, TAU); ctx.fillStyle = ol; ctx.fill();
-    ctx.beginPath(); ctx.ellipse(cx, cy, 9, 7, a, 0, TAU); ctx.fillStyle = pal.metal[1]; ctx.fill();
-    ctx.beginPath(); ctx.ellipse(cx - 1, cy - 2, 5, 3.5, a, 0, TAU); ctx.fillStyle = pal.metal[2]; ctx.fill();
-    ctx.strokeStyle = pal.trim[1]; ctx.lineWidth = 1.3;
+    const pm = (ent.adef && ent.adef.look && ent.adef.look.metal) ? pal.metal : (pal.pauldron || pal.metal);
+    ctx.beginPath(); ctx.ellipse(cx, cy, 9, 7, a, 0, TAU); ctx.fillStyle = pm[1]; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx - 1, cy - 2, 5, 3.5, a, 0, TAU); ctx.fillStyle = pm[2]; ctx.fill();
+    ctx.strokeStyle = (pal.pipe || pal.trim)[1]; ctx.lineWidth = 1.3;
     ctx.beginPath(); ctx.ellipse(cx, cy, 7.4, 5.6, a, 0.2, Math.PI - 0.2); ctx.stroke();
   }
   gearDeco(ctx, J, pal, ent, opt, 'top');
