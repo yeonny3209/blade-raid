@@ -299,11 +299,14 @@ const Game = {
     }
   },
 
+  // 죽어서 멈춘 배경음악을 되살린다 (보스가 살아 있으면 보스 음악)
+  resumeMusic() { Music.play(this.room && this.room.def.boss && this.boss && this.boss.hp > 0 ? 'boss' : 'dungeon'); },
+
   updateContinue() {
     const c = this.cont;
     c.t--;
     if ((Input.take('attack') || Input.take('confirm')) && this.coins > 0) {
-      this.coins--; this.state = 'play'; this.player.revive(); Input.clear(); return;
+      this.coins--; this.state = 'play'; this.player.revive(); this.resumeMusic(); Input.clear(); return;
     }
     Input.clear();
     if (c.t <= 0 || this.coins <= 0 && c.t < 480) {
