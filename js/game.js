@@ -54,7 +54,8 @@ const Game = {
     this.ps = this.canvas.width / W;
   },
 
-  scene() { return this.state === 'options' ? Opts : this.state === 'codex' ? Codex : null; },
+  scene() { return this.state === 'options' ? Opts : this.state === 'codex' ? Codex : this.state === 'tree' ? TreeUI : null; },
+  toTree() { this.state = 'tree'; TreeUI.enter(); Touch.release(); Input.clear(); },
   openOptions(from) { this.state = 'options'; Opts.enter(from); Touch.release(); Input.clear(); },
   toCodex() { this.state = 'codex'; Codex.enter(); Touch.release(); Input.clear(); },
 
@@ -91,6 +92,7 @@ const Game = {
       case 'shop': Shop.update(); break;
       case 'options': Opts.update(); break;
       case 'codex': Codex.update(); break;
+      case 'tree': TreeUI.update(); break;
       case 'paused': Pause.update(); if (this.state !== 'paused') break; if (Input.take('pause')) { this.state = this.pausedFrom; Sfx.play('ui'); } else if (Input.take('options')) { this.openOptions('paused'); break; } Input.queue = Input.queue.filter(q => q.a === 'pause'); break;
       case 'result': if (Input.take('share')) Share.save(); this.resT++; if (this.resT > 100 && (Input.take('confirm') || Input.take('attack'))) { Sfx.play('select'); this.toLobby(); } Input.clear(); break;
       case 'gameover': if (Input.take('share')) Share.save(); if (Input.take('confirm') || Input.take('attack')) { Sfx.play('select'); this.coins = 3; this.toLobby(); } Input.clear(); break;
@@ -172,7 +174,7 @@ const Game = {
       ensureTowerRooms(this.dungeon, i);
       const rm = this.dungeon.rooms[i], DD = DUNGEONS[rm.blk];
       Save.data.tower.run = i > 0 ? i : null; Save.data.tower.time = this.stats.time; Save.save();                 // 이어하기 지점 (플레이 타임 포함)
-      D0.theme = rm.theme; D0.mul = towerMul(rm.floor); D0.lv = Math.min(160, 60 + rm.floor * 2); D0.pool = DD.pool; D0.boss = rm.bossId || DD.boss;
+      D0.theme = rm.theme; D0.mul = towerMul(rm.floor); D0.lv = Math.min(999, 5 + rm.floor); D0.pool = DD.pool; D0.boss = rm.bossId || DD.boss;
     }
     delete this.bgCache[i - 2];
     Gear.reset(); WS.reset();
@@ -180,7 +182,7 @@ const Game = {
     this.enemies = []; this.projectiles = []; this.pickups = [];
     FX.clear();
     this.boss = null; this.target = null; this.targetT = 0; this.cutin = null;
-    this.player.reset(110, DEPTH / 2);
+    this.player.reset(110, DEPTH / 2); this.player.undyingUsed = false;
     Touch.release();
     this.cam.x = 0; this.dim = 0; this.dimTarget = 0; this.zoom = 1; this.hurtA = 0; this.flash = 0; this.speedT = 0; this.kickX = 0; this.kickY = 0; this.freezeT = 0;
     this.tokenMax = 2;
@@ -358,6 +360,7 @@ const Game = {
   onEnemyKilled(e) {
     this.stats.kills++;
     Dex.kill(e);
+    Prog.gainXp(Prog.xpFor(e));                                          // 경험치
     const DD = this.dungeon.def, idx = this.dungeonIdx > 0 ? this.dungeonIdx : 0;
     const gm = (DD.tower ? 1.6 + (this.roomIdx + 1) * 0.15 : idx >= 10 ? 4.5 : 1.6) * Diff.cur().gold;   // 지역 · 난이도별 골드 배율
     let coins, total;
@@ -476,6 +479,7 @@ const Game = {
     if (this.state === 'lobby') { Lobby.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'options') { Opts.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'codex') { Codex.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
+    if (this.state === 'tree') { TreeUI.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'shop') { Shop.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     const r = this.room, p = this.player, camX = Math.round(this.cam.x * 2) / 2;
 

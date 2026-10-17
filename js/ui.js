@@ -157,6 +157,8 @@ const UI = {
     const sec = Game.stats.time / 60 | 0;
     this.text(ctx, `${String(sec / 60 | 0).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`, 282, 58, { size: 16, align: 'right', fill: '#cfd8ff', stroke: 3 });
     this.text(ctx, Game.room ? Game.room.def.name : '', 92, 78, { size: 12, font: FONT_B, weight: 700, fill: '#9aa4c0' });
+    { const u = Prog.lv() >= Prog.MAXLV ? 1 : Prog.xp() / Prog.need(Prog.lv()), g = ctx.createLinearGradient(20, 0, 288, 0); g.addColorStop(0, '#7a5aff'); g.addColorStop(1, '#ff7ad8');
+      ctx.fillStyle = 'rgba(255,255,255,0.1)'; roundRect(ctx, 20, 84, 268, 3, 1.5); ctx.fill(); ctx.fillStyle = g; roundRect(ctx, 20, 84, Math.max(3, 268 * u), 3, 1.5); ctx.fill(); }
     ctx.restore();
   },
 

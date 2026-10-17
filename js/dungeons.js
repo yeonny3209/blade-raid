@@ -386,6 +386,8 @@ const Save = {
     d2.diff = d2.diff || 'normal'; d2.nick = typeof d2.nick === 'string' ? d2.nick : '';
     d2.up = d2.up || {}; d2.dex = d2.dex || {}; d2.ach = d2.ach || {}; d2.achSeen = d2.achSeen || {};
     d2.stat = Object.assign({ kills: 0, bosses: 0, maxCombo: 0, skills: 0, deaths: 0, hardClears: 0, hellClears: 0 }, d2.stat || {});
+    d2.tree = d2.tree || {}; d2.xp = d2.xp || 0;
+    if (typeof Prog !== 'undefined') Prog.migrate(d2); else d2.lv = d2.lv || 1;
     d2.tower = Object.assign({ best: 0, runs: 0, run: null, cd: null }, d2.tower || {});
     return this.data;
   },

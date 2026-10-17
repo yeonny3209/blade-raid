@@ -184,11 +184,12 @@ function applyHit(att, tgt, hit, o = {}) {
   let crit = false, counter = false, back = false;
   const W = att.isPlayer ? att.wdef : null;                                        // 장착한 검
   if (att.isPlayer) {
-    crit = Math.random() < att.critRate + (hit.crit || 0) || Game.eclipseT > 0;   // 월식 : 전부 치명타
+    crit = Math.random() < att.critRate + (hit.crit || 0) + Prog.critAdd(att, hit) || Game.eclipseT > 0;   // 월식 : 전부 치명타
     counter = !!(tgt.counterable && tgt.counterable());
     back = !hit.noBack && tgt.facing === sign(tgt.x - att.x) && !tgt.isBoss;
     if (crit) dmg *= (att.critDmg || 1.5) + (Game.eclipseT > 0 ? 0.6 : 0);
-    if (att.bloodT > 0) dmg *= 1.4;                                                // 피의 계약
+    if (att.bloodT > 0) dmg *= 1.4;
+    dmg *= Prog.dmgMul(att, hit);                                                  // 스킬 트리                                                // 피의 계약
     if (counter) dmg *= 1.25;
     if (back) dmg *= 1.1;
     if (tgt.breakT > 0) dmg *= 1.35;
@@ -264,7 +265,8 @@ function applyHit(att, tgt, hit, o = {}) {
 
   // --- 반응 ---
   tgt.takeHit(hit, att, dir, dmg, { crit, counter });
-  if (W && W.hit) W.hit(att, tgt, dmg, { crit, ipw, X, Y, hz, dir, hit, back, counter });   // 검 고유 능력
+  if (W && W.hit) W.hit(att, tgt, dmg, { crit, ipw, X, Y, hz, dir, hit, back, counter });
+  if (att.isPlayer) Prog.onHit(att, tgt, dmg, hit);                                  // 스킬 트리 : 흡혈 · 검기   // 검 고유 능력
   if (att.isPlayer && typeof WS !== 'undefined') {
     if (att.bloodT > 0) Gear.heal(att, Math.min(dmg * 0.08, att.hpMax * 0.015), true);
     if (att.cloneT > 0) WS.cloneStrike(att, tgt);

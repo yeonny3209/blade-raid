@@ -369,7 +369,7 @@ class Player extends Entity {
     // 클리어 기록에 따라 강해진다 (공격력은 난이도 배율과 같은 곡선)
     const P = typeof playerPower === 'function' ? playerPower() : 1;
     this.power = P;
-    this.lv = typeof playerLevel === 'function' ? playerLevel() : 70;
+    this.lv = Prog.lv();
     this.base = { hp: Math.round(34000 * 0.6 * (1 + (P - 1) * 0.35)), atk: Math.round(3000 * P), mpRegen: 48 };
     this.mpMax = 1500; this.sinceHit = 999; this.novaCd = 0; this.wcd = 0; this.shield = 0;
     this.setGear();
@@ -392,11 +392,11 @@ class Player extends Entity {
     const B = this.base, wp = W || {}, ap = A || {};
     const frac = this.hpMax ? this.hp / this.hpMax : 1;
     const wl = W ? Gear.lv(W.id) : 0, al = A ? Gear.lv(A.id) : 0;                       // 장비 강화 단계
-    this.hpMax = Math.round(B.hp * (ap.hp || 1) * (1 + 0.05 * al)); this.hp = Math.max(1, Math.round(this.hpMax * frac));
-    this.atk = this.baseAtk = Math.round(B.atk * (wp.atk || 1) * (1 + 0.06 * wl));
+    this.hpMax = Math.round(B.hp * (ap.hp || 1) * (1 + 0.05 * al) * Prog.hpMul()); this.hp = Math.max(1, Math.round(this.hpMax * frac));
+    this.atk = this.baseAtk = Math.round(B.atk * (wp.atk || 1) * (1 + 0.06 * wl) * Prog.atkMul()); this.lv = Prog.lv();
     this.critRate = 0.2 + (wp.crit || 0); this.critDmg = wp.critDmg || 1.5;
-    this.moveMul = (wp.move || 1) * (ap.move || 1);
-    this.mpRegen = B.mpRegen * (ap.mpRegen || 1); this.cdr = ap.cdr || 0;
+    this.moveMul = (wp.move || 1) * (ap.move || 1) * Prog.moveMul();
+    this.mpRegen = B.mpRegen * (ap.mpRegen || 1) * Prog.mpRegenMul(); this.cdr = ap.cdr || 0;
     this.takeMul = 1 - Math.min(0.85, (ap.def || 0) + 0.005 * al); this.dodge = ap.dodge || 0; this.capHit = ap.capHit || 0; this.kbRes = ap.kbRes || 0;
     if (hasGear && typeof gearRig === 'function') { this.rig = gearRig(A); }
     this.wlook = wp.look || null; this.wcol = wp.col || '140,200,255';
@@ -651,7 +651,7 @@ class Player extends Entity {
   actOf(s) { return typeof s.act === 'string' ? PA[s.act] : s.act; }
   canSkill(k) {
     const s = this.skill(k);
-    return this.cd[k] <= 0 && this.mp >= s.mp;
+    return this.cd[k] <= 0 && this.mp >= Math.round(s.mp * Prog.mpMul(k));
   }
   trySkills(allowAir, exclude) {
     for (const base of SKILLS) {
@@ -661,14 +661,15 @@ class Player extends Entity {
       if (this.z > 1 && !(allowAir && s.air) && s.key !== 's5' && s.key !== 's6') continue;
       this.use(s.key);
       if (!this.canSkill(s.key)) {
-        if (this.cd[s.key] <= 0 && this.mp < s.mp) Game.notice('MP가 부족합니다');
+        if (this.cd[s.key] <= 0) Game.notice('MP가 부족합니다');
         Sfx.play('ui', 0.5, 0.5);
         continue;
       }
-      this.mp -= s.mp; this.cd[s.key] = s.cd;
+      this.mp -= Math.round(s.mp * Prog.mpMul(s.key)); this.cd[s.key] = s.cd * Prog.cdMul(s.key);
       if (Game.dungeon && Game.dungeon.def.tower) Game.saveTowerCd();
       Game.stats.skills++; Save.data.stat.skills++;
       this.startAct(this.actOf(s));
+      Prog.onSkill(this, s.key, s);
       return true;
     }
     return false;
@@ -802,6 +803,7 @@ class Player extends Entity {
     this.hp -= dmg;
     this.sinceHit = 0;
     Game.onPlayerDamaged(dmg);
+    if (this.hp <= 0 && Prog.tryUndying(this)) return;                                // 스킬 트리 : 불굴
     if (this.hp <= 0 && this.adef && this.adef.phoenix && !this.phoenixUsed) { this.rise(); return; }
     if (this.hp > 0) this.onHurtGear(att, dmg);
     if (this.hp <= 0) {

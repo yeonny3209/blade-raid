@@ -101,6 +101,7 @@ const Lobby = {
       else if (q.a === 'tower') this.enterTower();
       else if (q.a === 'tower2') this.enterTower(true);
       else if (q.a === 'codex') { Sfx.play('select'); Game.toCodex(); return; }
+      else if (q.a === 'tree') { Sfx.play('select'); Game.toTree(); return; }
       else if (q.a === 'options') { Sfx.play('select'); Game.openOptions('lobby'); return; }
       else if (q.a === 'diff') { Diff.cycle(1); Sfx.play('ui', 0.7, 1.2); }
       else if (q.a === 'attack' || q.a === 'confirm' || q.a === 'jump') this.choose();
@@ -132,7 +133,7 @@ const Lobby = {
     Game.flashScreen(0.25, '255,230,160');
     const p = Game.player; p.setState('cine'); p.facing = 1;
   },
-  btnRect(i) { return { x: W / 2 - 330 + i * 226, y: 640, w: 208, h: 46 }; },
+  btnRect(i) { return { x: W / 2 - 443 + i * 226, y: 640, w: 208, h: 46 }; },
   diffRect() { return { x: W / 2 + 120, y: 408, w: 200, h: 36 }; },
 
   choose() {
@@ -192,9 +193,10 @@ const Lobby = {
     UI.text(ctx, '원 정 대  야 영 지', 40, 48, { size: 30, fill: '#ffe9a6', stroke: 5 });
     UI.text(ctx, '던전을 선택하세요', 40, 80, { size: 15, font: FONT_B, weight: 700, fill: '#9aa4c0' });
     // 내 캐릭터 상태
-    UI.text(ctx, `${Nick.name()}   Lv.${playerLevel()}`, 40, 104, { size: 17, fill: '#fff', stroke: 3 });
+    UI.text(ctx, `${Nick.name()}   Lv.${Prog.lv()}`, 40, 104, { size: 17, fill: '#fff', stroke: 3 });
+    { const u = Prog.lv() >= Prog.MAXLV ? 1 : Prog.xp() / Prog.need(Prog.lv()); ctx.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(ctx, 40, 112, 200, 4, 2); ctx.fill(); ctx.fillStyle = '#b08aff'; roundRect(ctx, 40, 112, Math.max(4, 200 * u), 4, 2); ctx.fill(); }
     Nick.pencil(ctx, 252, 103);
-    UI.text(ctx, `공격력 ${fmt(Math.round(3000 * playerPower() * (W_.atk || 1)))}`, 40, 126, { size: 14, font: FONT_B, weight: 700, fill: '#ffb0a0', stroke: 3 });
+    UI.text(ctx, `공격력 ${fmt(Math.round(3000 * playerPower() * (W_.atk || 1) * Prog.atkMul()))}`, 40, 126, { size: 14, font: FONT_B, weight: 700, fill: '#ffb0a0', stroke: 3 });
     UI.text(ctx, `검  ${W_.name}`, 40, 148, { size: 13, font: FONT_B, weight: 700, fill: `rgb(${W_.col})`, stroke: 3 });
     UI.text(ctx, `방어구  ${A_.name}`, 40, 168, { size: 13, font: FONT_B, weight: 700, fill: '#cfd8ff', stroke: 3 });
     // 보유 골드 / 진행도 / 상점
@@ -271,11 +273,11 @@ const Lobby = {
     ctx.strokeStyle = `rgb(${dm.col})`; ctx.lineWidth = 2; ctx.stroke();
     UI.text(ctx, `난이도  ◀ ${dm.name} ▶`, dr.x + dr.w / 2, dr.y + 19, { size: 16, align: 'center', fill: `rgb(${dm.col})`, stroke: 4 });
     // 하단 메뉴
-    const labels = [['무한의 탑', this.towerRun() ? `이어하기 ${this.towerRun() + 1}층  ·  최고 ${Save.data.tower.best}층` : Save.data.tower.best ? `최고 ${Save.data.tower.best}층` : (this.towerOpen() ? '' : '잠김'), 'N', !this.towerOpen()], ['도감 · 업적', Ach.claimable() ? `보상 ${Ach.claimable()}` : `${Dex.found()}/${Dex.total()}`, 'K', false], ['설정', '', 'O', false]];
+    const labels = [['무한의 탑', this.towerRun() ? `이어하기 ${this.towerRun() + 1}층  ·  최고 ${Save.data.tower.best}층` : Save.data.tower.best ? `최고 ${Save.data.tower.best}층` : (this.towerOpen() ? '' : '잠김'), 'N', !this.towerOpen()], ['스킬 트리', Prog.free() ? `포인트 ${Prog.free()}` : `Lv.${Prog.lv()}`, 'I', false], ['도감 · 업적', Ach.claimable() ? `보상 ${Ach.claimable()}` : `${Dex.found()}/${Dex.total()}`, 'K', false], ['설정', '', 'O', false]];
     labels.forEach(([nm, sub, key, lock], i) => {
       const r = this.btnRect(i);
       ctx.fillStyle = lock ? 'rgba(20,20,28,0.8)' : 'rgba(40,30,12,0.92)'; roundRect(ctx, r.x, r.y, r.w, r.h, 10); ctx.fill();
-      ctx.strokeStyle = lock ? 'rgba(150,160,190,0.35)' : (i === 1 && Ach.claimable() ? '#7dffa0' : '#c9a55c'); ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = lock ? 'rgba(150,160,190,0.35)' : ((i === 2 && Ach.claimable()) || (i === 1 && Prog.free()) ? '#7dffa0' : '#c9a55c'); ctx.lineWidth = 2; ctx.stroke();
       UI.text(ctx, nm + (Touch.on ? '' : `  [${key}]`), r.x + r.w / 2, r.y + (sub ? 18 : 24), { size: 17, align: 'center', fill: lock ? '#7a7a8a' : '#ffe9a6', stroke: 3 });
       if (sub) UI.text(ctx, sub, r.x + r.w / 2, r.y + 36, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: lock ? '#6a6a7a' : '#9aa4c0', stroke: 3 });
     });
@@ -345,9 +347,9 @@ const Lobby = {
     }
     if (lx >= this.diffRect().x && lx <= this.diffRect().x + this.diffRect().w && ly >= this.diffRect().y && ly <= this.diffRect().y + this.diffRect().h) { Diff.cycle(1); Sfx.play('ui', 0.7, 1.2); return true; }
     if (this.towerRun() && this.towerOpen() && inR(lx, ly, this.newTowerRect())) { this.enterTower(true); return true; }
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       const r = this.btnRect(i);
-      if (lx >= r.x && lx <= r.x + r.w && ly >= r.y && ly <= r.y + r.h) { Sfx.play('select'); if (i === 0) this.enterTower(); else if (i === 1) Game.toCodex(); else Game.openOptions('lobby'); return true; }
+      if (lx >= r.x && lx <= r.x + r.w && ly >= r.y && ly <= r.y + r.h) { Sfx.play('select'); if (i === 0) this.enterTower(); else if (i === 1) Game.toTree(); else if (i === 2) Game.toCodex(); else Game.openOptions('lobby'); return true; }
     }
     if (ly > 350 && ly < 404) { this.choose(); return true; }
     return false;
