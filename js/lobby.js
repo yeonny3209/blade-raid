@@ -90,6 +90,7 @@ const Lobby = {
       return;
     }
     // 입력
+    Input.take('pause');                          // 로비에서 누른 Esc 가 남아 있다가 던전에 들어가자마자 일시정지되지 않게
     const evs = Input.drain();
     for (let i = 0; i < evs.length; i++) {
       const q = evs[i];
@@ -207,7 +208,7 @@ const Lobby = {
     const sb = this.shopBtn, glowS = 0.5 + Math.sin(t * 0.08) * 0.5;
     ctx.fillStyle = 'rgba(40,30,12,0.9)'; roundRect(ctx, sb.x, sb.y, sb.w, sb.h, 9); ctx.fill();
     ctx.strokeStyle = `rgba(255,${190 + glowS * 40 | 0},80,${0.7 + glowS * 0.3})`; ctx.lineWidth = 2.4; ctx.stroke();
-    UI.text(ctx, Touch.on ? '상 점' : '상 점   [ B ]', sb.x + sb.w / 2, sb.y + 24, { size: 17, align: 'center', fill: '#ffe9a6', stroke: 3 });
+    UI.text(ctx, Touch.on ? '상 점' : `상 점   [ ${Input.label('shop')} ]`, sb.x + sb.w / 2, sb.y + 24, { size: 17, align: 'center', fill: '#ffe9a6', stroke: 3 });
 
     // 지역 탭
     for (let i = 0; i < MAPS.length; i++) {
@@ -217,7 +218,7 @@ const Lobby = {
       ctx.strokeStyle = on ? '#ffd24a' : 'rgba(150,160,190,0.35)'; ctx.lineWidth = on ? 2.4 : 1.2; ctx.stroke();
       UI.text(ctx, `${MAPS[i].name} · ${MAPS[i].sub}${lock ? '  (잠김)' : ''}`, r.x + r.w / 2, r.y + 23, { size: 15, align: 'center', fill: on ? '#ffe9a6' : lock ? '#7a7a8a' : '#aab2d0', stroke: 3 });
     }
-    if (!Touch.on) UI.text(ctx, '↑ ↓ 지역 이동', W / 2 + 394, 183, { size: 12, font: FONT_B, weight: 700, fill: '#7a84a4', stroke: 3 });
+    if (!Touch.on) UI.text(ctx, Input.padActive ? `↑ ↓ 지역 이동   난이도 [${Input.label('diff')}]` : '↑ ↓ 지역 이동', W / 2 + 394, 183, { size: 12, font: FONT_B, weight: 700, fill: '#7a84a4', stroke: 3 });
 
     // 던전 목록 (가로 카드, 지역별 10개)
     const cw = this.CW, y0 = this.CY;
@@ -273,25 +274,25 @@ const Lobby = {
     ctx.strokeStyle = `rgb(${dm.col})`; ctx.lineWidth = 2; ctx.stroke();
     UI.text(ctx, `난이도  ◀ ${dm.name} ▶`, dr.x + dr.w / 2, dr.y + 19, { size: 16, align: 'center', fill: `rgb(${dm.col})`, stroke: 4 });
     // 하단 메뉴
-    const labels = [['무한의 탑', this.towerRun() ? `이어하기 ${this.towerRun() + 1}층  ·  최고 ${Save.data.tower.best}층` : Save.data.tower.best ? `최고 ${Save.data.tower.best}층` : (this.towerOpen() ? '' : '잠김'), 'N', !this.towerOpen()], ['스킬 트리', Prog.free() ? `포인트 ${Prog.free()}` : `Lv.${Prog.lv()}`, 'I', false], ['도감 · 업적', Ach.claimable() ? `보상 ${Ach.claimable()}` : `${Dex.found()}/${Dex.total()}`, 'K', false], ['설정', '', 'O', false]];
+    const labels = [['무한의 탑', this.towerRun() ? `이어하기 ${this.towerRun() + 1}층  ·  최고 ${Save.data.tower.best}층` : Save.data.tower.best ? `최고 ${Save.data.tower.best}층` : (this.towerOpen() ? '' : '잠김'), 'tower', !this.towerOpen()], ['스킬 트리', Prog.free() ? `포인트 ${Prog.free()}` : `Lv.${Prog.lv()}`, 'tree', false], ['도감 · 업적', Ach.claimable() ? `보상 ${Ach.claimable()}` : `${Dex.found()}/${Dex.total()}`, 'codex', false], ['설정', '', 'options', false]];
     labels.forEach(([nm, sub, key, lock], i) => {
       const r = this.btnRect(i);
       ctx.fillStyle = lock ? 'rgba(20,20,28,0.8)' : 'rgba(40,30,12,0.92)'; roundRect(ctx, r.x, r.y, r.w, r.h, 10); ctx.fill();
       ctx.strokeStyle = lock ? 'rgba(150,160,190,0.35)' : ((i === 2 && Ach.claimable()) || (i === 1 && Prog.free()) ? '#7dffa0' : '#c9a55c'); ctx.lineWidth = 2; ctx.stroke();
-      UI.text(ctx, nm + (Touch.on ? '' : `  [${key}]`), r.x + r.w / 2, r.y + (sub ? 18 : 24), { size: 17, align: 'center', fill: lock ? '#7a7a8a' : '#ffe9a6', stroke: 3 });
+      UI.text(ctx, nm + (Touch.on ? '' : `  [${Input.label(key)}]`), r.x + r.w / 2, r.y + (sub ? 18 : 24), { size: 17, align: 'center', fill: lock ? '#7a7a8a' : '#ffe9a6', stroke: 3 });
       if (sub) UI.text(ctx, sub, r.x + r.w / 2, r.y + 36, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: lock ? '#6a6a7a' : '#9aa4c0', stroke: 3 });
     });
     if (this.towerRun() && this.towerOpen()) {
       const nr = this.newTowerRect();
       ctx.fillStyle = 'rgba(40,20,20,0.9)'; roundRect(ctx, nr.x, nr.y, nr.w, nr.h, 8); ctx.fill();
       ctx.strokeStyle = 'rgba(255,140,120,0.6)'; ctx.lineWidth = 1.4; ctx.stroke();
-      UI.text(ctx, Touch.on ? '1층부터 다시 도전' : '1층부터 다시  [U]', nr.x + nr.w / 2, nr.y + 12, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: '#ffa090', stroke: 3 });
+      UI.text(ctx, Touch.on ? '1층부터 다시 도전' : `1층부터 다시  [${Input.label('tower2')}]`, nr.x + nr.w / 2, nr.y + 12, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: '#ffa090', stroke: 3 });
     }
     // 안내
     if (this.msg > 0) {
       UI.text(ctx, this.msgText, W / 2, by + 124, { size: 18, align: 'center', fill: '#ff8a70', stroke: 4 });
     } else if (t % 70 < 50) {
-      const key = Touch.on ? '카드를 터치' : '← →  선택      J · Enter  입장      카드 클릭 : 선택 → 다시 클릭 : 입장';
+      const key = Touch.on ? '카드를 터치' : Input.padActive ? '← →  선택      A  입장      Y  상점' : '← →  선택      J · Enter  입장      카드 클릭 : 선택 → 다시 클릭 : 입장';
       UI.text(ctx, key, W / 2, by + 124, { size: 18, align: 'center', fill: '#ffe070', stroke: 4 });
     }
     // 제2지역 개방 안내

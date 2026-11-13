@@ -44,6 +44,73 @@ const Nick = {
   },
 };
 
+// ---------- 세이브 백업 : 진행 상황을 글자 코드로 내보내고 다른 기기에서 불러온다 ----------
+//   서버가 없어 웹과 앱, 기기마다 저장이 따로다 → 코드를 복사해 옮긴다
+const Backup = {
+  open: false, armed: null, mine: '',
+  $(id) { return document.getElementById(id); },
+  code() {
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(Save.data))));
+    return 'BR1.' + Share.hash(b64) + '.' + b64;
+  },
+  // 코드 → 저장 데이터 (형식이 틀리거나 일부가 잘렸으면 null)
+  parse(str) {
+    const m = /^BR1\.([0-9A-Z]{7})\.([A-Za-z0-9+/=]+)$/.exec(String(str || '').replace(/\s+/g, ''));
+    if (!m || Share.hash(m[2]) !== m[1]) return null;
+    try {
+      const d = JSON.parse(decodeURIComponent(escape(atob(m[2]))));
+      return d && typeof d === 'object' && !Array.isArray(d) && d.cleared && typeof d.cleared === 'object' && !Array.isArray(d.cleared) ? d : null;
+    } catch (e) { return null; }
+  },
+  init() {
+    if (!this.$('bakbox')) return;
+    this.$('bkCopy').addEventListener('click', () => this.copy());
+    this.$('bkLoad').addEventListener('click', () => this.load());
+    this.$('bkClose').addEventListener('click', () => this.close());
+    this.$('bkText').addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); this.close(); } e.stopPropagation(); });
+    this.$('bkText').addEventListener('input', () => { this.armed = null; this.say(''); });
+    this.$('bakbox').addEventListener('pointerdown', e => { if (e.target === this.$('bakbox')) this.close(); });
+  },
+  say(t, ok) { const el = this.$('bkMsg'); el.textContent = t; el.style.color = ok ? '#8fe8a8' : '#ff8a70'; },
+  ask() {
+    if (!this.$('bakbox')) return;
+    this.open = true; this.armed = null;
+    Touch.release(); Input.clear();
+    const ta = this.$('bkText');
+    ta.value = this.mine = this.code(); this.say('');
+    this.$('bakbox').style.display = 'flex'; setTimeout(() => { ta.focus(); ta.select(); }, 30);
+  },
+  close() {
+    this.$('bakbox').style.display = 'none'; this.$('bkText').blur();
+    this.open = false; this.armed = null; Input.clear();
+  },
+  copy() {
+    const ta = this.$('bkText'), txt = this.mine = this.code();
+    ta.value = txt; this.armed = null;
+    const done = () => this.say('내 코드를 복사했습니다. 메모장이나 카톡 나에게 보내기에 붙여 두세요.', true);
+    const hand = () => this.say('코드를 길게 눌러 직접 복사해 주세요.');
+    const old = () => { ta.focus(); ta.select(); try { if (document.execCommand('copy')) done(); else hand(); } catch (e) { hand(); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, old); else old();
+  },
+  load() {
+    const raw = this.$('bkText').value.replace(/\s+/g, '');
+    if (!raw || raw === this.mine) { this.say('다른 기기에서 복사한 코드를 여기에 붙여 넣은 뒤 눌러 주세요.'); return; }
+    const d = this.parse(raw);
+    if (!d) { this.armed = null; this.say('코드가 올바르지 않습니다. 처음부터 끝까지 빠짐없이 복사했는지 확인해 주세요.'); return; }
+    if (this.armed !== raw) {                                      // 실수로 덮어쓰지 않게 한 번 더 확인
+      this.armed = raw;
+      this.say(`Lv.${d.lv || 1} · 던전 ${Object.keys(d.cleared).length}개 클리어 · ${fmt(+d.gold || 0)} G 기록입니다. 지금 기록을 덮어씁니다. 한 번 더 누르면 불러옵니다.`);
+      return;
+    }
+    try { localStorage.setItem(Save.key, JSON.stringify(d)); } catch (e) { this.say('이 기기에 저장할 수 없습니다.'); return; }
+    Save.load(); Save.save(); Opt.apply();
+    this.close();
+    Game.player = null; Game.toLobby();                            // 새 기록으로 캐릭터 · 로비를 다시 만든다
+    Sfx.play('clear', 0.7);
+    Lobby.msg = 160; Lobby.msgText = '세이브를 불러왔습니다';
+  },
+};
+
 // ---------- 포인터 (마우스·터치 공용) : 상점 외의 장면들이 쓴다 ----------
 const Ptr = {
   down: false, x: 0, y: 0, last: 0,
@@ -51,7 +118,7 @@ const Ptr = {
     for (const t of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']) {
       addEventListener(t, e => {
         const S = Game.scene && Game.scene();
-        if (Nick.open) return;
+        if (Nick.open || Backup.open) return;
         if (!S) { if (t !== 'pointermove') this.down = false; return; }
         const [x, y] = Touch.toLogical(e);
         this.x = x; this.y = y; this.last = performance.now();
@@ -89,11 +156,12 @@ const Opts = {
     { k: 'voice', label: '몬스터 목소리', type: 'toggle' },
     { k: 'diff', label: '난이도', type: 'diff' },
     { k: 'nick', label: '닉네임', type: 'nick' },
+    { k: 'backup', label: '세이브 백업', type: 'backup' },
     { k: 'back', label: '돌아가기', type: 'back' },
   ],
-  RY: 168, RH: 50,
-  rowRect(i) { return { x: 300, y: this.RY + i * this.RH, w: 680, h: 44 }; },
-  track(i) { const r = this.rowRect(i); return { x: r.x + 340, y: r.y + 10, w: 280, h: 24 }; },
+  RY: 160, RH: 46,
+  rowRect(i) { return { x: 300, y: this.RY + i * this.RH, w: 680, h: 40 }; },
+  track(i) { const r = this.rowRect(i); return { x: r.x + 340, y: r.y + 8, w: 250, h: 24 }; },
 
   enter(from) { this.from = from || 'lobby'; this.sel = 0; this.drag = -1; },
   leave() { Opt.apply(); Save.save(); Sfx.play('select', 0.7); if (this.from === 'paused') { Game.state = 'paused'; } else Game.state = this.from; if (this.from === 'lobby') Lobby.t = 0; },
@@ -106,7 +174,7 @@ const Opts = {
     else if (r.type === 'toggle') { this.setVal(r, !o[r.k]); Sfx.play('ui', 0.6, o[r.k] ? 1.3 : 0.8); }
     else if (r.type === 'diff') { Diff.cycle(d || 1); Sfx.play('ui', 0.6, 1.2); }
   },
-  act(i) { const r = this.rows[i]; if (r.type === 'back') this.leave(); else if (r.type === 'toggle' || r.type === 'diff') this.adjust(i, 1); else if (r.type === 'nick') Nick.ask(); },
+  act(i) { const r = this.rows[i]; if (r.type === 'back') this.leave(); else if (r.type === 'toggle' || r.type === 'diff') this.adjust(i, 1); else if (r.type === 'nick') Nick.ask(); else if (r.type === 'backup') { if (this.from === 'lobby') Backup.ask(); else { Sfx.play('ui', 0.6, 0.5); this.msg = '세이브 백업은 로비의 설정에서 할 수 있습니다'; this.msgT = 120; } } },
 
   update() {
     if (this.msgT > 0) this.msgT--;
@@ -143,36 +211,40 @@ const Opts = {
   draw(ctx) {
     scrim(ctx);
     UI.text(ctx, '설  정', W / 2, 80, { size: 40, align: 'center', fill: '#ffe9a6', stroke: 6 });
-    Shop.panel(ctx, 280, 142, 720, this.rows.length * this.RH + 52);
+    Shop.panel(ctx, 280, 140, 720, this.rows.length * this.RH + 30);
     const o = Opt.get();
     this.rows.forEach((r, i) => {
       const rr = this.rowRect(i), on = i === this.sel;
       ctx.fillStyle = on ? 'rgba(70,58,26,0.85)' : 'rgba(24,28,42,0.65)'; roundRect(ctx, rr.x, rr.y, rr.w, rr.h, 9); ctx.fill();
       if (on) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 2; ctx.stroke(); }
-      UI.text(ctx, r.label, rr.x + 20, rr.y + 23, { size: 18, fill: r.type === 'back' ? '#ffe9a6' : '#e8ecff', stroke: 3 });
+      UI.text(ctx, r.label, rr.x + 20, rr.y + 21, { size: 18, fill: r.type === 'back' ? '#ffe9a6' : '#e8ecff', stroke: 3 });
       if (r.type === 'slider') {
         const t = this.track(i), v = o[r.k] / r.max;
         ctx.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(ctx, t.x, t.y + 8, t.w, 8, 4); ctx.fill();
         ctx.fillStyle = '#ffd24a'; roundRect(ctx, t.x, t.y + 8, Math.max(8, t.w * v), 8, 4); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(t.x + t.w * v, t.y + 12, 11, 0, TAU); ctx.fill();
         ctx.strokeStyle = '#8a6a20'; ctx.lineWidth = 2; ctx.stroke();
-        UI.text(ctx, `${Math.round(o[r.k] * 100)}%`, rr.x + rr.w - 12, rr.y + 23, { size: 15, align: 'right', fill: '#b8c0dc', stroke: 3 });
+        UI.text(ctx, `${Math.round(o[r.k] * 100)}%`, rr.x + rr.w - 12, rr.y + 21, { size: 15, align: 'right', fill: '#b8c0dc', stroke: 3 });
       } else if (r.type === 'toggle') {
-        const x = rr.x + rr.w - 110, y = rr.y + 10, on2 = o[r.k];
+        const x = rr.x + rr.w - 110, y = rr.y + 7, on2 = o[r.k];
         ctx.fillStyle = on2 ? 'rgba(60,150,90,0.9)' : 'rgba(70,70,84,0.9)'; roundRect(ctx, x, y, 88, 26, 13); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(on2 ? x + 75 : x + 13, y + 13, 10, 0, TAU); ctx.fill();
         UI.text(ctx, on2 ? '켜짐' : '꺼짐', on2 ? x + 30 : x + 58, y + 14, { size: 13, align: 'center', stroke: 3 });
       } else if (r.type === 'nick') {
         const nm = Nick.get();
-        UI.text(ctx, nm || '(미설정)', rr.x + rr.w - 150, rr.y + 23, { size: 19, align: 'center', fill: nm ? '#ffe9a6' : '#6a7494', stroke: 4 });
-        UI.text(ctx, '탭 / Enter 로 변경', rr.x + 190, rr.y + 23, { size: 12, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
+        UI.text(ctx, nm || '(미설정)', rr.x + rr.w - 150, rr.y + 21, { size: 19, align: 'center', fill: nm ? '#ffe9a6' : '#6a7494', stroke: 4 });
+        UI.text(ctx, '탭 / Enter 로 변경', rr.x + 190, rr.y + 21, { size: 12, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
       } else if (r.type === 'diff') {
         const d = Diff.cur();
-        UI.text(ctx, `◀  ${d.name}  ▶`, rr.x + rr.w - 150, rr.y + 23, { size: 19, align: 'center', fill: `rgb(${d.col})`, stroke: 4 });
-        UI.text(ctx, d.desc, rr.x + 190, rr.y + 23, { size: 12, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
+        UI.text(ctx, `◀  ${d.name}  ▶`, rr.x + rr.w - 150, rr.y + 21, { size: 19, align: 'center', fill: `rgb(${d.col})`, stroke: 4 });
+        UI.text(ctx, d.desc, rr.x + 190, rr.y + 21, { size: 12, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
+      } else if (r.type === 'backup') {
+        UI.text(ctx, '코드로 내보내기 · 불러오기', rr.x + rr.w - 150, rr.y + 21, { size: 15, align: 'center', fill: '#9ac8ff', stroke: 3 });
+        UI.text(ctx, '웹 ↔ 앱 · 다른 기기로 옮기기', rr.x + 190, rr.y + 21, { size: 12, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
       }
     });
-    UI.text(ctx, Touch.on ? '슬라이더를 끌어 조절 · 항목을 탭해 켜고 끄기' : '↑ ↓ 고르기   ← → 조절   Enter 변경   Esc 돌아가기', W / 2, 676, { size: 14, align: 'center', font: FONT_B, weight: 700, fill: '#6a7494', stroke: 3 });
+    if (this.msgT > 0) UI.text(ctx, this.msg, W / 2, 696, { size: 15, align: 'center', fill: '#ff8a70', stroke: 4 });
+    else UI.text(ctx, Touch.on ? '슬라이더를 끌어 조절 · 항목을 탭해 켜고 끄기' : Input.padActive ? '↑ ↓ 고르기   ← → 조절   A 변경   B 돌아가기' : '↑ ↓ 고르기   ← → 조절   Enter 변경   Esc 돌아가기', W / 2, 696, { size: 14, align: 'center', font: FONT_B, weight: 700, fill: '#6a7494', stroke: 3 });
     ctx.drawImage(UI.vignette, 0, 0);
   },
 };
@@ -256,7 +328,7 @@ const Codex = {
     const br = this.backRect();
     ctx.fillStyle = 'rgba(30,24,14,0.9)'; roundRect(ctx, br.x, br.y, br.w, br.h, 8); ctx.fill();
     ctx.strokeStyle = 'rgba(255,200,100,0.6)'; ctx.lineWidth = 1.6; ctx.stroke();
-    UI.text(ctx, Touch.on ? '돌아가기' : '돌아가기  [Esc]', br.x + br.w / 2, br.y + 18, { size: 15, align: 'center', fill: '#ffe9a6', stroke: 3 });
+    UI.text(ctx, Touch.on ? '돌아가기' : `돌아가기  [${Input.padActive ? 'B' : 'Esc'}]`, br.x + br.w / 2, br.y + 18, { size: 15, align: 'center', fill: '#ffe9a6', stroke: 3 });
     for (let i = 0; i < 3; i++) {
       const r = this.tabRect(i), on = i === this.tab;
       ctx.fillStyle = on ? 'rgba(54,44,22,0.95)' : 'rgba(14,16,24,0.85)'; roundRect(ctx, r.x, r.y, r.w, r.h, 9); ctx.fill();
@@ -364,7 +436,7 @@ const Pause = {
     else if (Input.take('back')) this.press(2);
   },
   draw(ctx) {
-    const names = ['계속하기', Touch.on ? '설정' : '설정  [O]', this.arm > 0 ? '정말 나갈까요?  한 번 더' : (Game.dungeon && Game.dungeon.def.tower ? '저장하고 나가기' : '로비로 나가기')];
+    const names = ['계속하기', Touch.on ? '설정' : `설정  [${Input.label('options')}]`, this.arm > 0 ? '정말 나갈까요?  한 번 더' : (Game.dungeon && Game.dungeon.def.tower ? '저장하고 나가기' : '로비로 나가기')];
     for (let i = 0; i < 3; i++) {
       const r = this.btn(i), on = i === this.sel, warn = i === 2;
       const col = warn ? (this.arm > 0 ? 'rgba(120,34,28,0.95)' : 'rgba(70,30,26,0.9)') : 'rgba(30,50,86,0.95)';
@@ -447,6 +519,6 @@ const Share = {
   },
   draw(ctx) {
     if (!this.active()) return;
-    bigBtn(ctx, this.btn, Touch.on ? '기록 카드 저장 · 공유' : '기록 카드 저장  [P]', 'rgba(30,50,86,0.95)', '#9ac8ff');
+    bigBtn(ctx, this.btn, Touch.on ? '기록 카드 저장 · 공유' : `기록 카드 저장  [${Input.label('share')}]`, 'rgba(30,50,86,0.95)', '#9ac8ff');
   },
 };

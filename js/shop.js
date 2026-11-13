@@ -276,7 +276,7 @@ const Shop = {
     const br = this.backRect();
     ctx.fillStyle = 'rgba(30,24,14,0.9)'; roundRect(ctx, br.x, br.y, br.w, br.h, 8); ctx.fill();
     ctx.strokeStyle = 'rgba(255,200,100,0.6)'; ctx.lineWidth = 1.6; ctx.stroke();
-    UI.text(ctx, Touch.on ? '돌아가기' : '돌아가기  [Esc]', br.x + br.w / 2, br.y + 18, { size: 15, align: 'center', fill: '#ffe9a6', stroke: 3 });
+    UI.text(ctx, Touch.on ? '돌아가기' : `돌아가기  [${Input.padActive ? 'B' : 'Esc'}]`, br.x + br.w / 2, br.y + 18, { size: 15, align: 'center', fill: '#ffe9a6', stroke: 3 });
 
     // 탭
     for (let i = 0; i < 3; i++) {
@@ -377,7 +377,7 @@ const Shop = {
     const ir = this.inspectRect(), on = this.inspect;
     ctx.fillStyle = on ? 'rgba(60,46,18,0.95)' : 'rgba(18,24,44,0.92)'; roundRect(ctx, ir.x, ir.y, ir.w, ir.h, 10); ctx.fill();
     ctx.strokeStyle = on ? '#ffd24a' : 'rgba(150,175,230,0.7)'; ctx.lineWidth = 2; ctx.stroke();
-    UI.text(ctx, (on ? '돌아가기' : '자세히 보기') + (Touch.on ? '' : '  [V]'), ir.x + ir.w / 2, ir.y + ir.h / 2 + 1, { size: 16, align: 'center', fill: on ? '#ffe9a6' : '#cfe0ff', stroke: 3.5 });
+    UI.text(ctx, (on ? '돌아가기' : '자세히 보기') + (Touch.on ? '' : `  [${Input.label('pot2')}]`), ir.x + ir.w / 2, ir.y + ir.h / 2 + 1, { size: 16, align: 'center', fill: on ? '#ffe9a6' : '#cfe0ff', stroke: 3.5 });
   },
 
   // 자세히 보기 화면 : 무기를 크게 띄워 돌린다 / 방어구는 캐릭터를 크게 보여주며 돌아선다

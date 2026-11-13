@@ -54,6 +54,20 @@
   #nickbox button { flex: 1; padding: 12px; border-radius: 12px; font-size: 17px; font-family: inherit; cursor: pointer; border: 2px solid; }
   #nickbox .ok { background: linear-gradient(180deg, #ffd66e, #e8a93a); border-color: #ffd66e; color: #2a1800; }
   #nickbox .no { background: #151a30; border-color: #6a7aa0; color: #c9d2ee; }
+  /* 세이브 백업 창 */
+  #bakbox { position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center; background: rgba(4, 6, 14, 0.72); font-family: 'Black Han Sans', 'Malgun Gothic', sans-serif; }
+  #bakbox .nb { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 16px); overflow: auto; box-sizing: border-box; padding: 20px 22px 16px; border-radius: 18px; background: linear-gradient(180deg, #1b2038, #0d1122); border: 2px solid #c9a55c; color: #ffe9a6; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+  #bakbox h3 { margin: 0 0 4px; font-weight: 400; font-size: 24px; }
+  #bakbox p { margin: 0 0 10px; font-family: 'Malgun Gothic', sans-serif; font-size: 13px; line-height: 1.5; color: #a9b3d4; }
+  #bakbox textarea { width: 100%; height: 96px; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 2px solid #6a7aa0; background: #0a0d1a; color: #cfe0ff; font: 12px/1.4 Consolas, monospace; word-break: break-all; resize: none; outline: none; user-select: text; -webkit-user-select: text; }
+  #bakbox textarea:focus { border-color: #ffd24a; }
+  #bakbox .err { min-height: 36px; margin: 6px 2px 0; font-family: 'Malgun Gothic', sans-serif; font-size: 12px; line-height: 1.5; color: #ff8a70; }
+  #bakbox .row { display: flex; gap: 10px; margin-top: 8px; }
+  #bakbox button { flex: 1; padding: 11px 6px; border-radius: 12px; font-size: 16px; font-family: inherit; cursor: pointer; border: 2px solid; }
+  #bakbox .ok { background: linear-gradient(180deg, #ffd66e, #e8a93a); border-color: #ffd66e; color: #2a1800; }
+  #bakbox .ld { background: #1c2c4c; border-color: #9ac8ff; color: #dcebff; }
+  #bakbox .no { background: #151a30; border-color: #6a7aa0; color: #c9d2ee; }
+  @media (max-height: 420px) { #bakbox textarea { height: 56px; } #bakbox p { display: none; } }
 </style>
 </head>
 <body>
@@ -65,6 +79,15 @@
     <input id="nbInput" type="text" maxlength="12" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="닉네임 입력">
     <div class="err" id="nbErr"></div>
     <div class="row"><button class="no" id="nbCancel" type="button">취소</button><button class="ok" id="nbOk" type="button">확인</button></div>
+  </div>
+</div>
+<div id="bakbox" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
+  <div class="nb">
+    <h3 id="bkTitle">세이브 백업</h3>
+    <p>아래 코드가 지금까지의 진행 상황이에요. 복사해 두었다가 다른 기기(웹 ↔ 앱)의 이 창에 붙여 넣고 [불러오기]를 누르면 그대로 이어서 할 수 있어요.</p>
+    <textarea id="bkText" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="세이브 코드"></textarea>
+    <div class="err" id="bkMsg" aria-live="polite"></div>
+    <div class="row"><button class="ok" id="bkCopy" type="button">내 코드 복사</button><button class="ld" id="bkLoad" type="button">불러오기</button><button class="no" id="bkClose" type="button">닫기</button></div>
   </div>
 </div>
 <div id="dlbar">
@@ -97,7 +120,7 @@
 </script>
 <script>
   // 파일이 섞이지 않도록 한 번에 같은 버전으로 로드
-  const BUILD = '20261015a';
+  const BUILD = '20261113a';
   ['util', 'input', 'audio', 'rig', 'characters', 'anims', 'fx', 'entity', 'player', 'enemies', 'boss', 'themes', 'themes2', 'stage', 'dungeons', 'creatures', 'creatures2', 'creatures3', 'mobs', 'items', 'wskills', 'gear2', 'gear3', 'gear4', 'gear5', 'meta', 'scenes', 'progress', 'ui', 'touch', 'lobby', 'shop', 'game']
     .forEach(n => document.write(`<script src="js/${n}.js?v=${BUILD}"><\/script>`));
 </script>

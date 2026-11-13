@@ -371,11 +371,11 @@ const UI = {
     const sx = 404, sz = 50, gap = 8, sy0 = 656;
     SKILLS.forEach((s0, i) => {
       const x = sx + i * (sz + gap), s = p.skill(s0.key);
-      this.slot(ctx, x, sy0, sz, this.skIcon(s), s.key.replace('s', ''), SKILL_KEY_LABELS[i], p.cd[s.key], s.cd, p.mp < s.mp);
+      this.slot(ctx, x, sy0, sz, this.skIcon(s), s.key.replace('s', ''), Input.skillLabel(i), p.cd[s.key], s.cd, p.mp < s.mp);
     });
     const px = sx + 6 * (sz + gap) + 16;
-    this.slot(ctx, px, sy0 + 3, 44, this.icons.hpPot, '', POTION_KEY_LABELS[0], p.potCd / 60, 0.5, p.pots.hp <= 0, p.pots.hp);
-    this.slot(ctx, px + 52, sy0 + 3, 44, this.icons.mpPot, '', POTION_KEY_LABELS[1], p.potCd / 60, 0.5, p.pots.mp <= 0, p.pots.mp);
+    this.slot(ctx, px, sy0 + 3, 44, this.icons.hpPot, '', Input.potionLabel(0), p.potCd / 60, 0.5, p.pots.hp <= 0, p.pots.hp);
+    this.slot(ctx, px + 52, sy0 + 3, 44, this.icons.mpPot, '', Input.potionLabel(1), p.potCd / 60, 0.5, p.pots.mp <= 0, p.pots.mp);
     ctx.restore();
   },
 
@@ -514,6 +514,9 @@ const UI = {
       ['왼쪽 화면', '드래그해서 이동 ( 같은 방향 두 번 = 대시 )'], ['큰 버튼', '기본 공격 (연타 콤보)'],
       ['↑ 버튼', '점프 / 다운 중 퀵 리바운드'], ['← 버튼', '백스텝 (무적)'],
       ['스킬 6종', '오른쪽 스킬 버튼'], ['물약', '오른쪽 끝 빨강 / 파랑'], ['⏸', '오른쪽 위 일시정지'],
+    ] : Input.padActive ? [
+      ['스틱 · 십자키', '이동  ( 같은 방향 두 번 = 대시 )'], ['X', '기본 공격 (연타 콤보)'], ['A', '점프 / 다운 중 퀵 리바운드'], ['B', '백스텝 (무적)'],
+      ['Y LB RB LT RT', '스킬      L3 : 각성기'], ['십자키 ↑ / ↓', 'HP / MP 물약'], ['START', '일시정지'],
     ] : [
       ['W A S D', '이동  ( AA / DD 대시 )'], ['좌클릭', '기본 공격 (연타 콤보)'], ['Space', '점프 / 다운 중 퀵 리바운드'], ['Z', '백스텝 (무적)'],
       ['Q E T F G', '스킬      R : 각성기'], ['C / V', 'HP / MP 물약'], ['ESC', '일시정지    M : 음소거'],
@@ -531,7 +534,15 @@ const UI = {
   drawPause(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(0, 0, W, H);
     this.text(ctx, 'PAUSE', W / 2, 98, { size: 54, align: 'center', italic: true, fill: '#fff', stroke: 8 });
-    const lines = [
+    const lines = Input.padActive ? [
+      ['스틱', '이동, 같은 방향 2번 → 대시  (십자키 ← → 도 가능)'], ['X', '기본 공격'],
+      ['A', '점프  /  다운 중 누르면 퀵 리바운드'], ['B', '백스텝 (무적)'],
+      ['Y', '어퍼 슬래시 - 적을 띄움 (공중 사용 가능)'], ['LB', '돌진참 - 적을 끌고 돌진'], ['RB', '삼단베기 - 3연속 돌진 베기 (방향 전환 가능)'],
+      ['LT', '발도 : 섬 - 순간 이동 베기'], ['RT', '검의 고유 스킬'], ['L3 / R3', '각성기  (스틱 누르기)'],
+      ['십자키 ↑ / ↓', 'HP / MP 물약'],
+      ['콤보', '평타 ↔ 스킬 서로 캔슬 가능 : X ×2 → Y → X ×3 → LB → X ...'], ['SELECT', '설정 (음량 · 화면 흔들림 · 난이도)'],
+      ['팁', '띄운 적은 평타로 계속 저글 · 적 공격 준비 중 타격 시 COUNTER'],
+    ] : [
       ['W A S D', '이동, 같은 방향 2번 → 대시  (방향키도 가능)'], ['좌클릭', '기본 공격  (J 도 가능)'],
       ['Space', '점프  /  다운 중 누르면 퀵 리바운드'], ['Z', '백스텝 (무적)  (L 도 가능)'],
       ['Q', '어퍼 슬래시 - 적을 띄움 (공중 사용 가능)'], ['E', '돌진참 - 적을 끌고 돌진'], ['T', '삼단베기 - 3연속 돌진 베기 (방향 전환 가능)'],
@@ -541,11 +552,11 @@ const UI = {
       ['팁', '띄운 적은 평타로 계속 저글 · 적 공격 준비 중 타격 시 COUNTER'],
     ];
     lines.forEach(([a, b], i) => {
-      this.text(ctx, a, 330, 262 + i * 27, { size: 17, fill: '#ffd87a', stroke: 3 });
+      this.text(ctx, a, a.length > 8 ? 314 : 330, 262 + i * 27, { size: a.length > 8 ? 14 : 17, fill: '#ffd87a', stroke: 3 });
       this.text(ctx, b, 450, 262 + i * 27, { size: 16, font: FONT_B, weight: 700, fill: '#e8ecf8', stroke: 3 });
     });
     Pause.draw(ctx);
-    this.text(ctx, Touch.on ? '버튼을 눌러 선택  ·  우측 위 일시정지 버튼으로도 계속' : 'ESC 계속   방향키 + Enter 선택   Z 로비로 나가기   (마우스 클릭 가능)', W / 2, 652, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
+    this.text(ctx, Touch.on ? '버튼을 눌러 선택  ·  우측 위 일시정지 버튼으로도 계속' : Input.padActive ? 'START · B 계속   ← → 고르고 A 선택' : 'ESC 계속   방향키 + Enter 선택   Z 로비로 나가기   (마우스 클릭 가능)', W / 2, 652, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
   },
 
   // ---------- 결과 ----------

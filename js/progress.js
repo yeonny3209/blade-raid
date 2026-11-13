@@ -367,7 +367,7 @@ const TreeUI = {
     const br = this.backRect();
     ctx.fillStyle = 'rgba(30,24,14,0.9)'; roundRect(ctx, br.x, br.y, br.w, br.h, 8); ctx.fill();
     ctx.strokeStyle = 'rgba(255,200,100,0.6)'; ctx.lineWidth = 1.6; ctx.stroke();
-    UI.text(ctx, Touch.on ? '돌아가기' : '돌아가기  [Esc]', br.x + br.w / 2, br.y + 18, { size: 15, align: 'center', fill: '#ffe9a6', stroke: 3 });
+    UI.text(ctx, Touch.on ? '돌아가기' : `돌아가기  [${Input.padActive ? 'B' : 'Esc'}]`, br.x + br.w / 2, br.y + 18, { size: 15, align: 'center', fill: '#ffe9a6', stroke: 3 });
 
     // 트리 판
     Shop.panel(ctx, 30, 104, 892, 590);

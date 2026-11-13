@@ -19,9 +19,16 @@ const Game = {
     this.ctx = this.canvas.getContext('2d');
     this.resize();
     addEventListener('resize', () => this.resize());
+    // 다른 창 · 다른 앱으로 넘어가면 전투를 멈춘다 (돌아왔더니 쓰러져 있는 일이 없게)
+    addEventListener('blur', () => this.autoPause());
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.autoPause();
+      try { if (Sfx.ctx) { if (document.hidden) Sfx.ctx.suspend(); else Sfx.ctx.resume(); } } catch (e) { }
+    });
+    addEventListener('gamepadconnected', () => this.notice('게임패드 연결됨'));
     Input.init();
     UI.init();
-    Ptr.init(); Nick.init();
+    Ptr.init(); Nick.init(); Backup.init();
     Touch.init();
     Save.load();
     Dex.init();
@@ -59,12 +66,19 @@ const Game = {
   openOptions(from) { this.state = 'options'; Opts.enter(from); Touch.release(); Input.clear(); },
   toCodex() { this.state = 'codex'; Codex.enter(); Touch.release(); Input.clear(); },
 
+  autoPause() {
+    if (this.state !== 'play' || this.cutin || !this.player || this.player.hp <= 0) return;
+    this.pausedFrom = this.state; this.state = 'paused'; Pause.enter();
+    Touch.release(); Input.clear();
+  },
+
   newStats() { return { time: 0, maxCombo: 0, hitsTaken: 0, kills: 0, gold: 0, dmg: 0, skills: 0 }; },
 
   // ---------------- 루프 ----------------
   loop(ts) {
     requestAnimationFrame(t => this.loop(t));
     const dt = Math.min(100, ts - this.last); this.last = ts;
+    Input.pollPad();
     if (this.slowMs > 0) { this.slowMs -= dt; if (this.slowMs <= 0) this.slowScale = 1; }
     const sc = this.slowMs > 0 ? lerp(this.slowScale, 1, clamp(1 - this.slowMs / 300, 0, 1) * (this.slowMs < 300 ? 1 : 0)) : 1;
     this.acc += dt * sc;
