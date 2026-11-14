@@ -134,6 +134,23 @@ function olPoly(ctx, pts, fill, ol, ow) {
   ctx.fillStyle = fill; ctx.fill();
 }
 
+// 부드러운 닫힌 곡선 (Catmull-Rom → 베지어). t = 1 이면 둥글게, 0 이면 다각형
+function smoothPoly(ctx, pts, t = 1) {
+  const n = pts.length >> 1, k = t / 6;
+  ctx.moveTo(pts[0], pts[1]);
+  for (let i = 0; i < n; i++) {
+    const i0 = ((i - 1 + n) % n) * 2, i1 = i * 2, i2 = ((i + 1) % n) * 2, i3 = ((i + 2) % n) * 2;
+    ctx.bezierCurveTo(pts[i1] + (pts[i2] - pts[i0]) * k, pts[i1 + 1] + (pts[i2 + 1] - pts[i0 + 1]) * k, pts[i2] - (pts[i3] - pts[i1]) * k, pts[i2 + 1] - (pts[i3 + 1] - pts[i1 + 1]) * k, pts[i2], pts[i2 + 1]);
+  }
+  ctx.closePath();
+}
+function olSmooth(ctx, pts, fill, ol, ow, t) {
+  ctx.beginPath(); smoothPoly(ctx, pts, t);
+  ctx.lineJoin = 'round';
+  if (ow) { ctx.strokeStyle = ol; ctx.lineWidth = ow * 2; ctx.stroke(); }
+  ctx.fillStyle = fill; ctx.fill();
+}
+
 // 몸통 좌표계 도우미 : hip→chest 기준 로컬 (u=위, f=앞)
 function torsoFrame(J) {
   const dx = J.chest.x - J.hip.x, dy = J.chest.y - J.hip.y, L = Math.hypot(dx, dy) || 1;

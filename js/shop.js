@@ -237,14 +237,9 @@ const Shop = {
   bladeIcon(ctx, Wp, x, y, s) {
     const Lk = Wp.look, c = Lk.c;
     if (Lk.karam) { ctx.save(); ctx.translate(x - 12, y - 12); ctx.scale(s * 0.74, s * 0.74); drawKarambit(ctx, Lk, c, Lk.grip || ['#1a120c', '#2e2016', '#5a4a3a'], Lk.trim || ['', '#c9a55c', '#fff'], '#120f18', 0, true); ctx.restore(); return; }
-    const S = bladeShape(Lk, 80);
-    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.78); ctx.scale(s, s); ctx.translate(-34, 0);
-    olPoly(ctx, [-12, -2.4, 10, -2.4, 10, 2.4, -12, 2.4], (Lk.hilt || ['#1a120c', '#2e2016'])[1], '#120f18', 1.2);
-    olPoly(ctx, [8, -8, 12, -8, 12, 8, 8, 8], (Lk.trim || ['', '#c9a55c'])[1], '#120f18', 1);
-    olPoly(ctx, S.outer, c[0], '#120f18', 1.3);
-    ctx.fillStyle = c[1]; ctx.beginPath(); polyPath(ctx, S.inner); ctx.fill();
-    ctx.strokeStyle = c[2]; ctx.lineWidth = 1; ctx.beginPath(); S.bot.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();
-    if (Lk.rune && !Lk.bend) { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${Lk.rune},0.8)`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(66, 0); ctx.stroke(); }
+    const len = RIG_PLAYER.wlen * (Lk.L || 1), k = 78 / len;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.78); ctx.scale(s * k, s * k); ctx.translate(-(len / 2 - 6), 0);
+    drawPlayerBlade(ctx, { hand1: { x: 0, y: 0 }, wAng: 90 }, RIG_PLAYER.pal, { wlook: Lk, bladeGlow: 0, id: 1 }, {});
     ctx.restore();
   },
   armorIcon(ctx, A, x, y, s) {

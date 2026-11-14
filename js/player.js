@@ -619,7 +619,7 @@ class Player extends Entity {
     const wind = -this.facing * (0.22 + Math.abs(this.vx) * 0.04) + Math.sin(Game.time * 0.07) * 0.08;
     this.tail.update(w[0], w[1], wind);
     const hr = J.headRot, c = Math.cos(hr), s = Math.sin(hr);
-    const hx = J.head.x + (-12 * c - -4.5 * s), hy = J.head.y + (-12 * s + -4.5 * c);
+    const hx = J.head.x + (-20 * c - -6.5 * s), hy = J.head.y + (-20 * s + -6.5 * c);
     const w2 = this.toWorld({ x: hx, y: hy });
     this.ribbon.update(w2[0], w2[1], wind * 1.2);
   }
