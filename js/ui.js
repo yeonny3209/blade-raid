@@ -556,7 +556,7 @@ const UI = {
       this.text(ctx, b, 450, 262 + i * 27, { size: 16, font: FONT_B, weight: 700, fill: '#e8ecf8', stroke: 3 });
     });
     Pause.draw(ctx);
-    this.text(ctx, Touch.on ? '버튼을 눌러 선택  ·  우측 위 일시정지 버튼으로도 계속' : Input.padActive ? 'START · B 계속   ← → 고르고 A 선택' : 'ESC 계속   방향키 + Enter 선택   Z 로비로 나가기   (마우스 클릭 가능)', W / 2, 652, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
+    this.text(ctx, Touch.on ? '버튼을 눌러 선택  ·  우측 위 일시정지 버튼으로도 계속' : Input.padActive ? 'START · B 계속   ← → 고르고 A 선택' : 'ESC 계속   방향키 + Enter 선택   Z 나가기   (마우스 클릭 가능)', W / 2, 652, { size: 20, align: 'center', fill: '#aab4d0', stroke: 3 });
   },
 
   // ---------- 결과 ----------
@@ -595,7 +595,7 @@ const UI = {
       this.text(ctx, `SCORE ${fmt(R.score)}`, 835, 460, { size: 22, align: 'center', fill: '#ffe9a6', stroke: 4, italic: true });
     }
     if (t > 140 && t % 60 < 44) this.text(ctx, 'Enter : 다시 도전', W / 2, 580, { size: 20, align: 'center', fill: '#ffd87a', stroke: 4 });
-    if (t > 150) this.text(ctx, `보유 골드 ${fmt(Save.data.gold || 0)}  —  로비의 상점에서 검과 방어구를 살 수 있습니다`, W / 2, 548, { size: 15, align: 'center', font: FONT_B, weight: 700, fill: '#b8c0dc', stroke: 3 });
+    if (t > 150) this.text(ctx, `보유 골드 ${fmt(Save.data.gold || 0)}  —  지도의 상점에서 검과 방어구를 살 수 있습니다`, W / 2, 548, { size: 15, align: 'center', font: FONT_B, weight: 700, fill: '#b8c0dc', stroke: 3 });
     if (R.newMap && t > 60) {                                  // 제2지역 최초 개방
       const k = 0.5 + Math.sin(t * 0.12) * 0.5;
       ctx.fillStyle = 'rgba(60,40,10,0.92)'; roundRect(ctx, 340, 70, 600, 56, 12); ctx.fill();
@@ -622,7 +622,7 @@ const UI = {
     this.text(ctx, 'GAME OVER', W / 2, 300, { size: 80, align: 'center', italic: true, fill: '#ff5a4a', stroke: 8 });
     if (Game.dungeon && Game.dungeon.def.tower) this.text(ctx, `무한의 탑  ${Game.towerFloor || 0}층 돌파  (최고 ${Save.data.tower.best}층)`, W / 2, 352, { size: 28, align: 'center', fill: '#ffe9a6', stroke: 5, italic: true });
     if (Game.keptGold > 0) this.text(ctx, `주운 골드 ${fmt(Game.keptGold)} 는 그대로 가져갑니다`, W / 2, 392, { size: 20, align: 'center', font: FONT_B, weight: 700, fill: '#ffe9a6', stroke: 4 });
-    if (Game.frame % 60 < 44) this.text(ctx, 'Enter : 로비로', W / 2, 450, { size: 22, align: 'center', fill: '#ffd87a', stroke: 4 });
+    if (Game.frame % 60 < 44) this.text(ctx, 'Enter : 지도로', W / 2, 450, { size: 22, align: 'center', fill: '#ffd87a', stroke: 4 });
   },
 
   drawBossIntro(ctx, t) {

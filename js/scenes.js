@@ -174,7 +174,7 @@ const Opts = {
     else if (r.type === 'toggle') { this.setVal(r, !o[r.k]); Sfx.play('ui', 0.6, o[r.k] ? 1.3 : 0.8); }
     else if (r.type === 'diff') { Diff.cycle(d || 1); Sfx.play('ui', 0.6, 1.2); }
   },
-  act(i) { const r = this.rows[i]; if (r.type === 'back') this.leave(); else if (r.type === 'toggle' || r.type === 'diff') this.adjust(i, 1); else if (r.type === 'nick') Nick.ask(); else if (r.type === 'backup') { if (this.from === 'lobby') Backup.ask(); else { Sfx.play('ui', 0.6, 0.5); this.msg = '세이브 백업은 로비의 설정에서 할 수 있습니다'; this.msgT = 120; } } },
+  act(i) { const r = this.rows[i]; if (r.type === 'back') this.leave(); else if (r.type === 'toggle' || r.type === 'diff') this.adjust(i, 1); else if (r.type === 'nick') Nick.ask(); else if (r.type === 'backup') { if (this.from === 'lobby' || this.from === 'smap') Backup.ask(); else { Sfx.play('ui', 0.6, 0.5); this.msg = '세이브 백업은 지도 화면의 설정에서 할 수 있습니다'; this.msgT = 120; } } },
 
   update() {
     if (this.msgT > 0) this.msgT--;
@@ -436,7 +436,7 @@ const Pause = {
     else if (Input.take('back')) this.press(2);
   },
   draw(ctx) {
-    const names = ['계속하기', Touch.on ? '설정' : `설정  [${Input.label('options')}]`, this.arm > 0 ? '정말 나갈까요?  한 번 더' : (Game.dungeon && Game.dungeon.def.tower ? '저장하고 나가기' : '로비로 나가기')];
+    const names = ['계속하기', Touch.on ? '설정' : `설정  [${Input.label('options')}]`, this.arm > 0 ? '정말 나갈까요?  한 번 더' : (Game.dungeon && Game.dungeon.def.tower ? '저장하고 나가기' : (Story.active ? '지도로 나가기' : '로비로 나가기'))];
     for (let i = 0; i < 3; i++) {
       const r = this.btn(i), on = i === this.sel, warn = i === 2;
       const col = warn ? (this.arm > 0 ? 'rgba(120,34,28,0.95)' : 'rgba(70,30,26,0.9)') : 'rgba(30,50,86,0.95)';

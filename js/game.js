@@ -61,7 +61,11 @@ const Game = {
     this.ps = this.canvas.width / W;
   },
 
-  scene() { return this.state === 'options' ? Opts : this.state === 'codex' ? Codex : this.state === 'tree' ? TreeUI : null; },
+  scene() {
+    const s = this.state;
+    return s === 'options' ? Opts : s === 'codex' ? Codex : s === 'tree' ? TreeUI
+      : s === 'talk' ? (Choice.on ? Choice : Talk) : s === 'cine' ? Cine : s === 'smap' ? StoryMap : s === 'sres' ? StoryRes : null;
+  },
   toTree() { this.state = 'tree'; TreeUI.enter(); Touch.release(); Input.clear(); },
   openOptions(from) { this.state = 'options'; Opts.enter(from); Touch.release(); Input.clear(); },
   toCodex() { this.state = 'codex'; Codex.enter(); Touch.release(); Input.clear(); },
@@ -111,6 +115,9 @@ const Game = {
       case 'result': if (Input.take('share')) Share.save(); this.resT++; if (this.resT > 100 && (Input.take('confirm') || Input.take('attack'))) { Sfx.play('select'); this.toLobby(); } Input.clear(); break;
       case 'gameover': if (Input.take('share')) Share.save(); if (Input.take('confirm') || Input.take('attack')) { Sfx.play('select'); this.coins = 3; this.toLobby(); } Input.clear(); break;
       case 'continue': this.updateContinue(); break;
+      case 'smap': StoryMap.update(); break;
+      case 'sres': Story.updateRes(); break;
+      case 'talk': Scr.update(); if (Choice.on) Choice.update(); else if (Talk.on) Talk.update(); else this.state = 'play'; break;
       default:
         if (Input.take('pause') && !this.cutin && this.state === 'play') { this.pausedFrom = this.state; this.state = 'paused'; Pause.enter(); Sfx.play('ui'); return; }
         this.updateWorld();
@@ -148,7 +155,8 @@ const Game = {
     this.fade = 0; this.fadeDir = 0; this.dim = 0; this.dimTarget = 0; this.zoom = 1;
     this.hurtA = 0; this.flash = 0; this.speedT = 0; this.kickX = 0; this.kickY = 0; this.freezeT = 0;
     FX.clear(); Touch.release(); Input.clear();
-    Lobby.enter();
+    Story.quit();
+    this.state = 'smap'; StoryMap.enter();            // 메인 스토리 : 로비 대신 세계 지도
   },
 
   toShop() {
@@ -158,6 +166,7 @@ const Game = {
   },
 
   startDungeon(id, from = 0) {
+    Story.quit();
     const d = DUNGEON_BY_ID[id] || DUNGEONS[0];
     this.dungeon = buildDungeon(d);
     this.bgCache = {};                      // 던전마다 배경이 다르므로 캐시 초기화
@@ -212,11 +221,13 @@ const Game = {
       Music.play('dungeon');
     }
     this.clearSeq = null;
+    if (Story.active) Story.onRoom(i);
   },
 
   // ---------------- 월드 ----------------
   updateWorld() {
     this.debugBoxes.length = 0;
+    if (Story.active) { tickTimers(); Story.tick(); if (this.state === 'sres' || this.state === 'talk') return; }
     // 페이드
     if (this.fadeDir) {
       this.fade = clamp(this.fade + this.fadeDir * 0.045, 0, 1);
@@ -237,8 +248,9 @@ const Game = {
     } else {
       p.update();
       if (p.hasteT > 0 && this.frame % 2 === 0 && p.hp > 0) p.update();          // 시간 가속 : 나만 1.5배
-      const ts = this.tstopT > 0;                                                // 크로노 브레이크 : 적의 시간이 멈춤
+      let ts = this.tstopT > 0;                                                  // 크로노 브레이크 : 적의 시간이 멈춤
       if (ts && --this.tstopT === 0) WS.timeResume();
+      if (this.state === 'cine') ts = true;                                      // 대본 진행 중 : 적은 멈춰 있다
       if (!ts) for (const e of this.enemies) e.update();
       this.enemies = this.enemies.filter(e => !e.dead);
       if (!ts) this.projectiles = this.projectiles.filter(pr => pr.update() !== false);
@@ -266,7 +278,7 @@ const Game = {
 
     // 방 이동
     const r = this.room;
-    if (r.cleared && (!r.def.boss || r.def.tower) && p.x > r.width - 80 && this.fadeDir === 0 && this.state === 'play' && p.hp > 0) {
+    if (r.cleared && (!r.def.boss || r.def.tower) && !(Story.active && Story.lastRoom()) && p.x > r.width - 80 && this.fadeDir === 0 && this.state === 'play' && p.hp > 0) {
       this.fadeDir = 1; this.state = 'transition'; p.setState('cine'); p.vx = 5; p.play('run', 4);
       Sfx.play('door');
     }
@@ -281,25 +293,26 @@ const Game = {
     if (this.clearSeq) {
       const c = this.clearSeq; c.t++;
       if (c.t === 110) {
-        this.bigText('DUNGEON CLEAR', '#fff8d0', '#ffb020', 320, 64);
+        this.bigText(Story.active ? 'STAGE CLEAR' : 'DUNGEON CLEAR', '#fff8d0', '#ffb020', 320, 64);
         Sfx.play('clear'); Music.play('clear');
         if (p.hp > 0) { if (p.act) p.endAct(); p.setState('cine'); p.play('win', 6, 1, true); p.bladeGlow = 1; }
         for (const it of this.pickups) it.magnet = true;
       }
-      if (c.t === 300) this.showResult();
+      if (c.t === 300) { if (Story.active) { this.clearSeq = null; Story.R.done = true; Story.finish(); } else this.showResult(); }
     }
   },
 
   updateCamera() {
     const p = this.player, r = this.room;
     let tx;
-    if (this.state === 'intro' && this.introT < 175 && this.boss) tx = this.boss.x - W / 2 + 60;
+    if (Cine.camX != null && Story.active) tx = Cine.camX - W / 2;
+    else if (this.state === 'intro' && this.introT < 175 && this.boss) tx = this.boss.x - W / 2 + 60;
     else {
       this.camLook = lerp(this.camLook, p.facing * 80, 0.03);
       tx = p.x - W / 2 + this.camLook;
     }
     tx = clamp(tx, 0, Math.max(0, r.width - W));
-    this.cam.x = lerp(this.cam.x, tx, this.state === 'intro' ? 0.05 : 0.12);
+    this.cam.x = lerp(this.cam.x, tx, this.state === 'intro' || this.state === 'cine' ? 0.05 : 0.12);
   },
 
   updateIntro() {
@@ -322,10 +335,11 @@ const Game = {
     const c = this.cont;
     c.t--;
     if ((Input.take('attack') || Input.take('confirm')) && this.coins > 0) {
-      this.coins--; this.state = 'play'; this.player.revive(); this.resumeMusic(); Input.clear(); return;
+      this.coins--; if (Story.active) Story.R.contUsed = true; this.state = 'play'; this.player.revive(); this.resumeMusic(); Input.clear(); return;
     }
     Input.clear();
     if (c.t <= 0 || this.coins <= 0 && c.t < 480) {
+      if (Story.active) { Story.failNow('쓰러지고 말았다'); Save.data.stat.deaths++; return; }
       this.state = 'gameover'; Music.stop();
       this.keptGold = this.stats.gold; Save.bank(this.stats.gold); this.stats.gold = 0;      // 클리어하지 못해도 주운 골드는 가져간다
       Save.data.stat.deaths++;
@@ -366,6 +380,7 @@ const Game = {
   },
   onPlayerDamaged() {
     this.stats.hitsTaken++;
+    if (Story.active) Story.onPlayerHurt();
     this.hurtA = 1;
     this.combo.t = Math.min(this.combo.t, 40);
   },
@@ -410,6 +425,7 @@ const Game = {
 
   onRoomClear() {
     if (this.room.def.boss && !this.room.def.tower) return;
+    if (Story.active && Story.onRoomClear()) return;                       // 스토리 마지막 방 : STAGE CLEAR
     Sfx.play('clear', 0.6);
     this.bigText('ROOM CLEAR', '#e8f6ff', '#4ac2ff', 250, 46);
     for (const it of this.pickups) it.magnet = true;
@@ -495,6 +511,7 @@ const Game = {
     if (this.state === 'codex') { Codex.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'tree') { TreeUI.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'shop') { Shop.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
+    if (this.state === 'smap') { StoryMap.draw(ctx); UI.drawNotices(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     const r = this.room, p = this.player, camX = Math.round(this.cam.x * 2) / 2;
 
     ctx.save();
@@ -511,12 +528,14 @@ const Game = {
     ctx.translate(-camX, 0);
     FX.draw(ctx, 'ground');
     r.drawDoor(ctx);
+    Story.drawGround(ctx);
     // 그림자
     p.drawShadow(ctx);
+    Story.drawShadows(ctx);
     for (const e of this.enemies) e.drawShadow(ctx);
     for (const pr of this.projectiles) pr.drawShadow(ctx);
     // 깊이 정렬
-    const list = [p, ...this.enemies, ...this.projectiles, ...this.pickups];
+    const list = [p, ...this.enemies, ...this.projectiles, ...this.pickups, ...Story.worldObjs()];
     list.sort((a, b) => (a.y - b.y) || ((a.isPlayer ? 1 : 0) - (b.isPlayer ? 1 : 0)));
     for (const o of list) o.draw(ctx);
     for (const e of this.enemies) if (e.trail.length) e.drawTrail(ctx);
@@ -524,12 +543,14 @@ const Game = {
     FX.draw(ctx, 'world');
     r.drawAmbient(ctx);
     FX.draw(ctx, 'top');
+    Story.drawTop(ctx);
     if (this.debug) this.drawDebug(ctx);
     ctx.restore();
 
     r.drawFront(ctx, camX);
     ctx.restore();
     WS.overlay(ctx);
+    Story.drawScreen(ctx);
 
     // 화면 효과
     if (this.speedT > 0) this.drawSpeedLines(ctx);
@@ -540,10 +561,15 @@ const Game = {
 
     // UI
     if (this.state === 'intro') UI.drawBossIntro(ctx, this.introT);
-    if (this.state !== 'intro' && this.state !== 'result' && !this.cutin) UI.drawHUD(ctx);
+    const st = this.state, talking = st === 'cine' || st === 'talk' || st === 'sres';
+    if (st !== 'intro' && st !== 'result' && !this.cutin && !talking) { UI.drawHUD(ctx); Story.drawHud(ctx); }
     UI.drawNotices(ctx);
     if (this.cutin) UI.drawCutin(ctx, this.cutin);
     if (this.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${this.fade})`; ctx.fillRect(0, 0, W, H); }
+    Scr.draw(ctx);
+    if (st === 'talk') { if (Choice.on) Choice.draw(ctx); else if (Talk.on) Talk.draw(ctx); }
+    Cine.drawSkip(ctx);
+    if (st === 'sres') Story.drawRes(ctx);
     if (this.state === 'paused') UI.drawPause(ctx);
     if (this.state === 'result') { UI.drawResult(ctx); if (this.resT > 100) Share.draw(ctx); }
     if (this.state === 'continue') UI.drawContinue(ctx);

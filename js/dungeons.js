@@ -360,7 +360,10 @@ function buildDungeon(d) {
 const POWER_CURVE = [1, 1.35, 1.8, 2.3, 3, 3.9, 5, 6.4, 8, 10, 12, 14.5, 17.5, 21, 25, 30, 35, 41, 48, 56, 66];
 function playerPower() {
   const n = Object.keys((Save.data && Save.data.cleared) || {}).length;
-  return POWER_CURVE[clamp(n, 0, POWER_CURVE.length - 1)];
+  const old = POWER_CURVE[clamp(n, 0, POWER_CURVE.length - 1)];
+  // 메인 스토리 : 깬 스테이지 수에 따라 (예전 던전 기록이 더 높으면 그쪽)
+  if (typeof Story !== 'undefined' && Save.data && Save.data.story) { const k = Story.clearedCount(); return Math.max(old, storyCurve(Math.max(0, k - 1))); }
+  return old;
 }
 function playerLevel() {
   const n = Object.keys((Save.data && Save.data.cleared) || {}).length;
@@ -389,6 +392,7 @@ const Save = {
     d2.tree = d2.tree || {}; d2.xp = d2.xp || 0;
     if (typeof Prog !== 'undefined') Prog.migrate(d2); else d2.lv = d2.lv || 1;
     d2.tower = Object.assign({ best: 0, runs: 0, run: null, cd: null }, d2.tower || {});
+    if (typeof Story !== 'undefined') Story.migrate(d2);
     return this.data;
   },
   save() {

@@ -55,6 +55,7 @@ const Input = {
     addEventListener('mousedown', e => {
       if (e.button !== 0 || (e.target.closest && e.target.closest('#dlbar, #nickbox, #bakbox')) || (typeof Share !== 'undefined' && Share.swallow(e))) return;
       if (typeof Game !== 'undefined' && Game.state === 'paused') { e.preventDefault(); const [x, y] = Touch.toLogical(e); Pause.click(x, y); return; }
+      if (typeof Game !== 'undefined' && /^(talk|cine|smap|sres)$/.test(Game.state)) { e.preventDefault(); return; }   // 스토리 화면 : 포인터 이벤트로 직접 처리
       if (typeof Game !== 'undefined' && Game.state === 'lobby') { e.preventDefault(); if (Lobby.enterT <= 0) { const [x, y] = Touch.toLogical(e); Lobby.touchAt(x, y); } return; }   // 로비 : 클릭한 버튼만 동작 (빈 곳 클릭으로 입장하지 않는다)
       e.preventDefault();          // 드래그로 텍스트/이미지가 선택되지 않게
       this.press('Mouse0');

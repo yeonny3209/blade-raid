@@ -90,7 +90,7 @@ class Room {
 
   update() {
     const alive = Game.enemies.some(e => !e.dying && !e.dead);
-    if (!this.cleared && !alive && Game.state === 'play') {
+    if (!this.cleared && !alive && Game.state === 'play' && !this.hold) {
       if (this.wave < this.def.waves.length - 1) {
         this.waveDelay++;
         if (this.waveDelay > 45) { this.waveDelay = 0; this.spawnWave(this.wave + 1, false); }
@@ -218,6 +218,7 @@ class Room {
   // 출구 게이트 (월드 좌표)
   drawDoor(ctx) {
     if (this.def.boss && !this.def.tower) return;
+    if (this.def.story && this.idx >= Game.dungeon.rooms.length - 1) return;           // 스토리 마지막 방 : 출구가 없다
     const x = this.width - 46, y = DEPTH / 2, gy = sy(y, 0), o = this.doorOpen, t = Game.time;
     ctx.save();
     // 바닥 빛
@@ -254,7 +255,7 @@ function buildBackground(def, S) {
     desert: buildDesert, swamp: buildSwamp, factory: buildFactory, sky: buildSky, abyss: buildAbyss,
     bloodmoon: buildBloodmoon, crystal: buildCrystal, deep: buildDeep, grave: buildGrave, jungle: buildJungle,
     clock: buildClock, neon: buildNeon, storm: buildStorm, cosmos: buildCosmos, chaos: buildChaos,
-  }[def.theme];
+  }[def.theme] || (typeof STORY_THEMES !== 'undefined' && STORY_THEMES[def.theme]);
   if (B) B(bg, ctxs, farW, midW, w, rnd, def);
   else buildLair(bg, ctxs, farW, midW, w, rnd, def, S);
   return bg;

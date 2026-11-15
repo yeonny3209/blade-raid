@@ -140,7 +140,7 @@ const Prog = {
     if (typeof Ach !== 'undefined') Ach.check();
     Sfx.play('clear', 0.9, 1.25); Sfx.play('ring', 0.8, 1.4);
     const sp = (L - 1) + Math.floor(L / 10) - ((L - ups - 1) + Math.floor((L - ups) / 10));
-    Game.notice(`스킬 포인트 +${sp}  (로비의 [스킬 트리]에서 배울 수 있어요)`);
+    Game.notice(`스킬 포인트 +${sp}  (지도의 [스킬 트리]에서 배울 수 있어요)`);
   },
   // 처음 이 기능이 생겼을 때 : 이미 깬 던전만큼 경험치를 소급해서 준다
   migrate(d) {

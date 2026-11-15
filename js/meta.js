@@ -97,10 +97,10 @@ const Dex = {
   monsters: null, bosses: null, bossIds: null,
   init() {
     this.monsters = Object.keys(ENEMY_TYPES).filter(k => k !== 'boss');
-    this.bosses = Object.keys(BOSS_DEFS).map(k => 'b:' + k);
+    this.bosses = Object.keys(BOSS_DEFS).filter(k => !BOSS_DEFS[k].dexKey).map(k => 'b:' + k);
     this.bossIds = new Map(Object.entries(BOSS_DEFS).map(([k, v]) => [v, k]));
   },
-  keyOf(e) { return e.isBoss ? 'b:' + (this.bossIds.get(e.def) || 'varkas') : (e.kind === 'slimelet' ? 'slime' : e.kind); },
+  keyOf(e) { if (!e.isBoss) return e.kind === 'slimelet' ? 'slime' : e.kind; const k = this.bossIds.get(e.def) || 'varkas'; return 'b:' + (BOSS_DEFS[k].dexKey || k); },
   name(key) { return key.startsWith('b:') ? BOSS_DEFS[key.slice(2)].name : ENEMY_TYPES[key].name; },
   kills(key) { return (Save.data.dex && Save.data.dex[key]) || 0; },
   found() { return [...this.monsters.filter(k => k !== 'slimelet'), ...this.bosses].filter(k => this.kills(k) > 0).length; },
