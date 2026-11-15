@@ -52,3 +52,27 @@ for nm in NAMES:
     meta['parts'][nm] = {'w': cw, 'h': ch, 'top': round(cx(0, max(2, ch // 10)), 1), 'bot': round(cx(ch - max(2, ch // 10), ch), 1)}
     print(nm, (x1 - x0, y1 - y0), '->', crop.size, meta['parts'][nm])
 json.dump(meta, open(OUT + 'meta.json', 'w'), indent=1)
+
+# ---------- 칼 (기본 무기 : 부러진 검) ----------
+# 표시 점(붉은 점)이 있는 판에서 손 쥐는 위치를 찾고, 점이 없는 판을 같은 상대 위치로 잘라 쓴다
+def _bbox(img):
+    a = np.array(img.convert('RGBA'))[:, :, 3] > 40
+    ys, xs = np.nonzero(a); return xs.min(), ys.min(), xs.max(), ys.max()
+ref = Image.open('docs/art/candidates/hero_sword_ref.png').convert('RGBA')
+mk = Image.open('docs/art/candidates/hero_sword_grip_marked.png').convert('RGBA')
+m = np.array(mk)
+red = (m[:, :, 0] > 200) & (m[:, :, 1] < 60) & (m[:, :, 2] < 60) & (m[:, :, 3] > 200)
+ry, rx = np.nonzero(red)
+dot = (rx.mean(), ry.mean())
+mx0, my0, mx1, my1 = _bbox(mk)
+# 붉은 점은 칼날 쪽 색이 섞이지 않게 : 점이 있는 판의 점 위치를 칼 전체 길이에 대한 비율로 바꾼다
+fy = (dot[1] - my0) / (my1 - my0); fx = (dot[0] - mx0) / (mx1 - mx0)
+x0, y0, x1, y1 = _bbox(ref)
+crop = ref.crop((x0 - 2, y0 - 2, x1 + 3, y1 + 3))
+SF = 0.21
+w, h = crop.size
+crop = crop.resize((round(w * SF), round(h * SF)), Image.LANCZOS)
+crop.save(OUT + 'sword.webp', 'WEBP', quality=92, method=6)
+meta['sword'] = {'w': crop.size[0], 'h': crop.size[1], 'px': round(fx * crop.size[0], 1), 'py': round(fy * crop.size[1], 1)}
+print('sword', crop.size, meta['sword'], 'dot', dot, 'marked bbox', (mx0, my0, mx1, my1), 'ref bbox', (x0, y0, x1, y1))
+json.dump(meta, open(OUT + 'meta.json', 'w'), indent=1)

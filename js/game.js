@@ -64,11 +64,13 @@ const Game = {
   scene() {
     const s = this.state;
     return s === 'options' ? Opts : s === 'codex' ? Codex : s === 'tree' ? TreeUI
-      : s === 'talk' ? (Choice.on ? Choice : Talk) : s === 'cine' ? Cine : s === 'smap' ? StoryMap : s === 'sres' ? StoryRes : null;
+      : s === 'talk' ? (Choice.on ? Choice : Talk) : s === 'cine' ? Cine : s === 'smap' ? StoryMap : s === 'camp' ? Camp : s === 'album' ? Album : s === 'sres' ? StoryRes : null;
   },
   toTree() { this.state = 'tree'; TreeUI.enter(); Touch.release(); Input.clear(); },
   openOptions(from) { this.state = 'options'; Opts.enter(from); Touch.release(); Input.clear(); },
   toCodex() { this.state = 'codex'; Codex.enter(); Touch.release(); Input.clear(); },
+  toCamp() { this.state = 'camp'; Camp.enter(); Touch.release(); Input.clear(); },
+  toAlbum(from) { this.state = 'album'; Album.enter(from); Touch.release(); Input.clear(); },
 
   autoPause() {
     if (this.state !== 'play' || this.cutin || !this.player || this.player.hp <= 0) return;
@@ -116,6 +118,8 @@ const Game = {
       case 'gameover': if (Input.take('share')) Share.save(); if (Input.take('confirm') || Input.take('attack')) { Sfx.play('select'); this.coins = 3; this.toLobby(); } Input.clear(); break;
       case 'continue': this.updateContinue(); break;
       case 'smap': StoryMap.update(); break;
+      case 'camp': Camp.update(); break;
+      case 'album': Album.update(); break;
       case 'sres': Story.updateRes(); break;
       case 'talk': Scr.update(); if (Choice.on) Choice.update(); else if (Talk.on) Talk.update(); else this.state = 'play'; break;
       default:
@@ -156,6 +160,7 @@ const Game = {
     this.hurtA = 0; this.flash = 0; this.speedT = 0; this.kickX = 0; this.kickY = 0; this.freezeT = 0;
     FX.clear(); Touch.release(); Input.clear();
     Story.quit();
+    if (this.ret === 'camp') { this.ret = null; this.state = 'camp'; Camp.enter(true); return; }       // 등불에서 상점 · 스킬 트리로 갔다면 등불로
     this.state = 'smap'; StoryMap.enter();            // 메인 스토리 : 로비 대신 세계 지도
   },
 
@@ -511,6 +516,8 @@ const Game = {
     if (this.state === 'codex') { Codex.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'tree') { TreeUI.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'shop') { Shop.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
+    if (this.state === 'camp') { Camp.draw(ctx); UI.drawNotices(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
+    if (this.state === 'album') { Album.draw(ctx); UI.drawNotices(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'smap') { StoryMap.draw(ctx); UI.drawNotices(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     const r = this.room, p = this.player, camX = Math.round(this.cam.x * 2) / 2;
 

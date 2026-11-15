@@ -119,6 +119,7 @@ const Prog = {
   gainXp(n, quiet) {
     const d = Save.data;
     if (d.lv >= this.MAXLV) { d.xp = 0; return; }
+    if (typeof Story !== 'undefined' && Story.active) n = Math.round(n * STORY_XP);          // 메인 스토리 : 끝에 이르러 약 Lv.80 이 되도록 맞춘 값
     d.xp = (d.xp || 0) + n;
     let ups = 0;
     while (d.lv < this.MAXLV && d.xp >= this.need(d.lv)) { d.xp -= this.need(d.lv); d.lv++; ups++; }

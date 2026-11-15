@@ -9,7 +9,7 @@
 // ============================================================
 const HA = (() => {
   const T = { ready: false, on: true };
-  const NAMES = ['head', 'torso', 'pelvis', 'uarm', 'farm', 'hand', 'thigh', 'shin', 'foot', 'cape'];
+  const NAMES = ['head', 'torso', 'pelvis', 'uarm', 'farm', 'hand', 'thigh', 'shin', 'foot', 'cape', 'sword'];
   const IMG = {}, CV = {};
   let M = null, g = 0.3, capR = 5.6;
   const BASE = 'img/hero/';
@@ -28,7 +28,9 @@ const HA = (() => {
     A.torso = [P.torso.bot, P.torso.h * 0.89];
     A.pelvis = [P.pelvis.top, P.pelvis.h * 0.1];
     A.cape = [P.cape.top, P.cape.h * 0.06];
+    const sw = M.sword; swordK = RIG_PLAYER.wlen * 0.97 / sw.py;          // 칼 : 쥐는 곳에서 칼끝까지가 기존 칼 길이가 되게
   };
+  let swordK = 0.45;
 
   // 변형 그림 : dark(뒤쪽 부품) · white(피격 번쩍임)
   const variant = (nm, kind) => {
@@ -39,9 +41,26 @@ const HA = (() => {
     return (CV[key] = c);
   };
   const put = (ctx, nm, x, y, th, kind, k = 1) => {
-    const a = A[nm], im = kind ? variant(nm, kind) : IMG[nm];
+    const a = A[nm] || [0, 0], im = kind ? variant(nm, kind) : IMG[nm];
     ctx.save(); ctx.translate(x, y); ctx.rotate(th); ctx.scale(g * k, g * k);
     ctx.drawImage(im, -a[0], -a[1]); ctx.restore();
+  };
+  // 기본 무기(부러진 검)만 그림으로, 나머지 무기는 기존 코드 그림
+  const artSword = ent => { const w = ent.wdef; return !w || w.id === 'w0'; };
+  const blade = (ctx, J, pal, ent, opt) => {
+    if (!artSword(ent)) return drawPlayerBlade(ctx, J, pal, ent, opt);
+    const sw = M.sword, im = opt.flash ? variant('sword', 'white') : IMG.sword;
+    weaponFrame(ctx, J.hand1, J.wAng);
+    ctx.rotate(Math.PI / 2); ctx.scale(swordK, swordK);
+    ctx.drawImage(im, -sw.px, -sw.py);
+    ctx.scale(1 / swordK, 1 / swordK);
+    const gl = ent.bladeGlow || 0;
+    if (gl > 0 && !opt.flash) {                                            // 기 발산
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(1, gl) * 0.8;
+      for (let i = 0; i < 4; i++) drawGlow(ctx, 0, -(14 + i * 15) * 1.1, 17, '120,190,255', 0.35);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.restore();
   };
   const down = (p, q) => -Math.atan2(q.x - p.x, q.y - p.y);                 // 아래를 향한 부품이 p→q 방향을 보게 하는 회전
 
@@ -64,7 +83,7 @@ const HA = (() => {
     const tr = torsoFrame(J);
     // 몸통이 보는 방향 : 엉덩이 → 가슴 (위쪽을 향한 부품)
     const thT = Math.PI - Math.atan2(J.chest.x - J.hip.x, J.chest.y - J.hip.y);
-    if (J.wb) drawPlayerBlade(ctx, J, pal, ent, opt);
+    if (J.wb) blade(ctx, J, pal, ent, opt);
     // 망토 : 어깨에 달려 꼬리 사슬을 따라 흔들린다
     let thC = 0.06;
     if (ent.tail && ent.tail.p && ent.tail.p.length > 2) {
@@ -91,7 +110,7 @@ const HA = (() => {
     // 머리 : 몸통 그림의 윗끝(목 밑)에 맞춘다 — 리그의 목 위치와 그림의 몸통 길이가 다르므로
     const top = A.torso[1] * g - 3, nx = J.hip.x + tr.ux * top, ny = J.hip.y + tr.uy * top;
     put(ctx, 'head', nx, ny, J.headRot, fl);
-    if (!J.wb) drawPlayerBlade(ctx, J, pal, ent, opt);
+    if (!J.wb) blade(ctx, J, pal, ent, opt);
     // 앞팔
     put(ctx, 'uarm', J.sh1.x, J.sh1.y, down(J.sh1, J.elbow1), fl);
     put(ctx, 'farm', J.elbow1.x, J.elbow1.y, down(J.elbow1, J.hand1), fl);

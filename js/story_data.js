@@ -251,7 +251,8 @@ function storyCurve(g) {
   return a * Math.pow(b / a, f);
 }
 function stageMul(s) { return storyCurve(s.g) * (s.easy || 1) * (s.n === 1 && s.m === 1 ? 0.8 : 1); }
-function stageLv(s) { return Math.max(1, Math.round(1 + s.g * 0.72)); }
+function stageLv(s) { return Math.max(1, Math.round(1 + s.g * 0.66)); }          // 권장 레벨 : 120번째 스테이지가 Lv.80 쯤
+const STORY_XP = 0.76;                                                          // 스토리 경험치 배율 (전부 깨면 약 Lv.80)
 
 // ---------- 기억 조각 40개 ----------
 //   [id, 제목, 내용 3~4줄]  : 잊힌 사람들의 기억 (진엔딩의 열쇠)

@@ -43,10 +43,11 @@ const StoryMap = {
   },
   tabRect(i) { return { x: 24 + i * 92, y: 84, w: 86, h: 40 }; },
   startRect() { return { x: 900, y: 532, w: 340, h: 58 }; },
-  BTNS: [['shop', '상점'], ['tree', '스킬 트리'], ['tower', '무한의 탑'], ['codex', '도감 · 업적'], ['options', '설정'], ['diff', '난이도']],
-  btnRect(i) { return { x: 24 + i * 208, y: 636, w: 196, h: 60 }; },
-  btnOpen(k) { return k === 'shop' ? Story.isOpen('shop') : k === 'tree' ? Story.isOpen('tree') : k === 'tower' ? Story.isOpen('tower') : true; },
-  lockText: { shop: '프롤로그를 마치면 상점이 열립니다', tree: '제1장을 마치면 거점 · 스킬 트리가 열립니다', tower: '제2장을 마치면 무한의 탑이 열립니다' },
+  BTNS: [['camp', '등불'], ['shop', '상점'], ['tree', '스킬 트리'], ['tower', '무한의 탑'], ['codex', '도감 · 업적'], ['options', '설정'], ['diff', '난이도']],
+  btnRect(i) { return { x: 24 + i * 177, y: 636, w: 167, h: 60 }; },
+  fragRect() { return { x: W - 500, y: 18, w: 150, h: 40 }; },
+  btnOpen(k) { return k === 'camp' ? Story.isOpen('hub') : k === 'shop' ? Story.isOpen('shop') : k === 'tree' ? Story.isOpen('tree') : k === 'tower' ? Story.isOpen('tower') : true; },
+  lockText: { camp: '제1장을 마치면 거점 「등불」이 열립니다', shop: '프롤로그를 마치면 상점이 열립니다', tree: '제1장을 마치면 거점 · 스킬 트리가 열립니다', tower: '제2장을 마치면 무한의 탑이 열립니다' },
 
   // ---------- 입력 ----------
   update() {
@@ -98,7 +99,8 @@ const StoryMap = {
   },
   btn(k) {
     if (!this.btnOpen(k)) { this.say(this.lockText[k]); return; }
-    if (k === 'shop') { Sfx.play('select'); Game.toShop(); }
+    if (k === 'camp') { Sfx.play('select'); Game.toCamp(); }
+    else if (k === 'shop') { Sfx.play('select'); Game.toShop(); }
     else if (k === 'tree') { Sfx.play('select'); Game.toTree(); }
     else if (k === 'codex') { Sfx.play('select'); Game.toCodex(); }
     else if (k === 'options') { Sfx.play('select'); Game.openOptions('smap'); }
@@ -115,6 +117,7 @@ const StoryMap = {
   pDown(x, y) {
     if (this.enterT > 0 || this.t < 12) return;
     if (this.modal) { for (let i = 0; i < this.modal.opts.length; i++) if (inR(x, y, this.modalBtn(i))) { this.pickModal(i); return; } return; }
+    if (inR(x, y, this.fragRect())) { Sfx.play('select'); Game.toAlbum('smap'); return; }
     for (let i = 0; i < SMAPS.length; i++) if (inR(x, y, this.tabRect(i))) { this.setMap(i); return; }
     const st = this.stages();
     for (let i = 0; i < st.length; i++) { const P = this.nodePos(i); if (Math.hypot(x - P.x, y - P.y) < 40) { if (this.sel === i) this.go(); else { this.sel = i; Sfx.play('ui', 0.6); } return; } }
@@ -149,8 +152,8 @@ const StoryMap = {
     ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, 72);
     UI.text(ctx, 'BLADE RAID', 24, 38, { size: 30, italic: true, fill: '#ffe9a6', stroke: 5 });
     UI.text(ctx, '메인 스토리 · 기억의 조각', 228, 40, { size: 15, font: FONT_B, weight: 700, fill: '#c8b890', stroke: 3 });
-    const info = [[`${heroName()}  Lv.${Prog.lv()}`, '#e8ecf8'], [`★ ${SMAIN.reduce((a, s) => a + Story.stars(s.id), 0)} / ${SMAIN.length * 3}`, '#ffd24a'], [`기억 조각 ${Story.fragCount()} / 40`, '#ffe0a0'], [`${fmt(Save.data.gold || 0)} G`, '#ffe9a6']];
-    const xs = [W - 590, W - 400, W - 210, W - 24];
+    const info = [[`${heroName()}  Lv.${Prog.lv()}`, '#e8ecf8'], [`★ ${SMAIN.reduce((a, s) => a + Story.stars(s.id), 0)} / ${SMAIN.length * 3}`, '#ffd24a'], [`기억 조각 ${Story.fragCount()} / 40`, '#ffe0a0'], [`엔딩 ${ENDS.filter(e => sd.end[e.k]).length} / 3`, '#c8f0c8'], [`${fmt(Save.data.gold || 0)} G`, '#ffe9a6']];
+    const xs = [W - 740, W - 560, W - 360, W - 215, W - 24];
     info.forEach(([txt, col], i) => UI.text(ctx, txt, xs[i], 38, { size: 17, align: 'right', fill: col, stroke: 3 }));
     // 장 탭
     for (let i = 0; i < SMAPS.length; i++) {
