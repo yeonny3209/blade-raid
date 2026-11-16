@@ -174,6 +174,23 @@ const ACHS = [
   { id: 'sk100', name: '스킬 난사', desc: '스킬 100회 사용', goal: 100, val: s => s.skills, gold: 15000 },
   { id: 'h1', name: '도전자', desc: '어려움 이상으로 던전 클리어', goal: 1, val: s => s.hardClears, gold: 40000 },
   { id: 'hl', name: '지옥의 생환자', desc: '지옥 난이도로 던전 클리어', goal: 1, val: s => s.hellClears, gold: 200000 },
+  // ---- 메인 스토리 ----
+  { id: 'sc1', name: '재의 고향', desc: '제1장을 끝까지 마친다', goal: 1, val: () => (Story.cleared('1-10') ? 1 : 0), gold: 30000 },
+  { id: 'sc2', name: '기사의 맹세', desc: '제2장을 끝까지 마친다', goal: 1, val: () => (Story.cleared('2-15') ? 1 : 0), gold: 40000 },
+  { id: 'sc3', name: '멈춘 시간의 탑', desc: '제3장을 끝까지 마친다', goal: 1, val: () => (Story.cleared('3-15') ? 1 : 0), gold: 50000 },
+  { id: 'sc4', name: '무너진 왕도', desc: '제4장을 끝까지 마친다', goal: 1, val: () => (Story.cleared('4-15') ? 1 : 0), gold: 60000 },
+  { id: 'sc5', name: '모래의 배신', desc: '제5장을 끝까지 마친다', goal: 1, val: () => (Story.cleared('5-15') ? 1 : 0), gold: 70000 },
+  { id: 'sc6', name: '가라앉은 진실', desc: '제6장을 끝까지 마친다', goal: 1, val: () => (Story.cleared('6-15') ? 1 : 0), gold: 80000 },
+  { id: 'sc7', name: '심판의 하늘', desc: '제7장을 끝까지 마친다', goal: 1, val: () => (Story.cleared('7-15') ? 1 : 0), gold: 90000 },
+  { id: 'sc8', name: '망각의 왕좌', desc: '제8장을 끝까지 마친다', goal: 1, val: () => (Story.cleared('8-15') ? 1 : 0), gold: 150000 },
+  { id: 'sf10', name: '주워 든 기억', desc: '기억 조각 10개 수집', goal: 10, val: () => Story.fragCount(), gold: 50000 },
+  { id: 'sf25', name: '기억의 수집가', desc: '기억 조각 25개 수집', goal: 25, val: () => Story.fragCount(), gold: 150000 },
+  { id: 'sf40', name: '잊힌 이들의 기록자', desc: '기억 조각 40개 모두 수집', goal: 40, val: () => Story.fragCount(), gold: 500000 },
+  { id: 'ss180', name: '반짝이는 길', desc: '스토리 별 180개 획득', goal: 180, val: () => SMAIN.reduce((a, s) => a + Story.stars(s.id), 0), gold: 200000 },
+  { id: 'ss360', name: '별을 모두 모으다', desc: '스토리 별 360개 모두 획득', goal: 360, val: () => SMAIN.reduce((a, s) => a + Story.stars(s.id), 0), gold: 800000 },
+  { id: 'se1', name: '이야기의 끝', desc: '엔딩을 하나 본다', goal: 1, val: () => (Story.sd().end.A || Story.sd().end.B || Story.sd().end.T ? 1 : 0), gold: 200000 },
+  { id: 'se3', name: '모든 결말', desc: '엔딩 3종을 모두 본다', goal: 3, val: () => ['A', 'B', 'T'].filter(k => Story.sd().end[k]).length, gold: 600000 },
+  { id: 'seT', name: '리엔', desc: '진엔딩을 본다', goal: 1, val: () => (Story.sd().end.T ? 1 : 0), gold: 1000000 },
 ];
 const Ach = {
   prog(a) { return Math.min(a.goal, a.val(Save.data.stat) || 0); },
