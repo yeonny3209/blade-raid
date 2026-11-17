@@ -144,7 +144,7 @@ skn('b2', 's', 3.2, 0, 's', 3, '전투 감각', 'star4', { skCrit: 0.04 }, { th:
 skn('b3', 's', 3.2, 0, 's', 2, '사냥 본능', 'boomerang', { killCd: 0.25 }, { th: 45, arm2: 'v' });
 skn('b4', 'p', 3.2, 0, 's', 3, '역습', 'fist', { back: 0.1 }, { th: 135, arm2: 'v' });
 
-// 각성 : 갈래의 모든 별을 밝히면 열린다 (스킬 포인트는 쓰지 않는다 · Y 키로 사용)
+// 각성 : 갈래의 모든 별을 하나씩 밝히면 열린다 (랭크는 상관없음 · 스킬 포인트는 쓰지 않는다 · Y 키로 사용)
 const SK_AWK = {
   p: {
     name: '파천멸검', han: '破天滅劍', sub: '破 天 滅 劍', g: 'awk_p', mp: 600, cd: 60, pos: [-505, -170], tips: ['p8', 'p9'],
@@ -228,6 +228,10 @@ Object.assign(Prog, {
   exTaken(n) { if (!n.ex) return null; return SKN.find(o => o.ex === n.ex && o.id !== n.id && this.r(o.id) > 0) || null; },
   armMax(a) { let m = 0; const seen = {}; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk) { if (n.ex) { if (seen[n.ex]) continue; seen[n.ex] = 1; } m += n.max; } return m; },
   armSpent(a) { let s = 0; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk) s += this.r(n.id); return s; },
+  // 각성 조건 : 갈래의 별을 하나도 빠짐없이 1랭크 이상 밝혔는가 (택일 오의는 하나만)
+  armNodes(a) { const out = [], seen = {}; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk) { if (n.ex) { if (seen[n.ex]) continue; seen[n.ex] = 1; } out.push(n); } return out; },
+  armOpen(a) { return this.armNodes(a).every(n => this.r(n.id) > 0 || (n.ex && this.exTaken(n))); },
+  armOpenCount(a) { return this.armNodes(a).filter(n => this.r(n.id) > 0 || (n.ex && this.exTaken(n))).length; },
   armDone(a) { for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk && this.r(n.id) < n.max && !(n.ex && this.exTaken(n))) return false; return true; },
 
   // 배울 수 있는지 + 안 되는 이유
@@ -235,7 +239,7 @@ Object.assign(Prog, {
     if (n.type === 'core') return { ok: false, why: '처음부터 밝혀져 있는 별입니다', core: true };
     if (n.awk) {
       if (this.r(n.id)) return { ok: false, why: '이미 각성했습니다', max: true };
-      if (!this.st().D[n.awk]) return { ok: false, why: `「${SK_ARMS[n.awk].name}」의 모든 별을 밝혀야 합니다 (${this.armSpent(n.awk)} / ${this.armMax(n.awk)})` };
+      if (!this.st().O[n.awk]) return { ok: false, why: `「${SK_ARMS[n.awk].name}」의 모든 별을 하나씩 밝혀야 합니다 (${this.armOpenCount(n.awk)} / ${this.armNodes(n.awk).length})` };
       return { ok: true, awk: true };
     }
     const r = this.r(n.id);
@@ -258,7 +262,7 @@ Object.assign(Prog, {
     const r = this.r(n.id);
     if (n.awk) return { ok: false, why: '각성은 되돌릴 수 없습니다 (전체 초기화로만 사라집니다)' };
     if (n.type === 'core' || r <= 0) return { ok: false, why: '되돌릴 랭크가 없습니다' };
-    if (!n.bridge && Save.data.awk && Save.data.awk[n.arm]) return { ok: false, why: '각성한 갈래의 별은 되돌릴 수 없습니다' };
+    if (r === 1 && !n.bridge && Save.data.awk && Save.data.awk[n.arm]) return { ok: false, why: '각성한 갈래의 별은 모두 밝혀 둬야 합니다 (랭크만 줄일 수 있음)' };
     if (r === 1) {
       for (const o of SKN) if (o.req === n.id && this.r(o.id) > 0) return { ok: false, why: `「${o.name}」${jo(o.name, '이', '가').slice(-1)} 이 별을 필요로 합니다` };
       const lit = new Set(['core']), st = ['core'];
@@ -292,17 +296,17 @@ Object.assign(Prog, {
       if (n.fx) for (const k in n.fx) S[k] = (S[k] || 0) + n.fx[k] * r;
       if (n.key) K[n.key] = 1;
     }
-    for (const a of SK_ARM_KEYS) D[a] = this.armDone(a);
+    const O = {}; for (const a of SK_ARM_KEYS) { D[a] = this.armDone(a); O[a] = this.armOpen(a); }
     if (D.p) S.all = (S.all || 0) + 0.05;
     if (D.s) S.cdAll = (S.cdAll || 0) + 0.05;
     if (D.w) S.wsk = (S.wsk || 0) + 0.1;
     if (D.v) S.hp = (S.hp || 0) + 0.08;
-    this._st = { S, K, D }; this._stRef = t; this._stV = this._v;
+    this._st = { S, K, D, O }; this._stRef = t; this._stV = this._v;
     return this._st;
   },
   v(k) { return this.st().S[k] || 0; },
   // 각성기 : 배웠고 갈래가 완성되어 있으면 쓸 수 있다. 장착한 하나를 Y 키로 쓴다
-  awkOn(a) { const d = Save.data; return !!(d && d.awk && d.awk[a]) && !!this.st().D[a]; },
+  awkOn(a) { const d = Save.data; return !!(d && d.awk && d.awk[a]) && !!this.st().O[a]; },
   awkSel() { const d = Save.data; if (d && d.awkSel && this.awkOn(d.awkSel)) return d.awkSel; for (const a of SK_ARM_KEYS) if (this.awkOn(a)) return a; return null; },
   awkDef(a) { return a ? SK_AWK[a] : null; },
   has(k) { return !!this.st().K[k]; },
@@ -1000,9 +1004,9 @@ const TreeUI = {
     // 각성 별 이름표
     for (const n of SKN) {
       if (!n.awk) continue;
-      const S = this.S[n.id], D = SK_AWK[n.awk], y = n.y + SK_TYPE.a.R * 1.72 + 18, done = Prog.st().D[n.awk];
+      const S = this.S[n.id], D = SK_AWK[n.awk], y = n.y + SK_TYPE.a.R * 1.72 + 18, done = Prog.st().O[n.awk];
       UI.text(ctx, D.name, n.x, y, { size: 15, align: 'center', fill: S.lit ? '#ffe9a6' : done ? '#fff' : '#8a94b4', stroke: 4 });
-      UI.text(ctx, S.lit ? '각성 완료' : done ? '각성할 수 있다!' : `${Prog.armSpent(n.awk)} / ${Prog.armMax(n.awk)}`, n.x, y + 16, { size: 11, align: 'center', font: FONT_B, weight: 800, fill: S.lit ? '#ffd24a' : done ? '#7dffa0' : '#6a7494', stroke: 3 });
+      UI.text(ctx, S.lit ? '각성 완료' : done ? '각성할 수 있다!' : `${Prog.armOpenCount(n.awk)} / ${Prog.armNodes(n.awk).length}`, n.x, y + 16, { size: 11, align: 'center', font: FONT_B, weight: 800, fill: S.lit ? '#ffd24a' : done ? '#7dffa0' : '#6a7494', stroke: 3 });
     }
     // 갈래 이름 (가장 바깥 별들 사이) · 택일 표시
     for (const a of SK_ARM_KEYS) {
@@ -1061,7 +1065,7 @@ const TreeUI = {
     const t = this.t;
     for (const n of SKN) {
       if (!n.awk) continue;
-      const S = this.S[n.id], done = Prog.st().D[n.awk], c = n.col;
+      const S = this.S[n.id], done = Prog.st().O[n.awk], c = n.col;
       for (const id of n.tips) {
         const o = SKN_BY[id], d = Math.hypot(n.x - o.x, n.y - o.y), ux = (n.x - o.x) / d, uy = (n.y - o.y) / d;
         const x0 = o.x + ux * (SK_TYPE[o.type].R + 3), y0 = o.y + uy * (SK_TYPE[o.type].R + 3), x1 = n.x - ux * (SK_TYPE.a.R + 4), y1 = n.y - uy * (SK_TYPE.a.R + 4);
@@ -1370,7 +1374,7 @@ const TreeUI = {
     // 조건 목록
     if (n.type !== 'core' && !S.lit) {
       const cond = [];
-      if (n.awk) cond.push([!!Prog.st().D[n.awk], `${SK_ARMS[n.awk].name}의 모든 별  ${Prog.armSpent(n.awk)} / ${Prog.armMax(n.awk)}`]);
+      if (n.awk) cond.push([!!Prog.st().O[n.awk], `${SK_ARMS[n.awk].name}의 모든 별 밝히기  ${Prog.armOpenCount(n.awk)} / ${Prog.armNodes(n.awk).length}`]);
       else cond.push([S.linked, '밝혀진 별과 이어져 있음']);
       if (n.req) cond.push([Prog.r(n.req) > 0, `「${SKN_BY[n.req].name}」 1랭크 이상`]);
       if (n.lv) cond.push([Prog.lv() >= n.lv, `캐릭터 Lv.${n.lv} 이상`]);
