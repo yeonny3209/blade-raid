@@ -11,7 +11,7 @@ const KEYMAP = {
   KeyJ: 'attack', KeyX: 'attack',
   Space: 'jump',
   KeyZ: 'back', KeyL: 'back',
-  KeyQ: 's1', KeyE: 's2', KeyT: 's3', KeyF: 's4', KeyG: 's5', KeyR: 's6',
+  KeyQ: 's1', KeyE: 's2', KeyT: 's3', KeyF: 's4', KeyG: 's5', KeyR: 's6', KeyY: 'awk',
   KeyB: 'shop', KeyN: 'tower', KeyU: 'tower2', KeyK: 'codex', KeyI: 'tree', KeyO: 'options', KeyH: 'diff', KeyP: 'share', KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
   Escape: 'pause', KeyM: 'mute', Enter: 'confirm', NumpadEnter: 'confirm',
   F2: 'debug',
@@ -22,7 +22,7 @@ const POTION_KEY_LABELS = ['C', 'V'];
 // 게임패드 (표준 배치 : Xbox 기준 이름)
 //   전투 : X 공격 / A 점프 / B 백스텝 / Y·LB·RB·LT·RT 스킬 / 스틱 누르기 각성기 / 십자키 ↑↓ 물약 / START 일시정지
 //   메뉴 : A 확인 / B 뒤로 / 그 밖의 버튼은 로비 바로가기
-const PAD_COMBAT = { 0: 'jump', 1: 'back', 2: 'attack', 3: 's1', 4: 's2', 5: 's3', 6: 's4', 7: 's5', 10: 's6', 11: 's6', 9: 'pause', 12: 'pot1', 13: 'pot2', 14: 'left', 15: 'right' };
+const PAD_COMBAT = { 0: 'jump', 1: 'back', 2: 'attack', 3: 's1', 4: 's2', 5: 's3', 6: 's4', 7: 's5', 10: 's6', 11: 's6', 8: 'awk', 9: 'pause', 12: 'pot1', 13: 'pot2', 14: 'left', 15: 'right' };
 const PAD_MENU = { 0: 'confirm', 1: 'pause', 2: 'attack', 3: 'shop', 4: 'tree', 5: 'codex', 6: 'diff', 7: 'tower', 8: 'options', 9: 'pause', 10: 'tower2', 11: 'pot2', 12: 'up', 13: 'down', 14: 'left', 15: 'right' };
 const PAD_SKILL_LABELS = ['Y', 'LB', 'RB', 'LT', 'RT', 'L3'];
 const PAD_POTION_LABELS = ['↑', '↓'];

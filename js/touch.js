@@ -10,7 +10,7 @@ const Touch = {
 
   init() {
     for (const a of ['left', 'right', 'up', 'down', 'attack', 'jump', 'back',
-      's1', 's2', 's3', 's4', 's5', 's6', 'pot1', 'pot2', 'pause']) KEYMAP['T_' + a] = a;
+      's1', 's2', 's3', 's4', 's5', 's6', 'awk', 'pot1', 'pot2', 'pause']) KEYMAP['T_' + a] = a;
 
     const B = (id, x, y, r, icon) => ({ id, x, y, r, icon, ptr: null, glow: 0 });
     this.btns = [
@@ -19,6 +19,7 @@ const Touch = {
       B('back', 896, 600, 44, 'back'),
       B('s1', 884, 470, 41, 'upper'), B('s2', 984, 470, 41, 'rush'), B('s3', 1084, 470, 41, 'triple'),
       B('s4', 884, 364, 41, 'draw'), B('s5', 984, 364, 41, 'quake'), B('s6', 1084, 364, 41, 'ult'),
+      B('awk', 1202, 196, 38, 'awk'),
       B('pot1', 1202, 298, 34, 'hpPot'), B('pot2', 1202, 392, 34, 'mpPot'),
       B('pause', 1006, 40, 26, 'pause'),
     ];
@@ -141,7 +142,9 @@ const Touch = {
     if (Game.state === 'paused') { this.btn(ctx, pb, 0.5); return; }
     if (!this.playing()) return;
     const p = Game.player;
+    UI.icons.awk = Prog.awkIcon();
     for (const b of this.btns) {
+      if (b.id === 'awk' && !UI.icons.awk) continue;                       // 각성기를 배우기 전에는 숨긴다
       if (b.glow > 0) b.glow *= 0.85;
       this.btn(ctx, b, b.ptr !== null ? 0.62 : 0.32, p);
     }
@@ -175,7 +178,7 @@ const Touch = {
       ctx.drawImage(ic, b.x - s / 2, b.y - s / 2, s, s);
     } else this.glyph(ctx, b);
     // 스킬 쿨타임 / 물약 개수
-    if (p && /^s\d$/.test(b.id)) {
+    if (p && /^(s\d|awk)$/.test(b.id)) {
       const sk = p.skill(b.id), cd = p.cd[b.id];
       if (p.mp < sk.mp) { ctx.globalAlpha = alpha + 0.25; ctx.fillStyle = 'rgba(10,20,70,0.6)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 1, 0, TAU); ctx.fill(); }
       if (cd > 0) {

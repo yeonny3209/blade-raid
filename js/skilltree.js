@@ -12,6 +12,7 @@
 
 const SK_UX = 96, SK_UY = 70;                                    // 별자리 좌표 눈금 (가로 · 세로)
 const SK_GOLD = '255,214,110';
+const SK_AWK_KEY = 'Y';
 const SK_ARMS = {
   p: { name: '파검의 길', short: '파검', han: '破 劍', col: '255,112,84', th: 180, lab: 4.5, done: '모든 피해 +5%', sub: '평타 · 치명 · 연격' },
   s: { name: '유검의 길', short: '유검', han: '流 劍', col: '96,186,255', th: 0, lab: 5.5, done: '스킬(Q·E·T·F) 쿨타임 -5%', sub: 'Q · E · T · F 스킬' },
@@ -24,6 +25,7 @@ const SK_TYPE = {
   s: { name: '소성', R: 20, view: 38 },
   n: { name: '명성', R: 27, view: 42 },
   k: { name: '극성', R: 35, view: 48 },
+  a: { name: '각성', R: 46, view: 54 },
 };
 
 // 능력치 : [설명, 단위, 부호(+1 늘어남 / -1 줄어듦), 짧은 이름]
@@ -142,6 +144,31 @@ skn('b2', 's', 3.2, 0, 's', 3, '전투 감각', 'star4', { skCrit: 0.04 }, { th:
 skn('b3', 's', 3.2, 0, 's', 2, '사냥 본능', 'boomerang', { killCd: 0.25 }, { th: 45, arm2: 'v' });
 skn('b4', 'p', 3.2, 0, 's', 3, '역습', 'fist', { back: 0.1 }, { th: 135, arm2: 'v' });
 
+// 각성 : 갈래의 모든 별을 밝히면 열린다 (스킬 포인트는 쓰지 않는다 · Y 키로 사용)
+const SK_AWK = {
+  p: {
+    name: '파천멸검', han: '破天滅劍', sub: '破 天 滅 劍', g: 'awk_p', mp: 600, cd: 60, pos: [-505, -170], tips: ['p8', 'p9'],
+    d: '무적 상태로 앞을 질주하며 12번 베고, 하늘로 뛰어올라 거대한 검기를 내리꽂는다. 적중한 적은 7초 동안 방어가 무너져 받는 피해가 35% 늘어난다.',
+    brief: '질주 12연참 + 천공 강타 (공격력 약 8,000%)',
+  },
+  s: {
+    name: '만검귀종', han: '萬劍歸宗', sub: '萬 劍 歸 宗', g: 'awk_s', mp: 600, cd: 60, pos: [505, 170], tips: ['sr'],
+    d: '검의 영혼 36자루를 하늘에서 쏟아 모든 적을 차례로 꿰뚫고, 마지막에 거대한 검 한 자루가 내리꽂힌다. 끝나면 스킬 쿨타임이 모두 초기화되고 8초 동안 쿨타임이 2배 빨리 돈다.',
+    brief: '검 36자루 + 거대한 검 낙하 · 쿨타임 초기화',
+  },
+  w: {
+    name: '차원절', han: '次元絶', sub: '次 元 絶', g: 'awk_w', mp: 600, cd: 60, pos: [265, -335], tips: ['w8', 'w9'],
+    d: '시공을 가르는 균열을 열어 화면의 모든 적을 붙잡고 수십 번 베어낸다. 균열이 닫히면 모두 한 점으로 끌려가 소멸한다. MP가 가득 차고 10초 동안 MP가 빠르게 차오른다.',
+    brief: '시간 정지 연속 차원 절단 + 특이점 붕괴 · MP 가득',
+  },
+  v: {
+    name: '불사성광', han: '不死聖光', sub: '不 死 聖 光', g: 'awk_v', mp: 600, cd: 60, pos: [-265, 335], tips: ['v8', 'v9'],
+    d: '성스러운 날개를 펼친다. 주변을 쓸어내는 성광 폭발과 함께 HP를 50% 되찾고, 12초 동안 받는 피해 -60%, 공격력 +40%, 초당 HP 2% 회복의 「불사 상태」가 된다.',
+    brief: '성광 폭발 + 12초 불사 상태 (피해 -60% · 공격 +40%)',
+  },
+};
+for (const a of SK_ARM_KEYS) { const A = SK_AWK[a]; skn('aw_' + a, a, 0, 0, 'a', 1, A.name, A.g, null, { awk: a, fixed: A.pos, tips: A.tips, d: A.d }); }
+
 const SK_EDGES = [
   ['core', 'p1'], ['core', 's1'], ['core', 'w1'], ['core', 'v1'],
   ['s1', 'sq'], ['s1', 'se'], ['s1', 'st'], ['s1', 'sf'], ['sq', 'sh'], ['se', 'sh'], ['se', 'sl'], ['st', 'sl'], ['st', 'sb'], ['sf', 'sb'],
@@ -160,6 +187,7 @@ const mixCol = (a, b) => { const A = a.split(',').map(Number), B = b.split(',').
 for (const n of SKN) {
   const th = ((n.th ?? (SK_ARMS[n.arm] ? SK_ARMS[n.arm].th : 0)) + n.off) * DEG;
   n.x = Math.cos(th) * n.r * SK_UX; n.y = Math.sin(th) * n.r * SK_UY;
+  if (n.fixed) { n.x = n.fixed[0]; n.y = n.fixed[1]; }
   n.col = n.type === 'core' ? SK_GOLD : n.arm2 ? mixCol(SK_ARMS[n.arm].col, SK_ARMS[n.arm2].col) : SK_ARMS[n.arm].col;
   n.bridge = !!n.arm2;
 }
@@ -187,20 +215,29 @@ const SK_SKILL = { s1: 1, s2: 2, s3: 3, s4: 4 };
 Object.assign(Prog, {
   _v: 0, _st: null, _stRef: null, _stV: -1,
   sk() { const d = Save.data; return d.sk || (d.sk = {}); },
-  r(id) { if (id === 'core') return 1; const t = Save.data && Save.data.sk; return (t && t[id]) || 0; },
+  r(id) {
+    if (id === 'core') return 1;
+    if (id.charCodeAt(0) === 97) { const a = Save.data && Save.data.awk; return a && a[id.slice(3)] ? 1 : 0; }      // 각성 별 (aw_p …)
+    const t = Save.data && Save.data.sk; return (t && t[id]) || 0;
+  },
   spent() { let n = 0; const t = (Save.data && Save.data.sk) || {}; for (const k in t) n += t[k]; return n; },
   free() { return Math.max(0, this.earned() - this.spent()); },
   resetCost() { return this.spent() * 1500; },
   refundCost() { return 1000; },
   linked(n) { return n.type === 'core' || SK_ADJ[n.id].some(id => this.r(id) > 0); },
   exTaken(n) { if (!n.ex) return null; return SKN.find(o => o.ex === n.ex && o.id !== n.id && this.r(o.id) > 0) || null; },
-  armMax(a) { let m = 0; const seen = {}; for (const n of SKN) if (n.arm === a && !n.bridge) { if (n.ex) { if (seen[n.ex]) continue; seen[n.ex] = 1; } m += n.max; } return m; },
-  armSpent(a) { let s = 0; for (const n of SKN) if (n.arm === a && !n.bridge) s += this.r(n.id); return s; },
-  armDone(a) { for (const n of SKN) if (n.arm === a && !n.bridge && this.r(n.id) < n.max && !(n.ex && this.exTaken(n))) return false; return true; },
+  armMax(a) { let m = 0; const seen = {}; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk) { if (n.ex) { if (seen[n.ex]) continue; seen[n.ex] = 1; } m += n.max; } return m; },
+  armSpent(a) { let s = 0; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk) s += this.r(n.id); return s; },
+  armDone(a) { for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk && this.r(n.id) < n.max && !(n.ex && this.exTaken(n))) return false; return true; },
 
   // 배울 수 있는지 + 안 되는 이유
   check(n) {
     if (n.type === 'core') return { ok: false, why: '처음부터 밝혀져 있는 별입니다', core: true };
+    if (n.awk) {
+      if (this.r(n.id)) return { ok: false, why: '이미 각성했습니다', max: true };
+      if (!this.st().D[n.awk]) return { ok: false, why: `「${SK_ARMS[n.awk].name}」의 모든 별을 밝혀야 합니다 (${this.armSpent(n.awk)} / ${this.armMax(n.awk)})` };
+      return { ok: true, awk: true };
+    }
     const r = this.r(n.id);
     if (r >= n.max) return { ok: false, why: '최대 랭크', max: true };
     if (!this.linked(n)) return { ok: false, why: '밝혀진 별과 이어져 있어야 합니다' };
@@ -212,13 +249,16 @@ Object.assign(Prog, {
   },
   learn(n) {
     if (!this.check(n).ok) return false;
+    if (n.awk) { const d = Save.data; (d.awk || (d.awk = {}))[n.awk] = 1; if (!d.awkSel) d.awkSel = n.awk; Save.save(); this.refresh(); return true; }
     const t = this.sk(); t[n.id] = (t[n.id] || 0) + 1; Save.save(); this.refresh();
     return true;
   },
   // 한 랭크 되돌리기 : 끄면 다른 별이 끊어지는 경우는 안 된다
   canRefund(n) {
     const r = this.r(n.id);
+    if (n.awk) return { ok: false, why: '각성은 되돌릴 수 없습니다 (전체 초기화로만 사라집니다)' };
     if (n.type === 'core' || r <= 0) return { ok: false, why: '되돌릴 랭크가 없습니다' };
+    if (!n.bridge && Save.data.awk && Save.data.awk[n.arm]) return { ok: false, why: '각성한 갈래의 별은 되돌릴 수 없습니다' };
     if (r === 1) {
       for (const o of SKN) if (o.req === n.id && this.r(o.id) > 0) return { ok: false, why: `「${o.name}」${jo(o.name, '이', '가').slice(-1)} 이 별을 필요로 합니다` };
       const lit = new Set(['core']), st = ['core'];
@@ -237,7 +277,7 @@ Object.assign(Prog, {
   reset() {
     const c = this.resetCost();
     if (!this.spent() || (Save.data.gold || 0) < c) return false;
-    Save.data.gold -= c; Save.data.sk = {}; Save.save(); this.refresh();
+    Save.data.gold -= c; Save.data.sk = {}; Save.data.awk = {}; Save.data.awkSel = null; Save.save(); this.refresh();
     return true;
   },
   refresh() { this._v++; const p = Game.player; if (p && p.setGear) p.setGear(); },
@@ -261,6 +301,10 @@ Object.assign(Prog, {
     return this._st;
   },
   v(k) { return this.st().S[k] || 0; },
+  // 각성기 : 배웠고 갈래가 완성되어 있으면 쓸 수 있다. 장착한 하나를 Y 키로 쓴다
+  awkOn(a) { const d = Save.data; return !!(d && d.awk && d.awk[a]) && !!this.st().D[a]; },
+  awkSel() { const d = Save.data; if (d && d.awkSel && this.awkOn(d.awkSel)) return d.awkSel; for (const a of SK_ARM_KEYS) if (this.awkOn(a)) return a; return null; },
+  awkDef(a) { return a ? SK_AWK[a] : null; },
   has(k) { return !!this.st().K[k]; },
 
   // ---------- 능력치 ----------
@@ -289,6 +333,7 @@ Object.assign(Prog, {
   cat(hit) { return hit && hit._cat; },
   dmgMul(p, hit, tgt, backOrCounter) {
     let m = 1 + this.v('all');
+    if (p.awkBuffT > 0) m *= 1.4;                                              // 불사성광
     const c = this.cat(hit);
     if (c === 'basic') {
       m *= 1 + this.v('basic');
@@ -303,6 +348,7 @@ Object.assign(Prog, {
     const ex = this.v('exec');
     if (ex && tgt && tgt.hpMax && tgt.hp < tgt.hpMax * 0.3) m *= 1 + ex;
     if (backOrCounter) m *= 1 + this.v('back');
+    if (tgt && tgt.awkBreak > 0) m *= 1.35;                                    // 파천멸검 : 방어가 무너진 적
     if (this.has('rage') && p.hp < p.hpMax * 0.5) m *= 1.3;
     return m;
   },
@@ -315,6 +361,7 @@ Object.assign(Prog, {
   },
   // 받는 피해 (마나 방패)
   takeDmg(p, dmg) {
+    if (p.awkBuffT > 0) dmg *= 0.4;                                            // 불사성광
     if (!this.has('mshield') || !(p.mp > 0) || !p.hpMax) return dmg;
     let part = dmg * 0.25, cost = part / p.hpMax * p.mpMax;
     if (cost > p.mp) { part *= p.mp / cost; cost = p.mp; }
@@ -387,6 +434,8 @@ Object.assign(Prog, {
   // 매 프레임 (Player.update)
   tick(p) {
     if (p.linkT > 0) p.linkT--;
+    if (p.awkBuffT > 0) { p.awkBuffT--; if (p.hp > 0 && Game.frame % 60 === 0) Gear.heal(p, p.hpMax * 0.02, true); }
+    if (p.mpBoostT > 0) { p.mpBoostT--; p.mp = Math.min(p.mpMax, p.mp + p.mpMax * 0.004); }
     if (p.eyeT > 0) p.eyeT--;
     if (p.hp <= 0 || p.state === 'dead') return;
     const rg = this.v('regen');
@@ -434,6 +483,30 @@ const SKG = (g, kind, col) => {
   const hex = (r, cx = 24, cy = 24) => { for (let i = 0; i < 6; i++) { const a = i * TAU / 6 - Math.PI / 2; i ? g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r) : g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } g.closePath(); };
   g.lineCap = 'round'; g.lineJoin = 'round';
   switch (kind) {
+    case 'awk_p':
+      fill(() => g.arc(24, 24, 15, 0, TAU), 0.22);
+      line(() => { g.moveTo(7, 7); g.lineTo(41, 41); }, 3.6); line(() => { g.moveTo(41, 7); g.lineTo(7, 41); }, 3.6);
+      line(() => g.arc(24, 24, 19, -2.6, -0.5), 2.2); line(() => g.arc(24, 24, 19, 0.55, 2.65), 2.2);
+      fill(() => g.arc(24, 24, 5.5, 0, TAU), 0.95); g.fillStyle = '#fff'; g.beginPath(); g.arc(24, 24, 2.6, 0, TAU); g.fill();
+      return true;
+    case 'awk_s':
+      for (let i = -2; i <= 2; i++) {
+        const x = 24 + i * 9, tx = 24 + i * 1.6;
+        fill(() => { g.moveTo(x - 2.2, 2); g.lineTo(x + 2.2, 2); g.lineTo(tx + 1, 36); g.lineTo(tx, 41); g.lineTo(tx - 1, 36); }, i === 0 ? 1 : 0.7);
+      }
+      line(() => { g.moveTo(24, 6); g.lineTo(24, 38); }, 2);
+      fill(() => g.ellipse(24, 43, 14, 3.4, 0, 0, TAU), 0.55);
+      return true;
+    case 'awk_w':
+      fill(() => g.ellipse(24, 24, 12, 21, 0, 0, TAU), 0.3);
+      line(() => { g.moveTo(24, 2); g.lineTo(19, 14); g.lineTo(28, 22); g.lineTo(18, 33); g.lineTo(24, 46); }, 3);
+      fill(() => g.arc(11, 15, 2.2, 0, TAU), 0.9); fill(() => g.arc(37, 33, 2.2, 0, TAU), 0.9); fill(() => g.arc(38, 11, 1.6, 0, TAU), 0.8); fill(() => g.arc(10, 38, 1.6, 0, TAU), 0.8);
+      return true;
+    case 'awk_v':
+      for (const sg of [-1, 1]) for (let i = 0; i < 4; i++) fill(() => { const a = (-0.2 - i * 0.34) * sg, L = 22 - i * 2.2; g.save(); g.translate(24, 28); g.rotate(a + (sg > 0 ? 0 : 0)); g.ellipse(sg * (L / 2 + 3), -3 - i * 0.6, L / 2, 3.1, sg * -0.25, 0, TAU); g.restore(); }, 0.9 - i * 0.12);
+      fill(() => { g.moveTo(24, 10); g.lineTo(28, 26); g.lineTo(24, 42); g.lineTo(20, 26); }, 0.95);
+      line(() => g.ellipse(24, 7, 7, 2.6, 0, 0, TAU), 1.8);
+      return true;
     case 'heart':
       fill(() => { g.moveTo(24, 41); g.bezierCurveTo(2, 26, 8, 6, 24, 16); g.bezierCurveTo(40, 6, 46, 26, 24, 41); }, 0.8);
       line(() => { g.moveTo(9, 25); g.lineTo(17, 25); g.lineTo(21, 18); g.lineTo(26, 32); g.lineTo(29, 25); g.lineTo(39, 25); }, 2);
@@ -521,7 +594,7 @@ const TreeUI = {
 
   fit() {
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (const n of SKN) { const R = SK_TYPE[n.type].R + 14; x0 = Math.min(x0, n.x - R); x1 = Math.max(x1, n.x + R); y0 = Math.min(y0, n.y - R); y1 = Math.max(y1, n.y + R); }
+    for (const n of SKN) { const R = SK_TYPE[n.type].R * (n.awk ? 1.72 : 1) + 14; x0 = Math.min(x0, n.x - R); x1 = Math.max(x1, n.x + R); y0 = Math.min(y0, n.y - R); y1 = Math.max(y1, n.y + R + (n.awk ? 38 : 0)); }
     const bot = 40;                                                              // 아래쪽 버튼 · 알림 자리
     this.fitZ = Math.min((this.BR.w - 30) / (x1 - x0), (this.BR.h - 24 - bot) / (y1 - y0));
     this.fitC = [(x0 + x1) / 2, (y0 + y1) / 2 + bot / 2 / this.fitZ];
@@ -603,12 +676,26 @@ const TreeUI = {
     if (first && from) { this.comets.push({ x0: from.x, y0: from.y, x1: n.x, y1: n.y, t: 0, life: 16, col: n.col, n, r }); Sfx.play('dash', 0.35, 1.6); }
     else this.ignite(n, r);
     if (n.type === 'k' && first) this.cineQ.push({ kind: 'key', n });
+    if (n.awk) { this.cineQ.push({ kind: 'awk', n }); Sfx.play('combo', 0.8, 0.7); }
     for (const a of SK_ARM_KEYS) if (!doneBefore.includes(a) && Prog.armDone(a)) this.cineQ.push({ kind: 'arm', arm: a });
     this.refArm = 0; this.resetArm = 0;
+    if (n.awk) { this.say(`「${n.name}」 각성!  ${SK_AWK_KEY} 키로 사용합니다`, '#ffd24a', 220); return; }
     this.say(r >= n.max ? (n.max > 1 ? `「${n.name}」 최대 랭크!` : `「${n.name}」 습득!`) : `「${n.name}」 ${r} / ${n.max}`, n.type === 'k' ? '#ffd24a' : `rgb(${n.col})`);
   },
+  // 각성기 장착 (여러 개를 각성했을 때 Y 키로 쓸 것을 고른다)
+  tryEquip(n) {
+    if (!Prog.r(n.id)) { Sfx.play('ui', 0.6, 0.5); this.say('먼저 각성해야 합니다', '#ff8a70'); return; }
+    if (!Prog.awkOn(n.awk)) { Sfx.play('ui', 0.6, 0.5); this.say('갈래의 별이 모두 밝혀져 있어야 쓸 수 있습니다', '#ff8a70'); return; }
+    if (Prog.awkSel() === n.awk) { this.say(`이미 「${n.name}」을 장착하고 있습니다`, '#c8d0ec'); return; }
+    Save.data.awkSel = n.awk; Save.save(); Prog.refresh();
+    Sfx.play('ring', 0.7, 1.3); Sfx.play('clear', 0.4, 1.4);
+    this.fx.push({ k: 'ring', x: n.x, y: n.y, r0: 30, r1: 150, t: 0, life: 26, col: n.col, w: 7 });
+    this.say(`「${n.name}」 장착  ·  ${SK_AWK_KEY} 키`, '#ffd24a');
+  },
   tryRefund() {
-    const n = this.cur(), c = Prog.canRefund(n);
+    const n = this.cur();
+    if (n.awk) { this.tryEquip(n); return; }
+    const c = Prog.canRefund(n);
     if (!c.ok) { Sfx.play('ui', 0.6, 0.5); this.say(c.why, '#ff8a70'); this.refArm = 0; return; }
     if (this.refArm <= 0) { this.refArm = 180; this.resetArm = 0; Sfx.play('ui', 0.8, 0.8); this.say(`한 번 더 누르면 ${fmt(Prog.refundCost())} G를 내고 1랭크 되돌립니다`, '#ffb070'); return; }
     Prog.refund(n); this.refArm = 0;
@@ -705,7 +792,7 @@ const TreeUI = {
     }
   },
   startCine(q) {
-    this.cine = Object.assign({ t: 0, life: q.kind === 'key' ? 150 : 170 }, q);
+    this.cine = Object.assign({ t: 0, life: q.kind === 'key' ? 150 : q.kind === 'awk' ? 210 : 170 }, q);
     Sfx.play('clear', 0.8, q.kind === 'key' ? 1 : 0.8); Sfx.play('ring', 0.8, 0.8);
     if (q.kind === 'arm') Sfx.play('combo', 0.8, 0.7);
   },
@@ -782,7 +869,7 @@ const TreeUI = {
     const cv = makeCanvas(Math.ceil(h * 2 * Q), Math.ceil(h * 2 * Q)), g = cv.getContext('2d');
     g.scale(Q, Q); g.translate(h, h);
     if (kind === 'star') {
-      const N = core ? 12 : 8, R1 = R * (core ? 1.55 : 1.48), R2 = R * 1.08;
+      const aw = n.type === 'a', N = core ? 12 : aw ? 16 : 8, R1 = R * (core ? 1.55 : aw ? 1.72 : 1.48), R2 = R * (aw ? 1.14 : 1.08);
       g.beginPath();
       for (let i = 0; i < N * 2; i++) { const a = i * Math.PI / N, rr = i % 2 ? R2 : R1; i ? g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
       g.closePath();
@@ -864,6 +951,7 @@ const TreeUI = {
     ctx.translate(this.bcx() + shx, this.bcy() + shy); ctx.scale(c.z, c.z); ctx.translate(-c.x, -c.y);
     this.drawSky(ctx);
     this.drawEdges(ctx);
+    this.drawAwkLinks(ctx);
     this.drawComets(ctx);
     for (const n of SKN) if (n.id !== this.sel) this.drawEmblem(ctx, n, n.x, n.y, 1, this.S[n.id]);
     this.drawEmblem(ctx, this.cur(), this.cur().x, this.cur().y, 1, this.S[this.sel]);
@@ -909,6 +997,13 @@ const TreeUI = {
     }
     ctx.stroke();
     ctx.restore();
+    // 각성 별 이름표
+    for (const n of SKN) {
+      if (!n.awk) continue;
+      const S = this.S[n.id], D = SK_AWK[n.awk], y = n.y + SK_TYPE.a.R * 1.72 + 18, done = Prog.st().D[n.awk];
+      UI.text(ctx, D.name, n.x, y, { size: 15, align: 'center', fill: S.lit ? '#ffe9a6' : done ? '#fff' : '#8a94b4', stroke: 4 });
+      UI.text(ctx, S.lit ? '각성 완료' : done ? '각성할 수 있다!' : `${Prog.armSpent(n.awk)} / ${Prog.armMax(n.awk)}`, n.x, y + 16, { size: 11, align: 'center', font: FONT_B, weight: 800, fill: S.lit ? '#ffd24a' : done ? '#7dffa0' : '#6a7494', stroke: 3 });
+    }
     // 갈래 이름 (가장 바깥 별들 사이) · 택일 표시
     for (const a of SK_ARM_KEYS) {
       const A = SK_ARMS[a], th = A.th * DEG, x = Math.cos(th) * A.lab * SK_UX, y = Math.sin(th) * A.lab * SK_UY;
@@ -961,6 +1056,32 @@ const TreeUI = {
       ctx.restore();
     }
   },
+  // 각성 별 : 갈래의 끝 별에서 이어지는 빛줄기
+  drawAwkLinks(ctx) {
+    const t = this.t;
+    for (const n of SKN) {
+      if (!n.awk) continue;
+      const S = this.S[n.id], done = Prog.st().D[n.awk], c = n.col;
+      for (const id of n.tips) {
+        const o = SKN_BY[id], d = Math.hypot(n.x - o.x, n.y - o.y), ux = (n.x - o.x) / d, uy = (n.y - o.y) / d;
+        const x0 = o.x + ux * (SK_TYPE[o.type].R + 3), y0 = o.y + uy * (SK_TYPE[o.type].R + 3), x1 = n.x - ux * (SK_TYPE.a.R + 4), y1 = n.y - uy * (SK_TYPE.a.R + 4);
+        ctx.save();
+        if (S.lit) {
+          ctx.strokeStyle = `rgba(${c},0.25)`; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+          ctx.strokeStyle = `rgba(${SK_GOLD},0.95)`; ctx.lineWidth = 2.6; ctx.stroke();
+          ctx.globalCompositeOperation = 'lighter';
+          for (let k = 0; k < 3; k++) { const u = (t * 0.016 + k / 3) % 1; drawGlow(ctx, lerp(x0, x1, u), lerp(y0, y1, u), 8, SK_GOLD, 0.9 * Math.sin(Math.PI * u)); }
+        } else if (done) {
+          ctx.strokeStyle = `rgba(${SK_GOLD},${0.5 + Math.sin(t * 0.14) * 0.3})`; ctx.lineWidth = 2.4; ctx.setLineDash([7, 6]); ctx.lineDashOffset = -t * 0.8;
+          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        } else {
+          ctx.strokeStyle = `rgba(${c},0.22)`; ctx.lineWidth = 1.6; ctx.setLineDash([2, 8]);
+          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+  },
   drawComets(ctx) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     for (const m of this.comets) {
@@ -980,7 +1101,7 @@ const TreeUI = {
     const t = this.t, T = SK_TYPE[n.type], R = T.R * k, c = n.col, gold = SK_GOLD;
     const { lit, max, can } = S;
     const pulse = 0.5 + 0.5 * Math.sin(t * 0.12 + n.x * 0.013 + n.y * 0.007);
-    const core = n.type === 'core', key = n.type === 'k', ac = (max && n.type !== 's') || core ? gold : c;
+    const core = n.type === 'core', key = n.type === 'k' || n.type === 'a', ac = (max && n.type !== 's') || core ? gold : c;
     const lt = t - (this.learnT[n.id] ?? -999), dn = t - (this.denyT[n.id] ?? -999);
     let sc = 1;
     if (lt >= 0 && lt < 30) { const u = lt / 30; sc = 1 + 0.4 * Math.exp(-u * 5) * Math.cos(u * 14); }
@@ -1046,7 +1167,7 @@ const TreeUI = {
 
   drawCursor(ctx) {
     const n = this.cur(), k = this.cursor, t = this.t; if (!k) return;
-    const R = SK_TYPE[n.type].R * (n.type === 'k' ? 1.5 : n.type === 'core' ? 1.6 : 1) + 12 + Math.sin(t * 0.12) * 2;
+    const R = SK_TYPE[n.type].R * (n.type === 'k' || n.type === 'a' ? 1.5 : n.type === 'core' ? 1.6 : 1) + 12 + Math.sin(t * 0.12) * 2;
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, k.x, k.y, R * 1.6, n.col, 0.14 + 0.05 * Math.sin(t * 0.1)); ctx.restore();
     const u = (t % 70) / 70;
     ctx.save(); ctx.strokeStyle = `rgba(${n.col},${0.5 * (1 - u)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(k.x, k.y, R + u * 34, 0, TAU); ctx.stroke(); ctx.restore();
@@ -1061,7 +1182,7 @@ const TreeUI = {
     const a = Math.min(1, (this.cam.z - 1.25) / 0.2);
     ctx.save(); ctx.globalAlpha = a;
     for (const n of SKN) {
-      if (n.type === 'core') continue;
+      if (n.type === 'core' || n.awk) continue;
       const S = this.S[n.id], y = n.y + SK_TYPE[n.type].R + (S.lvLock ? 24 : 15);
       UI.text(ctx, n.name, n.x, y, { size: 11, align: 'center', font: FONT_B, weight: 800, fill: S.lit ? '#f2f4ff' : S.can ? `rgb(${n.col})` : '#8a94b4', stroke: 3 });
     }
@@ -1110,12 +1231,12 @@ const TreeUI = {
     // 배율
     UI.text(ctx, `${Math.round(this.cam.z / this.fitZ * 100)}%`, this.zoomRect(0).x - 10, this.zoomRect(0).y + 17, { size: 11, align: 'right', font: FONT_B, weight: 700, fill: '#6a7494', stroke: 3 });
     // 범례
-    const lg = [['소성', 's'], ['명성', 'n'], ['극성', 'k']];
+    const lg = [['소성', 's'], ['명성', 'n'], ['극성', 'k'], ['각성', 'a']];
     let lx = B.x + 18; const ly = B.y + B.h - 30;
     for (const [nm, ty] of lg) {
-      const R = ty === 's' ? 6 : ty === 'n' ? 7.5 : 9;
+      const R = ty === 's' ? 6 : ty === 'n' ? 7.5 : ty === 'k' ? 9 : 10;
       ctx.fillStyle = 'rgba(36,46,78,0.95)'; ctx.beginPath(); ctx.arc(lx + R, ly, R, 0, TAU); ctx.fill();
-      ctx.strokeStyle = ty === 'k' ? 'rgba(255,214,110,0.9)' : 'rgba(170,180,220,0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeStyle = ty === 'k' || ty === 'a' ? 'rgba(255,214,110,0.9)' : 'rgba(170,180,220,0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
       UI.text(ctx, nm, lx + R * 2 + 6, ly + 1, { size: 12, font: FONT_B, weight: 700, fill: '#9aa4c0', stroke: 3 });
       lx += R * 2 + 48;
     }
@@ -1209,9 +1330,9 @@ const TreeUI = {
     ctx.save(); ctx.fillStyle = tg; ctx.fillRect(x0 + 2, y0, w - 4, 190); ctx.restore();
     ctx.save(); ctx.beginPath(); ctx.rect(x0 + 2, y0, w - 4, P.h - 48 - 2); ctx.clip(); ctx.globalAlpha = pa; ctx.translate(0, (1 - pa) * 10);
     UI.text(ctx, an, x0 + 16, y0 + 18, { size: 13, font: FONT_B, weight: 800, fill: `rgb(${n.col})`, stroke: 3 });
-    const tb = SK_TYPE[n.type].name + (n.ex ? ' · 택일 오의' : n.type === 'k' ? ' · 새 기술' : n.type === 'n' ? ' · 특수 효과' : '');
+    const tb = SK_TYPE[n.type].name + (n.awk ? ' · 필살 기술' : n.ex ? ' · 택일 오의' : n.type === 'k' ? ' · 새 기술' : n.type === 'n' ? ' · 특수 효과' : '');
     ctx.font = `800 11px ${FONT_B}`; const tw = ctx.measureText(tb).width + 16;
-    ctx.fillStyle = n.type === 'k' ? 'rgba(90,68,20,0.95)' : 'rgba(26,30,48,0.95)'; roundRect(ctx, x0 + w - 16 - tw, y0 + 8, tw, 20, 10); ctx.fill();
+    ctx.fillStyle = n.type === 'k' || n.awk ? 'rgba(90,68,20,0.95)' : 'rgba(26,30,48,0.95)'; roundRect(ctx, x0 + w - 16 - tw, y0 + 8, tw, 20, 10); ctx.fill();
     ctx.strokeStyle = n.type === 'k' ? '#ffd24a' : `rgba(${n.col},0.6)`; ctx.lineWidth = 1.2; ctx.stroke();
     UI.text(ctx, tb, x0 + w - 16 - tw / 2, y0 + 18.5, { size: 11, align: 'center', font: FONT_B, weight: 800, fill: n.type === 'k' ? '#ffe9a6' : '#c8d0ec' });
     // 큰 별
@@ -1234,7 +1355,12 @@ const TreeUI = {
       for (const s of arr) for (const ln of skWrap(ctx, s, w - 40, 15)) { UI.text(ctx, ln, x0 + 22, y, { size: 15, font: FONT_B, weight: 700, fill: col, stroke: 3 }); y += 21; }
       y += 6;
     };
-    if (n.type === 'core') lines('근원', [n.d], '#ffe9a6');
+    if (n.awk) {
+      const D = SK_AWK[n.awk];
+      lines(S.lit ? '각성함' : '각성기', [n.d], S.lit ? '#ffe9a6' : '#dfe4f6', '#ffcf6a');
+      lines('사용', [`${SK_AWK_KEY} 키  ·  MP ${D.mp}  ·  쿨타임 ${D.cd}초`], '#9fd0ff');
+    }
+    else if (n.type === 'core') lines('근원', [n.d], '#ffe9a6');
     else if (!n.fx) lines(S.lit ? '습득함' : '효과', [n.d], S.lit ? '#ffe9a6' : '#dfe4f6', n.type === 'k' ? '#ffcf6a' : '#8a94b4');
     else {
       if (S.r > 0) lines(S.max ? '현재 (최대)' : '현재', skDesc(n, S.r), '#dfe4f6');
@@ -1244,7 +1370,8 @@ const TreeUI = {
     // 조건 목록
     if (n.type !== 'core' && !S.lit) {
       const cond = [];
-      cond.push([S.linked, '밝혀진 별과 이어져 있음']);
+      if (n.awk) cond.push([!!Prog.st().D[n.awk], `${SK_ARMS[n.awk].name}의 모든 별  ${Prog.armSpent(n.awk)} / ${Prog.armMax(n.awk)}`]);
+      else cond.push([S.linked, '밝혀진 별과 이어져 있음']);
       if (n.req) cond.push([Prog.r(n.req) > 0, `「${SKN_BY[n.req].name}」 1랭크 이상`]);
       if (n.lv) cond.push([Prog.lv() >= n.lv, `캐릭터 Lv.${n.lv} 이상`]);
       if (n.ex) { const o = SKN.find(m => m.ex === n.ex && m !== n); cond.push([!S.exed, `택일 : 「${o.name}」${jo(o.name, '과', '와').slice(-1)} 함께 못 배움`]); }
@@ -1270,14 +1397,14 @@ const TreeUI = {
     }
     const core = n.type === 'core';
     ctx.strokeStyle = ok ? `rgba(255,210,74,${0.7 + pulse * 0.3})` : S.max && !core ? '#7dffa0' : '#5a5a6a'; ctx.lineWidth = 2.4; roundRect(ctx, lr.x, lr.y, lr.w, lr.h, 12); ctx.stroke();
-    const lab = core ? '검의 성좌의 중심' : S.max ? (n.max > 1 ? '최대 랭크' : '습득함') : ok ? (S.r ? '랭크 올리기  (1 포인트)' : '별 밝히기  (1 포인트)') : '밝힐 수 없음';
+    const lab = core ? '검의 성좌의 중심' : n.awk ? (S.max ? '각성 완료' : ok ? '각 성 하 기  (포인트 없음)' : '아직 각성할 수 없음') : S.max ? (n.max > 1 ? '최대 랭크' : '습득함') : ok ? (S.r ? '랭크 올리기  (1 포인트)' : '별 밝히기  (1 포인트)') : '밝힐 수 없음';
     UI.text(ctx, lab, lr.x + lr.w / 2, lr.y + lr.h / 2 + 1, { size: 19, align: 'center', fill: ok ? '#fff' : S.max && !core ? '#7dffa0' : '#8a8a9a', stroke: 4 });
     // 되돌리기
-    const fr = this.refundRect(), can = n.type !== 'core' && S.r > 0, armed = this.refArm > 0;
+    const fr = this.refundRect(), armed = this.refArm > 0, eqp = n.awk && Prog.awkSel() === n.awk, can = n.awk ? S.r > 0 && !eqp : n.type !== 'core' && S.r > 0;
     ctx.fillStyle = armed ? 'rgba(70,50,20,0.95)' : 'rgba(22,24,34,0.9)'; roundRect(ctx, fr.x, fr.y, fr.w, fr.h, 9); ctx.fill();
     ctx.strokeStyle = armed ? '#ffb070' : can ? 'rgba(200,190,150,0.5)' : 'rgba(120,120,140,0.3)'; ctx.lineWidth = 1.5; ctx.stroke();
-    UI.text(ctx, armed ? '정말 되돌릴까?' : '1랭크 되돌리기', fr.x + fr.w / 2, fr.y + 12, { size: 13, align: 'center', fill: can ? '#f0e0c0' : '#6a6a7a', stroke: 3 });
-    UI.text(ctx, `${fmt(Prog.refundCost())} G`, fr.x + fr.w / 2, fr.y + 26, { size: 10.5, align: 'center', font: FONT_B, weight: 700, fill: can ? '#b0a080' : '#5a5a6a', stroke: 2.5 });
+    UI.text(ctx, n.awk ? (eqp ? '장착 중' : '장착하기') : armed ? '정말 되돌릴까?' : '1랭크 되돌리기', fr.x + fr.w / 2, fr.y + (n.awk ? 17 : 12), { size: 13, align: 'center', fill: eqp ? '#ffd24a' : can ? '#f0e0c0' : '#6a6a7a', stroke: 3 });
+    if (!n.awk) UI.text(ctx, `${fmt(Prog.refundCost())} G`, fr.x + fr.w / 2, fr.y + 26, { size: 10.5, align: 'center', font: FONT_B, weight: 700, fill: can ? '#b0a080' : '#5a5a6a', stroke: 2.5 });
   },
   drawSummary(ctx) {
     const P = this.PR, x0 = P.x + 16, w = P.w - 32, st = Prog.st(), t = this.t;
@@ -1343,7 +1470,7 @@ const TreeUI = {
   drawCine(ctx) {
     const C = this.cine; if (!C) return;
     const T = C.t, a = Math.min(1, T / 12, (C.life - T) / 20), cx = W / 2, cy = 300;
-    const key = C.kind === 'key', col = key ? C.n.col : SK_ARMS[C.arm].col, gold = SK_GOLD;
+    const key = C.kind === 'key' || C.kind === 'awk', col = key ? C.n.col : SK_ARMS[C.arm].col, gold = SK_GOLD;
     ctx.save();
     ctx.fillStyle = `rgba(2,3,8,${0.78 * a})`; ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
@@ -1360,11 +1487,12 @@ const TreeUI = {
     ctx.globalAlpha = a;
     if (key) {
       ctx.save(); ctx.translate(cx, cy); ctx.scale(pop, pop); ctx.translate(-cx, -cy);
-      this.drawEmblem(ctx, C.n, cx, cy, 2.3, { r: 1, lit: true, max: true, can: false, dim: false, exed: false, lvLock: false });
+      this.drawEmblem(ctx, C.n, cx, cy, C.kind === 'awk' ? 2.1 : 2.3, { r: 1, lit: true, max: true, can: false, dim: false, exed: false, lvLock: false });
       ctx.restore();
       const ta = Math.min(1, Math.max(0, (T - 14) / 14));
       ctx.globalAlpha = a * ta;
-      UI.text(ctx, '극 성 각 성', cx, cy - 150, { size: 18, align: 'center', fill: '#ffe9a6', stroke: 4 });
+      UI.text(ctx, C.kind === 'awk' ? '각   성' : '극 성 각 성', cx, cy - 150, { size: C.kind === 'awk' ? 26 : 18, align: 'center', fill: '#ffe9a6', stroke: 4 });
+      if (C.kind === 'awk') UI.text(ctx, SK_AWK[C.n.awk].han, cx, cy + 108, { size: 20, align: 'center', font: FONT_B, weight: 800, fill: `rgb(${col})`, stroke: 4 });
       UI.text(ctx, C.n.name, cx, cy + 142, { size: 46, align: 'center', fill: '#ffffff', stroke: 7 });
       const ls = skWrap(ctx, C.n.d, 680, 18);
       ls.forEach((ln, i) => UI.text(ctx, ln, cx, cy + 190 + i * 26, { size: 18, align: 'center', font: FONT_B, weight: 700, fill: `rgb(${col})`, stroke: 4 }));

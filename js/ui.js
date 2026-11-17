@@ -376,6 +376,14 @@ const UI = {
     const px = sx + 6 * (sz + gap) + 16;
     this.slot(ctx, px, sy0 + 3, 44, this.icons.hpPot, '', Input.potionLabel(0), p.potCd / 60, 0.5, p.pots.hp <= 0, p.pots.hp);
     this.slot(ctx, px + 52, sy0 + 3, 44, this.icons.mpPot, '', Input.potionLabel(1), p.potCd / 60, 0.5, p.pots.mp <= 0, p.pots.mp);
+    // 각성기 슬롯 (스킬 트리에서 갈래를 완성해 각성했을 때)
+    const aw = Prog.awkIcon();
+    if (aw) {
+      const ax = px + 112, ak = p.skill('awk'), cd = p.cd.awk || 0, ready = cd <= 0 && p.mp >= ak.mp;
+      if (ready) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, ax + 25, sy0 + 25, 56, '255,214,110', 0.28 + Math.sin(Game.frame * 0.12) * 0.12); ctx.restore(); }
+      this.slot(ctx, ax, sy0, 50, aw, '', Input.padActive ? 'SEL' : 'Y', cd, ak.cd, p.mp < ak.mp);
+      if (ready) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 2; ctx.strokeRect(ax - 1.5, sy0 - 1.5, 53, 53); }
+    }
     ctx.restore();
   },
 
