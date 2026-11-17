@@ -189,7 +189,7 @@ function applyHit(att, tgt, hit, o = {}) {
     back = !hit.noBack && tgt.facing === sign(tgt.x - att.x) && !tgt.isBoss;
     if (crit) dmg *= (att.critDmg || 1.5) + (Game.eclipseT > 0 ? 0.6 : 0);
     if (att.bloodT > 0) dmg *= 1.4;
-    dmg *= Prog.dmgMul(att, hit);                                                  // 스킬 트리                                                // 피의 계약
+    dmg *= Prog.dmgMul(att, hit, tgt, back || counter);                                                  // 스킬 트리                                                // 피의 계약
     if (counter) dmg *= 1.25;
     if (back) dmg *= 1.1;
     if (tgt.breakT > 0) dmg *= 1.35;
@@ -197,6 +197,7 @@ function applyHit(att, tgt, hit, o = {}) {
     if (tgt.dmgMul) dmg *= tgt.dmgMul(att);                                          // 보스 고유 방어 (바위 껍질 등)
   } else if (tgt.isPlayer) {
     dmg *= (tgt.takeMul || 1) * (tgt.shield > 0 ? 0.7 : 1);                        // 방어구 : 피해 감소
+    dmg = Prog.takeDmg(tgt, dmg);                                                  // 스킬 트리 : 마나 방패
   }
   dmg = Math.max(1, Math.round(dmg));
   if (tgt.isPlayer && tgt.capHit) dmg = Math.min(dmg, Math.round(tgt.hpMax * tgt.capHit));

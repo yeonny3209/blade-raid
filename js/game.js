@@ -404,6 +404,7 @@ const Game = {
     for (let i = 0; i < coins; i++) this.pickups.push(new Pickup('gold', e.x, e.y, e.z + 40 * e.scale, per));
     const pl = this.player, wdf = pl && pl.wdef;
     if (wdf && wdf.kill && pl.hp > 0) wdf.kill(pl, e);                                  // 검의 처치 능력
+    if (pl && pl.hp > 0) Prog.onKill(pl, e);                                            // 스킬 트리 : 처치 회복 · 쿨타임
     if (chance(e.elite ? 0.5 : 0.12)) this.pickups.push(new Pickup('hp', e.x, e.y, e.z + 40, 0));
     const r = this.room;
     const others = this.enemies.some(o => o !== e && !o.dying && !o.dead);

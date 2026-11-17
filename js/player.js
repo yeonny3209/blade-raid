@@ -401,6 +401,7 @@ class Player extends Entity {
     if (hasGear && typeof gearRig === 'function') { this.rig = gearRig(A); }
     this.wlook = wp.look || null; this.wcol = wp.col || '140,200,255';
     this.trailCol = this.wcol; this.afterCol = this.wcol;
+    Prog.gear(this);                                                                // 스킬 트리 : 치명 피해 · 회피 · 방어 · 최대 MP
   }
 
   reset(x, y) {
@@ -428,6 +429,7 @@ class Player extends Entity {
     if (this.invul > 0) this.invul--;
     if (this.potCd > 0) this.potCd--;
     this.gearTick();
+    Prog.tick(this);                                                                // 스킬 트리 : 자연 회복 · 연계 시간
     if (this.state !== 'dead') this.mp = Math.min(this.mpMax, this.mp + this.mpRegen / 60);
     this.bladeGlow = Math.max(0, this.bladeGlow - 0.035);
     this.stT++;
@@ -630,7 +632,7 @@ class Player extends Entity {
       this.use('pot1');
       if (this.pots.hp > 0 && this.hp < this.hpMax) {
         this.pots.hp--; this.potCd = 30;
-        const v = Math.round(this.hpMax * 0.4); this.hp = Math.min(this.hpMax, this.hp + v);
+        const v = Math.round(this.hpMax * 0.4 * Prog.potMul()); this.hp = Math.min(this.hpMax, this.hp + v);
         Sfx.play('potion'); FX.add('top', new DmgText(this.x, sy(this.y, this.z) - 150, v, 'h'));
         for (let i = 0; i < 16; i++) FX.add('world', new Mote(this.x + rand(-22, 22), sy(this.y, 0) - rand(0, 110), 0, rand(-2.2, -0.6), { col: '255,90,90', life: 40, r: 8 }));
       } else Sfx.play('ui', 0.6, 0.6);
@@ -639,7 +641,7 @@ class Player extends Entity {
       this.use('pot2');
       if (this.pots.mp > 0 && this.mp < this.mpMax) {
         this.pots.mp--; this.potCd = 30;
-        this.mp = Math.min(this.mpMax, this.mp + this.mpMax * 0.5);
+        this.mp = Math.min(this.mpMax, this.mp + this.mpMax * 0.5 * Prog.potMul());
         Sfx.play('potion', 1, 1.3);
         for (let i = 0; i < 16; i++) FX.add('world', new Mote(this.x + rand(-22, 22), sy(this.y, 0) - rand(0, 110), 0, rand(-2.2, -0.6), { col: '90,150,255', life: 40, r: 8 }));
       } else Sfx.play('ui', 0.6, 0.6);
