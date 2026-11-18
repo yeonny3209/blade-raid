@@ -20,75 +20,75 @@ const _tri = x => Math.abs(((x % 1) + 1) % 1 - 0.5) * 4 - 1;          // 삼각�
 // 검별 스타일
 const BLADE_STYLE = {
   // --- 기본 ---
-  w0: { w: 3.6, tipL: 15, fuller: 1, guard: 'cross', grip: 'wrap', pommel: 'ball' },
+  w0: { w: 3.9, taper: 0.04, tip: 'square', slant: 9, fuller: 1, guard: 'cross', grip: 'wrap', pommel: 'ball', nicks: 4, rivets: [0.08, 0.2] },
   // 화염도 : 불꽃처럼 일렁이는 날, 등은 검게 그을린 곡도
-  w1: { w: 4.4, ws: 0.8, we: 1.1, tip: 'clip', tipL: 26, curve: -0.045, r: 0.55, mod: (u) => [(Math.sin(u * 19) * 0.5 + 0.5) * 3.4 * (0.4 + u * 0.6)], hot: 1, guard: 'flame', grip: 'wrap', pommel: 'gem', fx: 'flame' },
+  w1: { w: 5.2, ws: 0.7, we: 1.35, tip: 'clip', tipL: 30, curve: -0.07, belly: 0.3, r: 0.55, n: 30, mod: (u) => [(Math.sin(u * 26) * 0.5 + 0.5) * 5 * (0.35 + u * 0.65)], hot: 1, guard: 'flame', grip: 'wrap', pommel: 'gem', fx: 'flame', flameLick: 1, edgeGlow: { a: 0.6 } },
   // 빙백검 : 결정이 자라난 얼음 칼
-  w2: { w: 4.3, tipL: 26, tipP: 1.25, n: 24, mod: (u, i) => [i % 4 === 2 ? 2.8 : 0, i % 4 === 0 ? 2.2 : 0], facets: 1, guard: 'crystal', grip: 'smooth', pommel: 'gem', fx: 'frost' },
+  w2: { w: 5.2, taper: 0.2, tipL: 30, tipP: 1.5, n: 24, mod: (u, i) => [i % 4 === 2 ? 4.6 : 0, i % 4 === 0 ? 3.6 : 0], facets: 1, guard: 'crystal', grip: 'smooth', pommel: 'gem', fx: 'frost', icicles: { n: 6, h: 6.5, u0: 0.2, u1: 0.92 }, frostCoat: 1 },
   // 뇌명도 : 번개 모양으로 꺾인 칼날
-  w3: { w: 3.4, tipL: 18, n: 28, cfn: (u) => _tri(u * 3.5 + 0.25) * 2.6 * Math.min(1, u * 5) * (1 - u * 0.5), fuller: 0, ridgeGlow: 1, guard: 'bolt', grip: 'ito', pommel: 'ring', fx: 'spark' },
+  w3: { w: 2.8, tipL: 14, n: 32, cfn: (u) => _tri(u * 4.5 + 0.25) * 4.2 * Math.min(1, u * 5) * (1 - u * 0.4), fuller: 0, ridgeGlow: 1, guard: 'bolt', grip: 'ito', pommel: 'ring', fx: 'spark', edgeGlow: { col: '255,255,200', a: 0.5 }, gems: [0.14] },
   // 혈월도 : 톱니 송곳니가 달린 초승달 곡도
-  w4: { w: 4.6, ws: 0.7, we: 1.2, tip: 'clip', tipL: 30, curve: -0.11, belly: 0.25, r: 0.6, n: 26, mod: (u, i) => [i % 2 ? 2.4 : 0], guard: 'claw', grip: 'wrap', pommel: 'spike', fx: 'drip' },
+  w4: { w: 5.2, ws: 0.55, we: 1.3, tip: 'clip', tipL: 34, curve: -0.17, belly: 0.5, r: 0.6, n: 28, mod: (u, i) => [i % 2 ? 3.6 : 0], guard: 'horns', grip: 'wrap', pommel: 'spike', fx: 'drip', spines: { n: 3, u0: 0.28, u1: 0.8, h: 7, lean: 5 }, stain: 1 },
   // 대지분쇄검 : 바위를 깎아 만든 대검
-  w5: { w: 7.6, taper: 0.02, tip: 'square', slant: 9, r: 0.5, cracks: 'rock', guard: 'block', grip: 'wrap', pommel: 'cap', n: 12, mod: (u, i) => [(i * 7 % 3) * 0.7, (i * 5 % 3) * 0.6] },
+  w5: { w: 9, taper: 0.1, tip: 'square', slant: 15, r: 0.5, n: 16, mod: (u, i) => [(i * 7 % 4) * 1.7 + (u > 0.8 ? 2 : 0), (i * 5 % 3) * 1.4], cracks: 'rock', guard: 'block', grip: 'wrap', pommel: 'cap', bands: [0.22, 0.5, 0.76], rivets: [0.1, 0.36, 0.63], nicks: 5, spines: { n: 3, u0: 0.25, u1: 0.8, h: 5, w: 4, lean: 1 } },
   // 질풍검 : 가늘고 긴 세검 + 바람 고리 가드
-  w6: { w: 2.3, taper: 0.3, tipL: 34, tipP: 1.2, fuller: 1, guard: 'swept', grip: 'smooth', pommel: 'ball', fx: 'wind' },
+  w6: { w: 2.0, taper: 0.35, tipL: 42, tipP: 1.3, n: 28, cfn: (u) => Math.sin(u * 7) * 1.5 * u, fuller: 1, guard: 'swept', grip: 'smooth', pommel: 'ball', fx: 'wind', etch: { u0: 0.05, u1: 0.3 }, edgeGlow: { col: '200,255,235', a: 0.4, w: 1 } },
   // 맹독검 : 뱀처럼 굽이치는 크리스
-  w7: { w: 3.6, tipL: 20, n: 30, cfn: (u) => Math.sin(u * 15.5) * 2.6 * (1 - u * 0.55), ridgeGlow: 1, guard: 'fang', grip: 'wrap', pommel: 'gem', fx: 'drip' },
+  w7: { w: 3.2, taper: 0.2, tipL: 18, n: 36, cfn: (u) => Math.sin(u * 21) * 3.8 * (1 - u * 0.5), ridgeGlow: 1, guard: 'fang', grip: 'wrap', pommel: 'gem', fx: 'drip', bubbles: 1, spines: { n: 4, u0: 0.2, u1: 0.75, h: 4.6, w: 2.2, lean: 2.5 } },
   // 성검 : 금 상감이 들어간 정통 장검
-  w8: { w: 4.5, tipL: 20, tipP: 0.75, fuller: 1, inlay: 1, guard: 'holy', grip: 'wrap', pommel: 'gem', fx: 'holy' },
+  w8: { w: 5.6, taper: 0.16, tipL: 24, tipP: 0.65, fuller: 1, inlay: 1, guard: 'holy', grip: 'wrap', pommel: 'gem', fx: 'holy', etch: {}, gems: [0.2, 0.34] },
   // 공허의 낫
   w9: { form: 'scythe', guard: 'none', pommel: 'spike', fx: 'void' },
   // 용암대검 : 흑요석에 용암이 흐른다
-  w10: { w: 7.2, taper: 0.03, tipL: 20, tipP: 0.7, r: 0.5, cracks: 'lava', guard: 'block', grip: 'wrap', pommel: 'cap', n: 16, mod: (u, i) => [(i % 3 === 1 ? 1.3 : 0), 0], fx: 'ember' },
+  w10: { w: 8.6, taper: 0.05, tip: 'square', slant: 13, r: 0.5, n: 18, mod: (u, i) => [(i % 3 === 1 ? 2.2 : 0) + (u > 0.7 ? 1.5 : 0), i % 4 === 2 ? 1.6 : 0], cracks: 'lava', guard: 'block', grip: 'wrap', pommel: 'cap', fx: 'ember', flameLick: 1, bands: [0.2, 0.46, 0.72], spines: { n: 3, u0: 0.28, u1: 0.8, h: 6, w: 3.6, lean: 2 }, edgeGlow: { a: 0.5 } },
   // 태엽검 : 시곗바늘 칼날 + 돌아가는 톱니
-  w11: { w: 3.2, taper: 0.5, tipL: 30, tipP: 1.1, waistAt: 0.22, fuller: 1, guard: 'gear', grip: 'tech', pommel: 'ring', fx: 'tick' },
+  w11: { w: 3.8, taper: 0.35, tipL: 30, tipP: 1.0, waistAt: 0.22, n: 28, mod: (u) => { const b = Math.exp(-Math.pow((u - 0.72) / 0.09, 2)) * 3.2; return [b, b]; }, fuller: 1, guard: 'gear', grip: 'tech', pommel: 'ring', fx: 'tick', cogs: [[0.5, 3.4, 1], [0.72, 2.4, -1]], bands: [0.14] },
   // 처형검 : 끝이 뭉툭한 처형인의 검
-  w12: { w: 6.2, taper: -0.06, tip: 'square', slant: 0, roundTip: 1, fuller: 2, runes: 5, guard: 'cross', grip: 'wrap', pommel: 'skull' },
+  w12: { w: 7.2, taper: -0.12, tip: 'square', slant: 0, roundTip: 1, fuller: 2, runes: 5, guard: 'cross', grip: 'wrap', pommel: 'skull', nicks: 6, stain: 1, bands: [0.18], rivets: [0.3, 0.5, 0.7] },
   // 월광검 : 초승달 곡도
-  w13: { w: 4.6, ws: 0.6, we: 1.3, tip: 'clip', tipL: 40, curve: -0.19, belly: 0.5, r: 0.6, moon: 1, guard: 'crescent', grip: 'ito', pommel: 'ring', fx: 'frost' },
+  w13: { w: 5.0, ws: 0.6, we: 1.3, tip: 'clip', tipL: 44, curve: -0.25, belly: 0.6, r: 0.6, moon: 1, guard: 'crescent', grip: 'ito', pommel: 'ring', fx: 'frost', phases: 1, stardust: 1 },
   // 유성검 : 밤하늘 칼날에 별자리
-  w14: { w: 4.2, tipL: 24, tipP: 1.1, stars: 1, guard: 'star', grip: 'smooth', pommel: 'gem', fx: 'twinkle' },
+  w14: { w: 3.4, taper: -0.3, tipL: 18, tipP: 0.55, stars: 1, guard: 'star', grip: 'smooth', pommel: 'gem', fx: 'twinkle', nebula: 1, stardust: 1 },
   // 암살검 : 가드 없는 짧고 검은 단도
-  w15: { w: 3.1, ws: 0.75, we: 1.1, tip: 'clip', tipL: 20, r: 0.62, guard: 'none', grip: 'tech', pommel: 'ring', fx: 'shadow', matte: 1 },
+  w15: { w: 3.0, belly: 0.6, tipL: 26, tipP: 0.9, taper: 0.15, r: 0.55, guard: 'slim', gloss: 0.7, grip: 'tech', pommel: 'ring', fx: 'shadow', matte: 1, edgeGlow: { col: '180,120,255', a: 0.6 }, chain: 4, chainEnd: 'hook' },
   // 천공의 성검 : 깃털 날개 가드
-  w16: { w: 4.6, tipL: 24, tipP: 0.8, fuller: 1, inlay: 1, guard: 'wing', grip: 'smooth', pommel: 'gem', fx: 'holy' },
+  w16: { w: 4.2, tipL: 32, tipP: 0.8, fuller: 1, inlay: 1, guard: 'wing', grip: 'smooth', pommel: 'gem', fx: 'holy', feather: 1, gems: [0.15] },
   // 마검 : 들쭉날쭉한 혼돈의 결정
-  w17: { w: 5, tipL: 26, tipP: 1.3, n: 22, mod: (u, i) => [[2.6, 0, 4, 0.6, 1.8, 0][i % 6], [0, 2.4, 0, 0, 3, 0.8][i % 6]], facets: 1, guard: 'eye', grip: 'bone', pommel: 'spike', fx: 'chaos' },
+  w17: { w: 5, tipL: 26, tipP: 1.3, n: 22, mod: (u, i) => [[4.2, 0, 6.4, 1, 2.9, 0][i % 6], [0, 3.8, 0, 0, 4.8, 1.3][i % 6]], facets: 1, guard: 'eye', grip: 'bone', pommel: 'spike', fx: 'chaos', spines: { n: 5, u0: 0.2, u1: 0.85, h: 8, lean: 4 }, nebula: 2 },
   // 거합도 : 정통 카타나
-  w18: { w: 2.9, ws: 0.85, we: 1.05, taper: 0.1, tip: 'clip', tipL: 13, curve: -0.062, r: 0.6, hamon: 1, guard: 'tsuba', grip: 'ito', pommel: 'cap', fx: 'mist' },
+  w18: { w: 2.7, ws: 0.85, we: 1.05, taper: 0.1, tip: 'clip', tipL: 12, curve: -0.075, r: 0.6, hamon: 1, guard: 'tsuba', grip: 'ito', pommel: 'cap', fx: 'mist', edgeGlow: { col: '255,255,255', a: 0.35, w: 1 } },
   // 덩굴검 : 가시 돋친 나무 칼
-  w19: { w: 3.9, tipL: 22, tipP: 1.2, n: 24, mod: (u, i) => [i % 4 === 1 ? 3 : 0, i % 4 === 3 ? 2.6 : 0], vine: 1, wood: 1, guard: 'leaf', grip: 'bone', pommel: 'ball', fx: 'petal' },
+  w19: { w: 3.4, tipL: 22, tipP: 1.2, n: 30, cfn: (u) => Math.sin(u * 9) * 1.8, mod: (u, i) => [i % 5 === 1 ? 3.4 : 0, i % 5 === 3 ? 3 : 0], vine: 1, wood: 1, guard: 'antler', grip: 'bone', pommel: 'ball', fx: 'petal', spines: { n: 5, u0: 0.15, u1: 0.8, h: 6, w: 2.2, lean: 2, col: '#7bb04a', hi: '#c4ee86' } },
   // 주사위검
-  w20: { w: 5.6, taper: 0.0, tip: 'square', slant: 7, r: 0.5, pips: 1, guard: 'dice', grip: 'wrap', pommel: 'ball' },
+  w20: { w: 5.6, taper: 0, tip: 'square', slant: 7, r: 0.5, n: 18, mod: (u, i) => [Math.floor(i / 3) % 2 ? 2 : 0, 0], guard: 'dice', grip: 'wrap', pommel: 'ball', dice: [1, 3, 5], nicks: 2 },
   // 해적 곡도 : 넓은 커틀러스 + 너클 가드
-  w21: { w: 4.9, ws: 0.6, we: 1.25, tip: 'clip', tipL: 26, curve: -0.09, belly: 0.4, flare: 0.25, r: 0.6, fuller: 1, guard: 'basket', grip: 'wrap', pommel: 'ball' },
+  w21: { w: 4.9, ws: 0.6, we: 1.25, tip: 'clip', tipL: 30, curve: -0.13, belly: 0.5, flare: 0.45, r: 0.6, fuller: 1, guard: 'basket', grip: 'wrap', pommel: 'ball', etch: { u0: 0.06, u1: 0.4 }, nicks: 3 },
   // 증기 기관검
-  w22: { w: 5.4, taper: 0.04, tip: 'square', slant: 8, r: 0.42, n: 24, mod: (u, i) => [i % 2 ? 1.9 : 0], pipes: 1, guard: 'gear', grip: 'tech', pommel: 'cap', fx: 'steam' },
+  w22: { w: 5.4, taper: 0.04, tip: 'square', slant: 8, r: 0.42, n: 24, mod: (u, i) => [i % 3 === 0 ? 3 : 0, i % 6 === 3 ? 1.4 : 0], pipes: 1, guard: 'gear', grip: 'tech', pommel: 'cap', fx: 'steam', cogs: [[0.55, 3.2, 1], [0.78, 2.2, -1]], bands: [0.14, 0.4], rivets: [0.3, 0.6, 0.85] },
   // 태양신의 곡도 : 코페시
-  w23: { w: 4.6, ws: 0.7, we: 1.15, tip: 'clip', tipL: 22, r: 0.58, n: 26, cfn: (u, L) => (u < 0.3 ? 0 : Math.sin(Math.min(1, (u - 0.3) / 0.7) * Math.PI) * L * 0.17 - Math.pow(Math.max(0, u - 0.3) / 0.7, 2) * L * 0.1), inlay: 1, guard: 'sun', grip: 'wrap', pommel: 'gem', fx: 'holy' },
+  w23: { w: 4.6, ws: 0.7, we: 1.15, tip: 'clip', tipL: 22, r: 0.58, n: 26, cfn: (u, L) => (u < 0.3 ? 0 : Math.sin(Math.min(1, (u - 0.3) / 0.7) * Math.PI) * L * 0.17 - Math.pow(Math.max(0, u - 0.3) / 0.7, 2) * L * 0.1), inlay: 1, guard: 'sun', grip: 'wrap', pommel: 'gem', fx: 'holy', sunEtch: 1, flameLick: 1, edgeGlow: { col: '255,210,90', a: 0.5 } },
   // 캔디 크러셔
-  w24: { w: 4.9, taper: 0.0, tipL: 12, tipP: 0.5, stripes: 1, guard: 'candy', grip: 'smooth', pommel: 'ball', fx: 'twinkle' },
+  w24: { w: 4.9, taper: 0, tipL: 12, tipP: 0.5, n: 26, cfn: (u) => -Math.pow(Math.max(0, u - 0.68) / 0.32, 2.2) * 12, stripes: 1, guard: 'candy', grip: 'smooth', pommel: 'ball', fx: 'twinkle', icing: 1 },
   // 수호기사의 검 : 방패 가드 브로드소드
-  w25: { w: 5.4, taper: 0.1, tipL: 18, tipP: 0.7, fuller: 1, guard: 'shield', grip: 'wrap', pommel: 'cap' },
+  w25: { w: 6.4, taper: 0.28, tipL: 24, tipP: 0.7, fuller: 1, guard: 'shield', grip: 'wrap', pommel: 'cap', heraldry: 1, rivets: [0.14, 0.5, 0.8] },
   // 본블레이드 : 등뼈로 만든 칼
-  w26: { w: 5.2, tipL: 20, tipP: 0.8, n: 20, mod: (u, i) => [i % 2 ? 0 : 2.2, i % 2 ? 0 : 1.6], spine: 1, guard: 'skull', grip: 'bone', pommel: 'ball', matte: 1 },
+  w26: { w: 5.2, tipL: 20, tipP: 0.8, n: 24, mod: (u, i) => [i % 2 ? 0 : 3, i % 2 ? 0 : 2.2], spine: 1, guard: 'skull', grip: 'bone', pommel: 'ball', matte: 1, gloss: 0.5, spines: { n: 4, u0: 0.2, u1: 0.8, h: 6, w: 2.4, lean: 2, col: '#d9d2bc', hi: '#fffcec' }, nicks: 4 },
   // 음양검 : 반은 검고 반은 흰 직검
-  w27: { w: 3.9, tipL: 20, tipP: 0.85, split: 1, guard: 'yin', grip: 'ito', pommel: 'tassel' },
+  w27: { w: 3.6, taper: 0.2, tipL: 24, tipP: 0.85, split: 1, guard: 'yin', grip: 'ito', pommel: 'tassel', trigram: 1 },
   // 아케인 룬소드
-  w28: { w: 4.3, tipL: 24, tipP: 1.1, runes: 6, ridgeGlow: 1, guard: 'arc', grip: 'smooth', pommel: 'gem', fx: 'rune' },
+  w28: { w: 4.6, tipL: 36, tipP: 1.4, n: 24, mod: (u, i) => [u > 0.55 && i % 3 === 0 ? 2.2 : 0, 0], runes: 6, ridgeGlow: 1, guard: 'arc', grip: 'smooth', pommel: 'gem', fx: 'rune', gems: [0.12] },
   // 저주검
-  w29: { w: 4.2, ws: 0.8, we: 1.15, tip: 'clip', tipL: 28, curve: -0.06, r: 0.55, n: 26, mod: (u, i) => [i % 3 === 1 ? 3 : 0], guard: 'eye', grip: 'wrap', pommel: 'skull', fx: 'shadow' },
+  w29: { w: 4.2, ws: 0.8, we: 1.15, tip: 'clip', tipL: 28, curve: -0.09, r: 0.55, n: 26, mod: (u, i) => [i % 3 === 1 ? 4.4 : (i % 5 === 0 ? 2 : 0)], guard: 'eye', grip: 'wrap', pommel: 'skull', fx: 'shadow', chain: 5, spines: { n: 4, u0: 0.25, u1: 0.85, h: 6, lean: 4 }, edgeGlow: { col: '190,110,255', a: 0.5 } },
   // 수정검 : 프리즘
-  w30: { w: 4.9, tipL: 30, tipP: 1.0, n: 20, mod: (u, i) => [i % 4 === 2 ? 2 : 0, i % 4 === 0 ? 2 : 0], facets: 1, prism: 1, guard: 'crystal', grip: 'smooth', pommel: 'gem', fx: 'twinkle' },
+  w30: { w: 6.2, tipL: 34, tipP: 1.0, n: 20, mod: (u, i) => [i % 4 === 2 ? 3.2 : 0, i % 4 === 0 ? 3.2 : 0], facets: 1, prism: 1, guard: 'crystal', grip: 'smooth', pommel: 'gem', fx: 'twinkle', edgeGlow: { col: '255,255,255', a: 0.4 }, stardust: 1 },
   // 레이저 블레이드
   w31: { form: 'laser', guard: 'none', grip: 'tech', pommel: 'cap' },
   // 용아검 : 용의 송곳니
-  w32: { w: 5.9, ws: 0.75, we: 1.2, tip: 'clip', tipL: 34, tipP: 0.9, curve: -0.08, belly: 0.3, r: 0.56, scales: 1, guard: 'dragon', grip: 'wrap', pommel: 'spike', fx: 'ember' },
+  w32: { w: 6.4, ws: 0.75, we: 1.2, tip: 'clip', tipL: 38, tipP: 0.9, curve: -0.12, belly: 0.45, r: 0.56, scales: 1, guard: 'dragon', grip: 'wrap', pommel: 'spike', fx: 'ember', fin: { n: 4, u0: 0.15, u1: 0.75, h: 10 }, edgeGlow: { col: '255,150,60', a: 0.5 } },
   // 바이올린검
-  w33: { w: 3.0, taper: 0.25, tipL: 26, tipP: 1.1, strings: 1, guard: 'scroll', grip: 'smooth', pommel: 'ball', fx: 'note' },
+  w33: { w: 3.0, taper: 0.25, tipL: 26, tipP: 1.1, n: 24, mod: (u) => { const b = Math.sin(Math.min(1, Math.max(0, (u - 0.08) / 0.55)) * Math.PI) * 2.4, w = Math.exp(-Math.pow((u - 0.33) / 0.07, 2)) * 1.6; return [b - w, b - w]; }, strings: 1, guard: 'scroll', grip: 'smooth', pommel: 'ball', fx: 'note', fholes: 1 },
   // 라그나로크 : 빛의 심지가 흐르는 신화의 대검
-  w34: { w: 7.8, taper: 0.06, tipL: 30, tipP: 0.75, n: 24, mod: (u, i) => [u < 0.2 ? (0.2 - u) * 16 : 0, u < 0.2 ? (0.2 - u) * 16 : 0], core: 1, runes: 4, guard: 'mythic', grip: 'wrap', pommel: 'gem', fx: 'holy' },
+  w34: { w: 9.4, taper: 0.06, tipL: 36, tipP: 0.75, n: 24, mod: (u, i) => [u < 0.2 ? (0.2 - u) * 16 : 0, u < 0.2 ? (0.2 - u) * 16 : 0], core: 1, runes: 4, guard: 'mythic', grip: 'wrap', pommel: 'gem', fx: 'holy', etch: { u0: 0.06, u1: 0.5 }, gems: [0.1], edgeGlow: { a: 0.5 } },
 };
 
 function bladeStyle(Lk) {
@@ -182,6 +182,14 @@ function drawBladeGuard(ctx, S, trim, ol, glow, plain, t, W) {
   const curve = (pts, fill, w) => { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 4) ctx.quadraticCurveTo(pts[i], pts[i + 1], pts[i + 2], pts[i + 3]); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = w + 2.4; ctx.strokeStyle = ol; ctx.stroke(); ctx.lineWidth = w; ctx.strokeStyle = fill; ctx.stroke(); };
   switch (S.guard) {
     case 'none': break;
+    case 'antler':                                      // 사슴뿔 가드
+      for (const s of [-1, 1]) { curve([8, s * 2, 14, s * 6, 14.5, s * 15], T, 2.4); curve([12.6, s * 9, 18, s * 9.4, 21, s * 6.4], T, 1.7); curve([13.8, s * 13, 19, s * 15, 22, s * 13.4], T, 1.5); }
+      olPoly(ctx, [6.6, -3.4, 12, -3.8, 12, 3.8, 6.6, 3.4], trim[0], ol, 1.1); gem(9.4, 0, 1.6); break;
+    case 'horns':                                       // 휘어 뻗은 두 뿔
+      for (const s of [-1, 1]) { curve([8, s * 2, 11, s * 10, 22, s * 9.6], T, 3.6); curve([8.4, s * 2.4, 11.4, s * 9, 20.4, s * 8.8], trim[2], 0.9); }
+      olPoly(ctx, [6.4, -3.6, 12.4, -3.6, 12.4, 3.6, 6.4, 3.6], trim[0], ol, 1.1); gem(9.4, 0, 1.9); break;
+    case 'slim':                                        // 단도의 작은 날 밑
+      olPoly(ctx, [7.6, -5.4, 11.4, -4.6, 11.4, 4.6, 7.6, 5.4], T, ol, 1.2); hi([8.2, -4.8, 10.8, -4.2, 10.8, -1, 8.2, -1]); break;
     case 'tsuba':
       ctx.beginPath(); ctx.ellipse(9.4, 0, 2.6, 8.6, 0, 0, TAU); ctx.fillStyle = ol; ctx.fill();
       ctx.beginPath(); ctx.ellipse(9.4, 0, 1.6, 7.5, 0, 0, TAU); ctx.fillStyle = trim[0]; ctx.fill();
@@ -528,12 +536,13 @@ function drawPlayerBlade(ctx, J, pal, ent, opt) {
     }
     ctx.restore(); return;
   }
+  const G = bladeGeom(S, len);
+  if (!plain) drawBladeBack(ctx, S, G, c, trim, ol, glow, rune, t);
   drawBladeGrip(ctx, S, hilt, trim, ol, glow, plain);
   drawBladePommel(ctx, S, hilt, trim, ol, glow, plain, t);
   if (S.form === 'laser') { drawLaserBlade(ctx, S, c, hilt, trim, ol, glow, len, plain, t, gl); ctx.restore(); return; }
-  const G = bladeGeom(S, len);
   drawBladeBody(ctx, S, G, c, ol, plain, t, id);
-  if (!plain) drawBladeDeco(ctx, S, G, c, trim, ol, glow, rune, t);
+  if (!plain) { drawBladeDeco(ctx, S, G, c, trim, ol, glow, rune, t); drawBladeExtra(ctx, S, G, c, trim, ol, glow, rune, t, id); }
   drawBladeGuard(ctx, S, trim, ol, glow, plain, t, G.W);
   if (!plain) {
     if (S.fx) drawBladeFx(ctx, S, G, glow, rune, t, id);
