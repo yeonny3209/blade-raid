@@ -114,6 +114,10 @@ function heroGhostArm(ctx, J, pal, ent, opt, ol, ow) {
     ctx.strokeStyle = `rgba(255,90,60,${0.55 + gg * 0.4})`; ctx.lineWidth = 0.9; ctx.beginPath();                       // 살 속에서 비치는 붉은 맥
     ctx.moveTo(e.x + dx * 0.15 + nx * 2, e.y + dy * 0.15 + ny * 2); ctx.lineTo(e.x + dx * 0.4 - nx * 1.5, e.y + dy * 0.4 - ny * 1.5); ctx.lineTo(e.x + dx * 0.62 + nx * 2, e.y + dy * 0.62 + ny * 2); ctx.lineTo(h.x, h.y); ctx.stroke();
     drawGlow(ctx, h.x, h.y, 18 + gg * 20, '255,40,30', fl);
+    for (let i = 0; i < 5; i++) {                                                                                      // 손끝에서 피어오르는 붉은 연기
+      const ph = (Game.time * 0.022 + i / 5) % 1, sw = Math.sin(ph * 9 + i * 2) * 4;
+      drawGlow(ctx, h.x + sw + ux * 5, h.y - ph * 22 + uy * 5, 3 + ph * 6, '255,70,45', (1 - ph) * (0.28 + gg * 0.3));
+    }
     ctx.restore();
   }
 }
@@ -131,6 +135,26 @@ function heroPauldron(ctx, J, pal, ent, ol) {
   ctx.strokeStyle = pipe[1]; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 0, 8, 6, 0, 0.35, Math.PI - 0.35); ctx.stroke();   // 붉은 초승달 테두리
   ctx.fillStyle = pal.trim[1]; ctx.beginPath(); ctx.arc(-5.6, 0.4, 1.3, 0, TAU); ctx.arc(5.6, 0.4, 1.3, 0, TAU); ctx.fill();          // 리벳
   ctx.restore();
+}
+
+// 코트 : 천 주름 · 박음질 · 어깨 장식 끈 · 면 그라데이션 · 뒷날 림라이트
+function heroCoatDetail(ctx, pal, L, T, ol, pipe, pts) {
+  ctx.save(); ctx.beginPath(); smoothPoly(ctx, pts, 0.85); ctx.clip();            // 면 그라데이션 : 등은 어둡게, 앞가슴은 달빛이 닿게
+  const g = ctx.createLinearGradient(...T(-12, 0), ...T(13, 0));
+  g.addColorStop(0, 'rgba(0,0,14,0.38)'); g.addColorStop(0.45, 'rgba(0,0,14,0.05)'); g.addColorStop(1, 'rgba(150,185,255,0.16)');
+  ctx.fillStyle = g; ctx.fillRect(-900, -900, 1800, 1800);
+  ctx.restore();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(0,0,14,0.38)'; ctx.lineWidth = 1;                       // 천 주름
+  for (const f of [[-8, 0.04, -9.4, 0.32, -8.2, 0.58], [-3.4, 0.08, -4.8, 0.38, -3.6, 0.62], [5.4, 0.06, 4.4, 0.3, 5.2, 0.5]]) { ctx.beginPath(); ctx.moveTo(...T(f[0], L * f[1])); ctx.quadraticCurveTo(...T(f[2], L * f[3]), ...T(f[4], L * f[5])); ctx.stroke(); }
+  ctx.strokeStyle = pal.trim[1]; ctx.globalAlpha = 0.6; ctx.lineWidth = 0.8; ctx.setLineDash([2, 2]);               // 박음질
+  ctx.beginPath(); ctx.moveTo(...T(10.2, L * 0.3)); ctx.lineTo(...T(10.9, L * 0.74)); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  const a = T(-6.4, L * 0.96), b = T(4.6, L * 0.52), c = T(-5, L * 0.5);          // 어깨 장식 끈 + 술
+  for (const [w, col] of [[2.6, ol], [1.2, pal.trim[1]]]) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(c[0], c[1], b[0], b[1]); ctx.stroke(); }
+  olPoly(ctx, [b[0] - 1.8, b[1], b[0] + 1.8, b[1], b[0] + 2.6, b[1] + 6.2, b[0] - 2.6, b[1] + 6.2], pal.trim[1], ol, 0.9);
+  ctx.strokeStyle = pal.trim[2]; ctx.lineWidth = 0.5; ctx.beginPath(); for (const k of [-1.2, 0, 1.2]) { ctx.moveTo(b[0] + k * 0.6, b[1] + 1.2); ctx.lineTo(b[0] + k * 1.4, b[1] + 5.6); } ctx.stroke();
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(120,170,255,0.32)'; ctx.lineWidth = 1.3; ctx.beginPath();        // 등 쪽 림라이트
+  ctx.moveTo(...T(-11.2, -4)); ctx.lineTo(...T(-12.9, L * 0.36)); ctx.lineTo(...T(-13, L * 0.76)); ctx.lineTo(...T(-10.6, L + 1.2)); ctx.stroke(); ctx.restore();
 }
 
 function drawPlayer(ctx, J, pal, ent, opt) {
@@ -174,6 +198,7 @@ function drawPlayer(ctx, J, pal, ent, opt) {
       const b = T(1.6, L * 0.47); ctx.save(); ctx.translate(b[0], b[1]); ctx.rotate(Math.atan2(F.fy, F.fx) + 0.72); olPoly(ctx, [-2.6, -3, 2.6, -3, 2.6, 3, -2.6, 3], pal.buckle[1], ol, 0.9); ctx.fillStyle = pal.sash[0]; ctx.fillRect(-1.1, -1.5, 2.2, 3); ctx.restore();
     }
   }
+  if (det && own) heroCoatDetail(ctx, pal, L, T, ol, pipe, [...T(-11.2, -4), ...T(-12.9, L * 0.36), ...T(-13, L * 0.76), ...T(-10.6, L + 1.2), ...T(-4, L + 4.6), ...T(5.5, L + 4.6), ...T(12.4, L + 0.2), ...T(14.4, L * 0.72), ...T(12.4, L * 0.36), ...T(11.4, -4)]);
   // 허리띠 + 버클
   olPoly(ctx, [...T(-12.6, -1.4), ...T(12, -1.4), ...T(12.5, 6.4), ...T(-13, 6.4)], pal.sash[1], ol, 1.2);
   if (det) {
@@ -203,6 +228,8 @@ function drawPlayer(ctx, J, pal, ent, opt) {
     if (det) {
       ctx.fillStyle = pal.coat[0]; ctx.beginPath(); polyPath(ctx, [...T(-1.6, 1.4), ...T(3, 1.4), m[0] + 4 + sw * 1.2, m[1] + 11, m[0] + 1.4 + sw * 1.2, m[1] + 10.4]); ctx.fill();        // 접힌 그늘
       ctx.fillStyle = pal.coat[2]; ctx.beginPath(); polyPath(ctx, [...T(9.4, 1.4), ...T(11.4, 1.4), m[0] + 13 + sw * 1.2, m[1] + 4, m[0] + 11.4 + sw * 1.25, m[1] + 7]); ctx.fill();          // 앞 가장자리 광택
+      ctx.strokeStyle = 'rgba(0,0,14,0.4)'; ctx.lineWidth = 1; ctx.lineCap = 'round';                                       // 자락 주름
+      ctx.beginPath(); ctx.moveTo(...T(-7, 1.4)); ctx.quadraticCurveTo(m[0] - 4 + sw, m[1] + 4, m[0] - 8 + sw, m[1] + 10); ctx.moveTo(...T(6, 1.4)); ctx.quadraticCurveTo(m[0] + 6 + sw * 1.2, m[1] + 4, m[0] + 7 + sw * 1.2, m[1] + 10); ctx.stroke();
       ctx.strokeStyle = pipe[1]; ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(A[8], A[9]); ctx.lineTo(A[6], A[7]); ctx.lineTo(A[4], A[5]); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(B[8], B[9]); ctx.lineTo(B[6], B[7]); ctx.lineTo(B[4], B[5]); ctx.lineTo(...T(12.4, 1.4)); ctx.stroke();
@@ -236,6 +263,7 @@ function drawPlayer(ctx, J, pal, ent, opt) {
   gearDeco(ctx, J, pal, ent, opt, 'top');
   // 손 (장갑) : 주먹 + 손등 판
   circleOl(ctx, J.hand1.x, J.hand1.y, 5.4, pal.bracer[1], ol, ow);
+  if (det) { ctx.strokeStyle = pal.trim[1]; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(J.hand1.x, J.hand1.y, 4.1, 3.4, 5.8); ctx.stroke(); ctx.fillStyle = pal.trim[2]; ctx.fillRect(J.hand1.x + 1.6, J.hand1.y - 4.4, 1.6, 1.6); }
   if (det) { ctx.fillStyle = pal.bracer[2]; ctx.beginPath(); ctx.arc(J.hand1.x - 1.2, J.hand1.y - 1.6, 2.4, 0, TAU); ctx.fill(); ctx.strokeStyle = ol; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(J.hand1.x + 0.6, J.hand1.y + 0.8, 3.2, 0.2, 2.2); ctx.stroke(); }
 }
 
@@ -258,13 +286,20 @@ function drawPlayerHead(ctx, J, pal, ow, opt) {
   if (det) { ctx.strokeStyle = pal.skin[0]; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.arc(-2.4, 2.4, 1.5, 1.2, 4.4); ctx.stroke(); }
   // 눈 : 날카로운 눈매 + 붉은 귀안
   ctx.fillStyle = '#f6eeee'; ctx.beginPath(); polyPath(ctx, [4, 0, 7.4, -2, 11.7, -1.4, 11.1, 3.5, 5.2, 3.8]); ctx.fill();
-  ctx.fillStyle = pal.eye[1]; ctx.beginPath(); ctx.ellipse(8.5, 1, 2.4, 2.8, 0, 0, TAU); ctx.fill();
+  { const ig = ctx.createRadialGradient(8.4, 0.2, 0.3, 8.5, 1, 3); ig.addColorStop(0, pal.eye[2]); ig.addColorStop(0.5, pal.eye[1]); ig.addColorStop(1, pal.eye[0]); ctx.fillStyle = ig; }
+  ctx.beginPath(); ctx.ellipse(8.5, 1, 2.4, 2.8, 0, 0, TAU); ctx.fill();
   if (det) { ctx.fillStyle = '#3a0606'; ctx.beginPath(); ctx.ellipse(8.7, 1.1, 1.1, 1.6, 0, 0, TAU); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(7.5, -0.1, 0.8, 0, TAU); ctx.fill(); }
   ctx.strokeStyle = ol; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(3.4, 0.6); ctx.quadraticCurveTo(7.4, -3, 12.2, -1.6); ctx.stroke();           // 윗눈꺼풀
   ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(5.6, 4); ctx.lineTo(10.8, 3.7); ctx.stroke();                              // 아랫눈꺼풀
   ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(3.2, -5); ctx.lineTo(12, -3.4); ctx.stroke();                            // 눈썹
   ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(9.4, 8.3); ctx.lineTo(11.8, 7.9); ctx.stroke();                              // 입
+  if (det) {
+    ctx.strokeStyle = 'rgba(150,40,40,0.75)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(5.8, 5.4); ctx.lineTo(10.4, 8.2); ctx.stroke();            // 뺨의 흉터
+    ctx.strokeStyle = 'rgba(255,230,215,0.55)'; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(6.6, 5.6); ctx.lineTo(9.8, 7.6); ctx.stroke();
+    ctx.strokeStyle = pal.skin[0]; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(12.4, 2.4); ctx.quadraticCurveTo(13.6, 4, 12.2, 4.8); ctx.stroke();       // 콧날 그늘
+    ctx.strokeStyle = ol; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(11.5, -1.5); ctx.lineTo(12.8, -2.2); ctx.moveTo(11.6, -0.6); ctx.lineTo(13, -0.8); ctx.stroke();   // 속눈썹
+  }
   if (det && !opt.flash) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 8.4, 1.1, 7, '255,60,30', 0.5); ctx.globalCompositeOperation = 'source-over'; }
   // 윗머리 + 앞머리
   olPoly(ctx, [-13.4, 0.5, -13.6, -9.5, -8, -15.6, 0, -17.6, 8, -15.6, 13.4, -10.8, 15.2, -7, 6, -7.4, -2, -7.6, -5.2, -2.6, -7.6, 3.6, -9.6, -2.6], pal.hair[1], ol, ow);
@@ -273,6 +308,11 @@ function drawPlayerHead(ctx, J, pal, ow, opt) {
     ctx.beginPath(); polyPath(ctx, [-9, -11.6, -2, -15.6, 6, -14.6, 0, -12.4]); ctx.fill();
     ctx.beginPath(); polyPath(ctx, [7, -12.2, 11.6, -9.6, 13, -6.6, 9, -9.4]); ctx.fill();
     ctx.fillStyle = pal.hair[0]; ctx.beginPath(); polyPath(ctx, [-13.4, 0.5, -13.6, -6, -9.6, -2.6, -7.6, 3.2]); ctx.fill();
+  }
+  if (det && !opt.flash) {                                                                                  // 머리카락 림라이트 + 가닥
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(130,160,255,0.4)'; ctx.lineWidth = 1; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-12.6, -9.6); ctx.lineTo(-8, -15); ctx.lineTo(0, -17); ctx.lineTo(8, -15); ctx.stroke(); ctx.restore();
+    ctx.strokeStyle = pal.hair[2]; ctx.lineWidth = 0.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-6, -12); ctx.quadraticCurveTo(-1, -15, 4, -13); ctx.moveTo(-10, -6); ctx.quadraticCurveTo(-7, -10, -3, -11.4); ctx.stroke();
   }
   // 머리띠 + 이마 보호판
   olPoly(ctx, [-14.2, -9.6, 13.6, -8.2, 13.4, -3.6, -14.2, -4.6], pal.band[1], ol, 1.2);

@@ -8,7 +8,7 @@
 //   - 그림이 아직 안 불러와졌거나, 복장 스킨을 입은 경우에는 기존 코드 그림을 쓴다
 // ============================================================
 const HA = (() => {
-  const T = { ready: false, on: true };
+  const T = { ready: false, on: false };   // 코드로 새로 그린 몸(characters.js)을 쓴다. 이미지 몸으로 돌리려면 true
   const NAMES = ['head', 'torso', 'pelvis', 'uarm', 'farm', 'hand', 'thigh', 'shin', 'foot', 'cape', 'sword'];
   const IMG = {}, CV = {};
   let M = null, g = 0.3, capR = 5.6;
