@@ -101,6 +101,7 @@ const Lobby = {
       else if (q.a === 'shop') { Sfx.play('select'); Game.toShop(); Input.queue.push(...evs.slice(i + 1)); return; }
       else if (q.a === 'tower') this.enterTower();
       else if (q.a === 'tower2') this.enterTower(true);
+      else if (q.a === 'gacha') { Sfx.play('select'); Game.toGacha(); return; }
       else if (q.a === 'codex') { Sfx.play('select'); Game.toCodex(); return; }
       else if (q.a === 'tree') { Sfx.play('select'); Game.toTree(); return; }
       else if (q.a === 'options') { Sfx.play('select'); Game.openOptions('lobby'); return; }
@@ -187,6 +188,7 @@ const Lobby = {
   CW: 108, GAP: 10, CY: 206,
   cardX(i) { const tot = 10 * this.CW + 9 * this.GAP; return W / 2 - tot / 2 + i * (this.CW + this.GAP); },
   shopBtn: { x: W - 230, y: 92, w: 190, h: 36 },
+  gachaBtn: { x: W - 430, y: 92, w: 190, h: 36 },
   tabRect(i) { return { x: W / 2 - 262 + i * 270, y: 160, w: 252, h: 34 }; },
 
   drawUI(ctx) {
@@ -209,6 +211,11 @@ const Lobby = {
     ctx.fillStyle = 'rgba(40,30,12,0.9)'; roundRect(ctx, sb.x, sb.y, sb.w, sb.h, 9); ctx.fill();
     ctx.strokeStyle = `rgba(255,${190 + glowS * 40 | 0},80,${0.7 + glowS * 0.3})`; ctx.lineWidth = 2.4; ctx.stroke();
     UI.text(ctx, Touch.on ? '상 점' : `상 점   [ ${Input.label('shop')} ]`, sb.x + sb.w / 2, sb.y + 24, { size: 17, align: 'center', fill: '#ffe9a6', stroke: 3 });
+    const gb = this.gachaBtn;
+    ctx.fillStyle = 'rgba(48,28,10,0.9)'; roundRect(ctx, gb.x, gb.y, gb.w, gb.h, 9); ctx.fill();
+    ctx.strokeStyle = `rgba(255,${210 + glowS * 30 | 0},120,${0.7 + glowS * 0.3})`; ctx.lineWidth = 2.4; ctx.stroke();
+    UI.text(ctx, Touch.on ? '소 환' : `소 환   [ ${Input.label('gacha')} ]`, gb.x + gb.w / 2 - 14, gb.y + 24, { size: 17, align: 'center', fill: '#fff1c0', stroke: 3 });
+    UI.text(ctx, fmt(Gacha.sh()), gb.x + gb.w - 14, gb.y + 24, { size: 13, align: 'right', font: FONT_B, weight: 800, fill: '#ffd24a', stroke: 3 });
 
     // 지역 탭
     for (let i = 0; i < MAPS.length; i++) {
@@ -332,6 +339,8 @@ const Lobby = {
   // 터치 : 카드 / 지역 탭 / 상점 버튼 직접 선택
   touchAt(lx, ly) {
     if (lx >= 36 && lx <= 270 && ly >= 88 && ly <= 114) { Sfx.play('ui', 0.7, 1.2); Nick.ask(); return true; }          // 이름을 누르면 닉네임 변경
+    const gb = this.gachaBtn;
+    if (lx >= gb.x && lx <= gb.x + gb.w && ly >= gb.y && ly <= gb.y + gb.h) { Sfx.play('select'); Game.toGacha(); return true; }
     const sb = this.shopBtn;
     if (lx >= sb.x && lx <= sb.x + sb.w && ly >= sb.y && ly <= sb.y + sb.h) { Sfx.play('select'); Game.toShop(); return true; }
     for (let i = 0; i < MAPS.length; i++) {

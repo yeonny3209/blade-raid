@@ -19,6 +19,7 @@ const _bxBand = (ctx, G, a0, a1, col) => {
 // ---------- 칼날 뒤에 깔리는 것 ----------
 function drawBladeBack(ctx, S, G, c, trim, ol, glow, rune, t) {
   const T = G.top, B = G.bot;
+  if (S.holyWings) _bxHolyWings(ctx, S, t, ol, glow);
   if (S.spines) {                                         // 등날 가시 (날 끝쪽으로 갈수록 낮아진다)
     const sp = S.spines;
     for (let k = 0; k < sp.n; k++) {
@@ -60,6 +61,7 @@ function drawBladeBack(ctx, S, G, c, trim, ol, glow, rune, t) {
 // ---------- 칼날 위에 덧그리는 것 ----------
 function drawBladeExtra(ctx, S, G, c, trim, ol, glow, rune, t, id) {
   const M = G.mid, T = G.top, B = G.bot, W = G.W, col = rune || glow;
+  if (S.sunRing) _bxSunRing(ctx, S, G, t, glow);
   // 금속 광택 : 등 그늘 · 윗면 반사 · 날 쪽 반사광
   if ((!S.matte || S.gloss) && S.gloss !== 0) {
     const k = S.gloss || 1;
@@ -226,4 +228,33 @@ function drawBladeExtra(ctx, S, G, c, trim, ol, glow, rune, t, id) {
       ctx.fillStyle = trim[1]; ctx.fillRect(x, -2.9, 1.8, 5.8); ctx.fillStyle = trim[2]; ctx.fillRect(x, -2.9, 0.7, 5.8);
     }
   }
+}
+
+// ---------- 한정 검 장식 : 성스러운 날개 · 떠도는 태양 고리 (스타일 holyWings / sunRing) ----------
+function _bxHolyWings(ctx, S, t, ol, glow) {
+  const hw = S.holyWings, n = hw.n || 7, fl = Math.sin(t * 0.06) * 0.06;
+  for (const side of [-1, 1]) {
+    for (let i = n - 1; i >= 0; i--) {
+      const k = i / (n - 1), a = side * (-(Math.PI * 0.5) - 0.18 - k * 0.8) + fl * side, L = (hw.L || 22) * (0.55 + k * 0.7);
+      const ex = 2 + Math.cos(a) * L, ey = Math.sin(a) * L, w = 3.4 + k * 1.2;
+      ctx.save(); ctx.translate(2, 0); ctx.rotate(a);
+      ctx.beginPath(); ctx.moveTo(0, -w * 0.6); ctx.quadraticCurveTo(L * 0.55, -w * 1.5, L, 0); ctx.quadraticCurveTo(L * 0.55, w * 1.5, 0, w * 0.6); ctx.closePath();
+      ctx.lineJoin = 'round'; ctx.lineWidth = 1.6; ctx.strokeStyle = ol; ctx.stroke();
+      const g = ctx.createLinearGradient(0, 0, L, 0); g.addColorStop(0, '#fff3c8'); g.addColorStop(1, i % 2 ? '#ffe08a' : '#ffffff'); ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = 'rgba(190,140,50,0.6)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L * 0.92, 0); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 2, 0, 26, glow, 0.35 + Math.sin(t * 0.1) * 0.12); ctx.restore();
+}
+function _bxSunRing(ctx, S, G, t, glow) {
+  const sr = S.sunRing, u = sr.u || 0.5, p = _bxAt(G.mid, u), R = sr.r || 11, a0 = t * 0.045;
+  ctx.save(); ctx.translate(p[0], p[1]); ctx.globalCompositeOperation = 'lighter';
+  for (let k = 0; k < 2; k++) {
+    ctx.save(); ctx.rotate(k ? 0.35 : -0.35); ctx.strokeStyle = `rgba(${glow},${0.8 - k * 0.3})`; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.ellipse(0, 0, 3.2, R, 0, 0, TAU); ctx.stroke();
+    for (let i = 0; i < 4; i++) { const a = a0 * (k ? -1 : 1) + i * Math.PI / 2; ctx.fillStyle = 'rgba(255,248,220,0.95)'; ctx.beginPath(); ctx.arc(Math.cos(a) * 3.2, Math.sin(a) * R, 1.5, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+  drawGlow(ctx, 0, 0, 10, glow, 0.35);
+  ctx.restore();
 }

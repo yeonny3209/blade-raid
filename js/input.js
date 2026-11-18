@@ -12,7 +12,7 @@ const KEYMAP = {
   Space: 'jump',
   KeyZ: 'back', KeyL: 'back',
   KeyQ: 's1', KeyE: 's2', KeyT: 's3', KeyF: 's4', KeyG: 's5', KeyR: 's6', KeyY: 'awk',
-  KeyB: 'shop', KeyN: 'tower', KeyU: 'tower2', KeyK: 'codex', KeyI: 'tree', KeyO: 'options', KeyH: 'diff', KeyP: 'share', KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
+  KeyB: 'shop', KeyN: 'tower', KeyU: 'tower2', KeyK: 'codex', Digit3: 'gacha', Numpad3: 'gacha', KeyI: 'tree', KeyO: 'options', KeyH: 'diff', KeyP: 'share', KeyC: 'pot1', KeyV: 'pot2', Digit1: 'pot1', Digit2: 'pot2', Numpad1: 'pot1', Numpad2: 'pot2',
   Escape: 'pause', KeyM: 'mute', Enter: 'confirm', NumpadEnter: 'confirm',
   F2: 'debug',
 };
@@ -27,7 +27,7 @@ const PAD_MENU = { 0: 'confirm', 1: 'pause', 2: 'attack', 3: 'shop', 4: 'tree', 
 const PAD_SKILL_LABELS = ['Y', 'LB', 'RB', 'LT', 'RT', 'L3'];
 const PAD_POTION_LABELS = ['↑', '↓'];
 const PAD_ACTION_LABELS = { shop: 'Y', tree: 'LB', codex: 'RB', diff: 'LT', tower: 'RT', tower2: 'L3', options: 'SELECT', share: 'Y', pot2: 'R3' };
-const KEY_ACTION_LABELS = { shop: 'B', tree: 'I', codex: 'K', diff: 'H', tower: 'N', tower2: 'U', options: 'O', share: 'P', pot2: 'V' };
+const KEY_ACTION_LABELS = { shop: 'B', tree: 'I', codex: 'K', gacha: '3', diff: 'H', tower: 'N', tower2: 'U', options: 'O', share: 'P', pot2: 'V' };
 
 const Input = {
   held: {},

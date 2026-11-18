@@ -13,7 +13,8 @@ const Shop = {
   DET: { x: 848, y: 144, w: 392, h: 500 },
   TX: 770, FY: 176,                       // 허수아비 x / 바닥 깊이 (화면 y = GROUND_Y + FY)
 
-  items() { return this.tab === 0 ? WEAPONS : this.tab === 1 ? ARMORS : [Gear.w(), Gear.a()]; },
+  wlist() { return WEAPONS.filter(w => !w.gacha || Gear.owns('w', w.id)); },
+  items() { return this.tab === 0 ? this.wlist() : this.tab === 1 ? ARMORS : [Gear.w(), Gear.a()]; },
   kind() { return this.tab === 0 ? 'w' : this.tab === 1 ? 'a' : (this.sel[2] === 0 ? 'w' : 'a'); },
   cur() { return this.items()[this.sel[this.tab]]; },
   btnRect() { const D = this.DET; return { x: D.x + 20, y: D.y + D.h - 70, w: D.w - 40, h: 52 }; },
@@ -37,7 +38,7 @@ const Shop = {
     pp.scale = 1.5; pp.x = pp.px = 606; pp.y = this.FY; pp.z = 0; pp.facing = 1;
     pp.visible = true; pp.state = 'ground';
     // 처음에는 장착 중인 아이템을 선택
-    for (const [i, list, k] of [[0, WEAPONS, 'w'], [1, ARMORS, 'a']]) {
+    for (const [i, list, k] of [[0, this.wlist(), 'w'], [1, ARMORS, 'a']]) {
       const id = Save.data.eq[k], ix = list.findIndex(x => x.id === id);
       this.sel[i] = Math.max(0, ix); this.scroll[i] = clamp(this.sel[i] - 3, 0, Math.max(0, list.length - this.ROWS));
     }
