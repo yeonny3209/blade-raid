@@ -53,6 +53,10 @@
 - 초상화 · CG 는 `img/story/portrait`, `img/story/cg` 에 파일을 넣으면 자동으로 쓰이고, 없으면 코드로 그린 대체 화면이 나온다.
 - 주인공 몸은 `img/hero/` 의 부품 그림을 뼈대에 붙여 그린다 (`tools/cut_hero.py` 로 부품 시트를 자른다).
 
+## 검 스킬 · 이펙트 코드
+- 검 정의(능력치 · 패시브)는 `js/items.js`, `js/gear2.js`~`gear5.js`, 검 외형은 `js/blades.js`
+- 검 고유 스킬(G · R)과 전용 이펙트는 「검의 대장간」 파일에 있다 : `js/forge.js`(공용 이펙트 도구 · 검별 궤적 · `forgeDef`) · `forge_1.js`(w1~w3) · `forge_2.js`(w4~w8) · `forge_3.js`(w9~w17) · `forge_4.js`(w18~w23) · `forge_5.js`(w24~w28) · `forge_6.js`(w29~w33) · `forge_7.js`(w34 · w35 · 기본 검 연출)
+
 ## 개발
 순수 JavaScript + Canvas 2D (프레임워크·빌드 도구 없음). 로컬 실행:
 

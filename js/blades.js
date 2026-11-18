@@ -487,6 +487,12 @@ function drawBladeBody(ctx, S, G, c, ol, plain, t, id) {
   }
   // 날빛
   ctx.strokeStyle = c[2]; ctx.lineWidth = 1.2; ctx.lineJoin = 'round'; ctx.beginPath(); B.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1] - 0.5) : ctx.moveTo(p[0], p[1] - 0.5))); ctx.stroke();
+  // 벼린 날 : 날 끝을 따라 밝은 연마 띠 + 그 안쪽 얇은 그늘선
+  if (!S.matte) {
+    const hb = B.map((q, i) => [q[0], q[1] + (M[i][1] - q[1]) * 0.24]);
+    ctx.fillStyle = S.hot ? 'rgba(255,240,200,0.45)' : blMix(c[1], c[2], 0.85); ctx.globalAlpha = 0.75; ctx.beginPath(); polyPath(ctx, _flat(B).concat(_flat(hb.slice().reverse()))); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = 0.5; ctx.beginPath(); hb.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.stroke();
+  }
   // 리카소 (가드 바로 앞 어두운 띠)
   ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); polyPath(ctx, [T[0][0], T[0][1], T[0][0] + 2.6, T[0][1], B[0][0] + 2.6, B[0][1], B[0][0], B[0][1]]); ctx.fill();
   // 훑고 지나가는 반짝임
@@ -535,6 +541,22 @@ function drawPlayerBlade(ctx, J, pal, ent, opt) {
       ctx.globalCompositeOperation = 'lighter';
       drawGlow(ctx, len * 0.55, 0, len * 0.5, rune, 0.1 + Math.sin(t * 0.12 + id) * 0.04, 1, 0.22);
       ctx.globalCompositeOperation = 'source-over';
+    }
+    if (id !== undefined && Lk.glow) {                                     // 테두리 빛 (어두운 곳에서도 검의 윤곽이 산다)
+      ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round';
+      ctx.strokeStyle = `rgba(${glow},${0.22 + Math.sin(t * 0.07 + id) * 0.06})`; ctx.lineWidth = 1.3;
+      ctx.beginPath(); polyPath(ctx, _flat(G.top).concat(_flat(G.bot.slice().reverse()))); ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    {                                                                        // 칼끝의 별빛 (가끔 반짝)
+      const ph = (t * 0.008 + id * 0.29) % 1;
+      if (ph < 0.12) {
+        const a = Math.sin(ph / 0.12 * Math.PI), tp = G.top[G.top.length - 1], bp = G.bot[G.bot.length - 1], x = (tp[0] + bp[0]) / 2 - 2, y = (tp[1] + bp[1]) / 2, r = 7 * a;
+        ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,255,255,${0.95 * a})`;
+        ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x, y - r * 0.18); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r * 0.18); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.18, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.18, y); ctx.closePath(); ctx.fill();
+        drawGlow(ctx, x, y, r * 1.6, glow, 0.5 * a); ctx.globalCompositeOperation = 'source-over';
+      }
     }
     if (gl > 0) {                                                            // 기 발산
       ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(1, gl) * 0.9;
