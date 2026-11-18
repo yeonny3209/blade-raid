@@ -16,7 +16,7 @@ BLADE_STYLE.wL1 = {
   mod: (u, i) => [i % 5 === 2 ? 2.2 : 0, i % 5 === 3 ? 2.2 : 0],
   core: 1, runes: 5, guard: 'sun', grip: 'wrap', pommel: 'gem', fx: 'holy',
   sunEtch: 1, etch: { u0: 0.06, u1: 0.7 }, gems: [0.08, 0.3], edgeGlow: { a: 0.8 }, flameLick: 1, stardust: 1,
-  holyWings: { n: 7, L: 26 }, sunRing: { u: 0.55, r: 12 },
+  holyWings: { n: 7, L: 30 }, flameEdge: { n: 16, h: 11, u0: 0.1, u1: 0.98 }, sunRing: { u: [0.5, 0.64], r: 19 },
 };
 
 // 적중 : 십자 섬광 · 퍼지는 고리 · 떠오르는 성화 깃털
@@ -48,7 +48,7 @@ const WEAPON_SUNFLAME = {
   atk: 2.4, crit: 0.18, critDmg: 2.2, stop: 1.4, shake: 1.6, kx: 1.2, move: 1.1, col: SF, snd: 'myth', part: 'sacred', pitch: 1.0, swingPitch: 1.05,
   feel: '맑은 종소리와 타오르는 불꽃 소리',
   desc: '한정 검 : 공격력이 가장 높은 일반 검의 1.5배. 적중마다 「성화 각인」이 쌓이고(+5% 피해, 최대 5) 5번째 적중에 성화가 폭발해 220% 피해 + 화상, 불기둥 셋이 내린다. 불타는 적에게 피해 +25%, 치명타는 근처 적 둘에게 성화 번개가 튄다. 처치하면 폭발하며 체력을 되찾는다. 치명타율 +18%, 치명타 피해 x2.2, 이동속도 +10%.',
-  look: { c: ['#5a3a14', '#f0c860', '#fffbe8'], hw: 7.4, L: 1.3, guard: 'sun', glow: SF, rune: '255,236,170', trim: ['#7a3c10', '#f4b43c', '#fff2b0'], taper: 0.06 },
+  look: { c: ['#a8863e', '#fff0c8', '#ffffff'], hw: 7.4, L: 1.3, guard: 'sun', glow: SF, rune: '255,236,170', trim: ['#7a3c10', '#f4b43c', '#fff2b0'], taper: 0.06 },
   amb: ['ember', SF, 0.4],
   mod(p, t) { return (1 + 0.05 * Math.min(5, p.sfN || 0) + (p.sfT > 0 ? 0.4 : 0)) * (t && t.st && t.st.burn && t.st.burn.t > 0 ? 1.25 : 1); },
   hit(p, t, dmg, o) {

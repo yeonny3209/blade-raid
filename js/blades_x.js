@@ -19,6 +19,7 @@ const _bxBand = (ctx, G, a0, a1, col) => {
 // ---------- 칼날 뒤에 깔리는 것 ----------
 function drawBladeBack(ctx, S, G, c, trim, ol, glow, rune, t) {
   const T = G.top, B = G.bot;
+  if (S.flameEdge) _bxFlameEdge(ctx, S, G, t);
   if (S.holyWings) _bxHolyWings(ctx, S, t, ol, glow);
   if (S.spines) {                                         // 등날 가시 (날 끝쪽으로 갈수록 낮아진다)
     const sp = S.spines;
@@ -230,31 +231,51 @@ function drawBladeExtra(ctx, S, G, c, trim, ol, glow, rune, t, id) {
   }
 }
 
-// ---------- 한정 검 장식 : 성스러운 날개 · 떠도는 태양 고리 (스타일 holyWings / sunRing) ----------
-function _bxHolyWings(ctx, S, t, ol, glow) {
-  const hw = S.holyWings, n = hw.n || 7, fl = Math.sin(t * 0.06) * 0.06;
-  for (const side of [-1, 1]) {
-    for (let i = n - 1; i >= 0; i--) {
-      const k = i / (n - 1), a = side * (-(Math.PI * 0.5) - 0.18 - k * 0.8) + fl * side, L = (hw.L || 22) * (0.55 + k * 0.7);
-      const ex = 2 + Math.cos(a) * L, ey = Math.sin(a) * L, w = 3.4 + k * 1.2;
-      ctx.save(); ctx.translate(2, 0); ctx.rotate(a);
-      ctx.beginPath(); ctx.moveTo(0, -w * 0.6); ctx.quadraticCurveTo(L * 0.55, -w * 1.5, L, 0); ctx.quadraticCurveTo(L * 0.55, w * 1.5, 0, w * 0.6); ctx.closePath();
-      ctx.lineJoin = 'round'; ctx.lineWidth = 1.6; ctx.strokeStyle = ol; ctx.stroke();
-      const g = ctx.createLinearGradient(0, 0, L, 0); g.addColorStop(0, '#fff3c8'); g.addColorStop(1, i % 2 ? '#ffe08a' : '#ffffff'); ctx.fillStyle = g; ctx.fill();
-      ctx.strokeStyle = 'rgba(190,140,50,0.6)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L * 0.92, 0); ctx.stroke();
-      ctx.restore();
-    }
-  }
-  ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 2, 0, 26, glow, 0.35 + Math.sin(t * 0.1) * 0.12); ctx.restore();
-}
-function _bxSunRing(ctx, S, G, t, glow) {
-  const sr = S.sunRing, u = sr.u || 0.5, p = _bxAt(G.mid, u), R = sr.r || 11, a0 = t * 0.045;
-  ctx.save(); ctx.translate(p[0], p[1]); ctx.globalCompositeOperation = 'lighter';
-  for (let k = 0; k < 2; k++) {
-    ctx.save(); ctx.rotate(k ? 0.35 : -0.35); ctx.strokeStyle = `rgba(${glow},${0.8 - k * 0.3})`; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.ellipse(0, 0, 3.2, R, 0, 0, TAU); ctx.stroke();
-    for (let i = 0; i < 4; i++) { const a = a0 * (k ? -1 : 1) + i * Math.PI / 2; ctx.fillStyle = 'rgba(255,248,220,0.95)'; ctx.beginPath(); ctx.arc(Math.cos(a) * 3.2, Math.sin(a) * R, 1.5, 0, TAU); ctx.fill(); }
+// ---------- 한정 검 장식 : 겹겹의 날개 · 칼날 가장자리의 불꽃 · 우뚝 선 태양 고리 (스타일 holyWings / flameEdge / sunRing) ----------
+function _bxFeatherWing(ctx, side, base, spread, n, L0, ol, fl) {
+  for (let i = n - 1; i >= 0; i--) {
+    const k = i / (n - 1), a = side * (base + k * spread) + fl * side, L = L0 * (0.55 + k * 0.7), w = 3.4 + k * 1.3;
+    ctx.save(); ctx.translate(2, 0); ctx.rotate(a);
+    ctx.beginPath(); ctx.moveTo(0, -w * 0.6); ctx.quadraticCurveTo(L * 0.55, -w * 1.5, L, 0); ctx.quadraticCurveTo(L * 0.55, w * 1.5, 0, w * 0.6); ctx.closePath();
+    ctx.lineJoin = 'round'; ctx.lineWidth = 1.6; ctx.strokeStyle = ol; ctx.stroke();
+    const g = ctx.createLinearGradient(0, 0, L, 0); g.addColorStop(0, '#fff3c8'); g.addColorStop(1, i % 2 ? '#ffd870' : '#ffffff'); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = 'rgba(190,140,50,0.6)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L * 0.92, 0); ctx.stroke();
     ctx.restore();
   }
-  drawGlow(ctx, 0, 0, 10, glow, 0.35);
+}
+function _bxHolyWings(ctx, S, t, ol, glow) {
+  const hw = S.holyWings, n = hw.n || 7, fl = Math.sin(t * 0.06) * 0.06, L = hw.L || 22;
+  for (const side of [-1, 1]) {
+    _bxFeatherWing(ctx, side, -(Math.PI * 0.5) + 0.45, 0.5, Math.max(4, n - 2), L * 0.78, ol, -fl);       // 앞으로 기운 작은 날개
+    _bxFeatherWing(ctx, side, -(Math.PI * 0.5) - 0.2, -0.8, n, L, ol, fl);                                // 뒤로 젖힌 큰 날개
+  }
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 2, 0, 28, glow, 0.38 + Math.sin(t * 0.1) * 0.12); ctx.restore();
+}
+// 칼날 위·아래 가장자리에서 일렁이는 금빛 불꽃 (칼날 뒤에 깔려 날을 감싸 보인다)
+function _bxFlameEdge(ctx, S, G, t) {
+  const fe = S.flameEdge, n = fe.n || 14;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const [A, dir] of [[G.top, -1], [G.bot, 1]]) {
+    for (let k = 0; k < n; k++) {
+      const u = fe.u0 + (k + 0.5) / n * (fe.u1 - fe.u0), p = _bxAt(A, u), ph = t * 0.12 + k * 1.9 + (dir > 0 ? 1.3 : 0);
+      const h = fe.h * (0.6 + 0.4 * Math.sin(ph)) * (1 - 0.35 * (u - fe.u0)), sw = Math.sin(ph * 0.7) * 2.2, w = 3.2;
+      const g = ctx.createLinearGradient(0, p[1], 0, p[1] + dir * h); g.addColorStop(0, 'rgba(255,248,200,0.95)'); g.addColorStop(0.5, 'rgba(255,200,70,0.8)'); g.addColorStop(1, 'rgba(255,130,30,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(p[0] - w, p[1]); ctx.quadraticCurveTo(p[0] - w * 0.4 + sw * 0.4, p[1] + dir * h * 0.55, p[0] + sw, p[1] + dir * h); ctx.quadraticCurveTo(p[0] + w * 0.5 + sw * 0.4, p[1] + dir * h * 0.5, p[0] + w, p[1]); ctx.closePath(); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+function _bxSunRing(ctx, S, G, t, glow) {
+  const sr = S.sunRing, us = [].concat(sr.u || 0.55), R = sr.r || 12;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  us.forEach((u, k) => {
+    const p = _bxAt(G.mid, u), a0 = t * 0.04 * (k % 2 ? -1 : 1);
+    ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(k % 2 ? 0.1 : -0.1);
+    ctx.strokeStyle = `rgba(${glow},0.95)`; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.ellipse(0, 0, 3.4, R, 0, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,250,225,0.6)'; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.ellipse(0, 0, 3.4, R, 0, 0, TAU); ctx.stroke();
+    for (let i = 0; i < 4; i++) { const a = a0 + i * Math.PI / 2; ctx.fillStyle = 'rgba(255,252,235,0.98)'; ctx.beginPath(); ctx.arc(Math.cos(a) * 3.4, Math.sin(a) * R, 1.7, 0, TAU); ctx.fill(); }
+    drawGlow(ctx, 0, 0, 9, glow, 0.28);
+    ctx.restore();
+  });
   ctx.restore();
 }

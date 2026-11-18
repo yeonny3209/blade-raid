@@ -109,6 +109,20 @@ const Gacha = {
 // ============================================================
 //  소환 화면
 // ============================================================
+// 한정 검 키아트 (img/gacha/sunflame.webp) — 불러오지 못하면 코드로 그린 검을 쓴다
+const GACHA_ART = { ok: false, img: new Image() };
+GACHA_ART.img.onload = () => {                                      // 검이 있는 띠만 잘라 어두운 배경을 투명하게 만든다
+  try {
+    const sw = 768, sh = 580, c = document.createElement('canvas'); c.width = sw; c.height = sh;
+    const g = c.getContext('2d'); g.drawImage(GACHA_ART.img, 0, 360, sw, sh, 0, 0, sw, sh);
+    const d = g.getImageData(0, 0, sw, sh), p = d.data;
+    for (let i = 0; i < p.length; i += 4) { const m = Math.max(p[i], p[i + 1], p[i + 2]); p[i + 3] = Math.max(0, Math.min(255, (m - 46) * 5)); }
+    g.putImageData(d, 0, 0); GACHA_ART.cv = c;
+  } catch (e) { GACHA_ART.cv = null; }
+  GACHA_ART.ok = true;
+};
+GACHA_ART.img.src = './img/gacha/sunflame.webp';
+
 const GachaUI = {
   t: 0, pp: null, sel: 1, msg: '', msgT: 0, res: null, rt: 0, cs: 100, best: 'N',
   backRect() { return { x: W - 220, y: 54, w: 180, h: 34 }; },
@@ -188,9 +202,16 @@ const GachaUI = {
     ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, 340, 0, TAU); ctx.fill();
     for (let i = 0; i < 26; i++) { const k = (t * 0.6 + i * 53) % 400, x = (i * 97) % 760 + 20, y = 640 - k * 1.5; ctx.fillStyle = `rgba(${i % 2 ? col : '255,246,214'},${0.5 * (1 - k / 400)})`; ctx.beginPath(); ctx.arc(x + Math.sin(t * 0.02 + i) * 14, y, 2 + (i % 3), 0, TAU); ctx.fill(); }
     ctx.restore();
-    // 바닥 그림자 · 검 든 주인공
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.ellipse(360, 568, 130, 24, 0, 0, TAU); ctx.fill();
-    this.pp.draw(ctx);
+    // 배너 : 한정 검 키아트 (둥실 떠 있다). 이미지를 못 불러오면 검 든 주인공
+    if (GACHA_ART.ok) {
+      const bob = Math.sin(t * 0.04) * 8;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 380, 440 + bob, 300, col, 0.28 + Math.sin(t * 0.05) * 0.05); ctx.restore();
+      this.drawArt(ctx, 380, 440 + bob, 640, 1);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(380, 690, 150 - bob * 2, 14, 0, 0, TAU); ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.ellipse(360, 568, 130, 24, 0, 0, TAU); ctx.fill();
+      this.pp.draw(ctx);
+    }
 
     // 제목 · 재화
     UI.text(ctx, '소  환', 40, 48, { size: 32, fill: '#ffe9a6', stroke: 5 });
@@ -201,9 +222,9 @@ const GachaUI = {
     this.drawShard(ctx, W - 40, 112, G.sh);
 
     // 배너 설명
-    UI.text(ctx, '한 정  소 환', 360, 150, { size: 17, align: 'center', fill: '#fff1c0', stroke: 4 });
-    UI.text(ctx, W_.name, 360, 196, { size: 40, align: 'center', fill: '#fffbe8', stroke: 7, italic: true });
-    UI.text(ctx, W_.sub, 360, 222, { size: 15, font: FONT_B, weight: 700, align: 'center', fill: `rgb(${col})`, stroke: 4 });
+    UI.text(ctx, '한 정  소 환', 360, 128, { size: 17, align: 'center', fill: '#fff1c0', stroke: 4 });
+    UI.text(ctx, W_.name, 360, 172, { size: 40, align: 'center', fill: '#fffbe8', stroke: 7, italic: true });
+    UI.text(ctx, W_.sub, 360, 198, { size: 15, font: FONT_B, weight: 700, align: 'center', fill: `rgb(${col})`, stroke: 4 });
 
     // 오른쪽 : 정보 패널
     const px = 700, py = 140, pw = 540;
@@ -252,6 +273,15 @@ const GachaUI = {
     UI.text(ctx, s, x0 + 22, y, { size: 18, fill: can ? '#ffe9a6' : '#8a8a9a', stroke: 4 });
   },
 
+  // 키아트 그리기 : 검이 있는 가운데 띠만 잘라 w 너비로 그린다. 어두운 배경은 screen 합성으로 녹인다
+  drawArt(ctx, cx, cy, w, a = 1, rot = 0) {
+    if (!GACHA_ART.ok) return false;
+    const sh = 580, sw = 768, h = w * sh / sw;
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, cy); ctx.rotate(rot);
+    if (GACHA_ART.cv) ctx.drawImage(GACHA_ART.cv, -w / 2, -h / 2, w, h);
+    else { ctx.globalCompositeOperation = 'screen'; ctx.drawImage(GACHA_ART.img, 0, 360, sw, sh, -w / 2, -h / 2, w, h); }
+    ctx.restore(); return true;
+  },
   // 한정 검 그리기 (상점 자세히 보기와 같은 방식)
   drawSword(ctx, cx, cy, sc, ang, t, a = 1) {
     const it = WEAPON_BY_ID[GACHA.BANNER], Lk = it.look, len = RIG_PLAYER.wlen * (Lk.L || 1);
@@ -327,7 +357,8 @@ const GachaUI = {
     const ang = -Math.PI / 2 + (1 - e) * TAU * 2.2, sc = 2.3 + (1 - e) * 1.0;
     if (t > 14) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, cx, lerp(sy0, sy1, e), 230, '255,214,120', 0.5 * Math.min(1, e + 0.3)); ctx.restore();
-      this.drawSword(ctx, cx, lerp(sy0, sy1, e), sc, ang, rt, Math.min(1, (t - 14) / 10));
+      if (GACHA_ART.ok) this.drawArt(ctx, cx, lerp(sy0, sy1, e) + 10, 640 + (1 - e) * 260, Math.min(1, (t - 14) / 10), (1 - e) * 0.6 - 0.05);
+      else this.drawSword(ctx, cx, lerp(sy0, sy1, e), sc, ang, rt, Math.min(1, (t - 14) / 10));
     }
     // 검이 멈추는 순간 : 두 번째 섬광 + 베기 고리
     if (rt >= 168 && rt < 176) { ctx.fillStyle = `rgba(255,250,235,${(1 - Math.abs(rt - 172) / 4) * 0.7})`; ctx.fillRect(0, 0, W, H); }
@@ -373,10 +404,11 @@ const GachaUI = {
         UI.text(ctx, o.name, x + cw / 2, y + ch * 0.7, { size: 15 * m, align: 'center', fill: '#fff', stroke: 4 });
         UI.text(ctx, `+${fmt(o.gold)} G`, x + cw / 2, y + ch * 0.82, { size: 15 * m, font: FONT_B, weight: 800, align: 'center', fill: '#ffe9a6', stroke: 4 });
       } else {
-        UI.text(ctx, o.name, x + cw / 2, y + ch * 0.5, { size: res.length === 1 ? 26 : 17, align: 'center', fill: '#fffbe8', stroke: 5 });
+        const art = this.drawArt(ctx, x + cw / 2, y + ch * 0.4, cw * 0.92, 1), ny = art ? 0.64 : 0.5, ty = art ? 0.78 : 0.68, ly = art ? 0.9 : 0.82;
+        UI.text(ctx, o.name, x + cw / 2, y + ch * ny, { size: res.length === 1 ? 26 : 17, align: 'center', fill: '#fffbe8', stroke: 5 });
         const tx = o.kind === 'new' ? '새로 획득!' : o.kind === 'brk' ? `돌파 ${o.n} / ${GACHA.MAXBRK}` : `최대 돌파 · 성화 +${o.sh}`;
-        UI.text(ctx, tx, x + cw / 2, y + ch * 0.68, { size: res.length === 1 ? 22 : 15, align: 'center', fill: o.kind === 'new' ? '#7dffa0' : '#ffd24a', stroke: 4 });
-        UI.text(ctx, '한정 검', x + cw / 2, y + ch * 0.82, { size: 13 * (res.length === 1 ? 1.3 : 1), font: FONT_B, weight: 700, align: 'center', fill: `rgb(${c})`, stroke: 3 });
+        UI.text(ctx, tx, x + cw / 2, y + ch * ty, { size: res.length === 1 ? 22 : 15, align: 'center', fill: o.kind === 'new' ? '#7dffa0' : '#ffd24a', stroke: 4 });
+        UI.text(ctx, '한정 검', x + cw / 2, y + ch * ly, { size: 13 * (res.length === 1 ? 1.3 : 1), font: FONT_B, weight: 700, align: 'center', fill: `rgb(${c})`, stroke: 3 });
       }
       ctx.restore();
     }

@@ -1,6 +1,6 @@
 // 오프라인 캐시 : 한 번 실행하면 인터넷 없이도 플레이 가능
-const CACHE = 'blade-raid-v44';
-const BUILD = '20261120g';
+const CACHE = 'blade-raid-v47';
+const BUILD = '20261120j';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './js/util.js?v=' + BUILD, './js/input.js?v=' + BUILD, './js/audio.js?v=' + BUILD, './js/rig.js?v=' + BUILD, './js/paint.js?v=' + BUILD, './js/characters.js?v=' + BUILD, './js/blades.js?v=' + BUILD, './js/blades_x.js?v=' + BUILD, './js/hero2.js?v=' + BUILD, './js/cast.js?v=' + BUILD, './js/cast_body.js?v=' + BUILD,
@@ -10,7 +10,7 @@ const ASSETS = [
   ...['boss/wyrm', 'boss/golem', 'boss/toad', 'boss/spider', 'boss/seraph', 'boss/furnace', 'boss/dragon', 'boss/vampire', 'boss/maw', 'boss/crystal', 'boss/oni', 'boss/clock', 'boss/cosmic', 'boss/chaos', 'mob/goblin', 'mob/thrower', 'mob/orc', 'mob/mage', 'mob/mushroom', 'mob/slime', 'mob/wolf', 'mob/rat', 'mob/bat', 'mob/yeti', 'mob/aegis', 'mob/mummy', 'mob/drone', 'mob/imp', 'mob/pod', 'mob/wisp'].map(n => './img/art/' + n + '.webp?v=' + BUILD),
   ...['head', 'torso', 'pelvis', 'uarm', 'farm', 'hand', 'thigh', 'shin', 'foot', 'cape', 'sword'].map(n => './img/hero/' + n + '.webp?v=' + BUILD), './img/hero/meta.json?v=' + BUILD,
   './fonts/BlackHanSans-Regular.ttf',
-  './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/icon-180.png',
+  './img/gacha/sunflame.webp', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/icon-180.png',
 ];
 
 self.addEventListener('install', e => {
