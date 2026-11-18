@@ -264,6 +264,9 @@ Object.assign(Prog, {
   armNodes(a) { const out = [], seen = {}; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk && !n.xp) { if (n.ex) { if (seen[n.ex]) continue; seen[n.ex] = 1; } out.push(n); } return out; },
   armOpen(a) { return this.armNodes(a).every(n => this.r(n.id) > 0 || (n.ex && this.exTaken(n))); },
   armOpenCount(a) { return this.armNodes(a).filter(n => this.r(n.id) > 0 || (n.ex && this.exTaken(n))).length; },
+  // 각성 조건 : ① 그 갈래로 전직 ② 갈래의 별을 모두 한 번씩 밝히기 ③ 2차 전직(확장 별 SK_JOB_T2개)
+  awkReady(a) { return this.job() === a && this.jobTier() >= 2 && this.armOpen(a); },
+  awkWhy(a) { if (this.job() !== a) return this.job() ? `「${SK_ARMS[a].short}」으로 전직해야 합니다 (지금은 ${this.jobName()})` : `「${SK_ARMS[a].short}」의 별을 밝혀 전직해야 합니다`; if (!this.armOpen(a)) return `「${SK_ARMS[a].name}」의 모든 별을 하나씩 밝혀야 합니다 (${this.armOpenCount(a)} / ${this.armNodes(a).length})`; return `2차 전직이 필요합니다 — 확장 별을 ${SK_JOB_T2}개 이상 밝히세요`; },
   armDone(a) { for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk && !n.xp && this.r(n.id) < n.max && !(n.ex && this.exTaken(n))) return false; return true; },
 
   // 배울 수 있는지 + 안 되는 이유
@@ -271,7 +274,7 @@ Object.assign(Prog, {
     if (n.type === 'core') return { ok: false, why: '처음부터 밝혀져 있는 별입니다', core: true };
     if (n.awk) {
       if (this.r(n.id)) return { ok: false, why: '이미 각성했습니다', max: true };
-      if (!this.st().O[n.awk]) return { ok: false, why: `「${SK_ARMS[n.awk].name}」의 모든 별을 하나씩 밝혀야 합니다 (${this.armOpenCount(n.awk)} / ${this.armNodes(n.awk).length})` };
+      if (!this.awkReady(n.awk)) return { ok: false, why: this.awkWhy(n.awk) };
       return { ok: true, awk: true };
     }
     const r = this.r(n.id);
@@ -1072,9 +1075,9 @@ const TreeUI = {
     // 각성 별 이름표
     for (const n of SKN) {
       if (!n.awk) continue;
-      const S = this.S[n.id], D = SK_AWK[n.awk], y = n.y + SK_TYPE.a.R * 1.72 + 18, done = Prog.st().O[n.awk];
+      const S = this.S[n.id], D = SK_AWK[n.awk], y = n.y + SK_TYPE.a.R * 1.72 + 18, done = Prog.awkReady(n.awk);
       UI.text(ctx, D.name, n.x, y, { size: 15, align: 'center', fill: S.lit ? '#ffe9a6' : done ? '#fff' : '#8a94b4', stroke: 4 });
-      UI.text(ctx, S.lit ? '각성 완료' : done ? '각성할 수 있다!' : `${Prog.armOpenCount(n.awk)} / ${Prog.armNodes(n.awk).length}`, n.x, y + 16, { size: 11, align: 'center', font: FONT_B, weight: 800, fill: S.lit ? '#ffd24a' : done ? '#7dffa0' : '#6a7494', stroke: 3 });
+      UI.text(ctx, S.lit ? '각성 완료' : done ? '각성할 수 있다!' : Prog.armOpen(n.awk) && Prog.job() === n.awk ? '2차 전직 필요' : `${Prog.armOpenCount(n.awk)} / ${Prog.armNodes(n.awk).length}`, n.x, y + 16, { size: 11, align: 'center', font: FONT_B, weight: 800, fill: S.lit ? '#ffd24a' : done ? '#7dffa0' : '#6a7494', stroke: 3 });
     }
     // 갈래 이름 (가장 바깥 별들 사이) · 택일 표시
     for (const a of SK_ARM_KEYS) {
@@ -1133,7 +1136,7 @@ const TreeUI = {
     const t = this.t;
     for (const n of SKN) {
       if (!n.awk) continue;
-      const S = this.S[n.id], done = Prog.st().O[n.awk], c = n.col;
+      const S = this.S[n.id], done = Prog.awkReady(n.awk), c = n.col;
       for (const id of n.tips) {
         const o = SKN_BY[id], d = Math.hypot(n.x - o.x, n.y - o.y), ux = (n.x - o.x) / d, uy = (n.y - o.y) / d;
         const x0 = o.x + ux * (SK_TYPE[o.type].R + 3), y0 = o.y + uy * (SK_TYPE[o.type].R + 3), x1 = n.x - ux * (SK_TYPE.a.R + 4), y1 = n.y - uy * (SK_TYPE.a.R + 4);
@@ -1442,7 +1445,7 @@ const TreeUI = {
     // 조건 목록
     if (n.type !== 'core' && !S.lit) {
       const cond = [];
-      if (n.awk) cond.push([!!Prog.st().O[n.awk], `${SK_ARMS[n.awk].name}의 모든 별 밝히기  ${Prog.armOpenCount(n.awk)} / ${Prog.armNodes(n.awk).length}`]);
+      if (n.awk) { cond.push([Prog.job() === n.awk, `「${SK_ARMS[n.awk].short}」으로 전직`]); cond.push([Prog.armOpen(n.awk), `${SK_ARMS[n.awk].name}의 모든 별 밝히기  ${Prog.armOpenCount(n.awk)} / ${Prog.armNodes(n.awk).length}`]); cond.push([Prog.job() === n.awk && Prog.jobTier() >= 2, `2차 전직 (확장 별 ${SK_JOB_T2}개 이상)`]); }
       else cond.push([S.linked, '밝혀진 별과 이어져 있음']);
       if (n.req) cond.push([Prog.r(n.req) > 0, `「${SKN_BY[n.req].name}」 1랭크 이상`]);
       if (n.lv) cond.push([Prog.lv() >= n.lv, `캐릭터 Lv.${n.lv} 이상`]);
