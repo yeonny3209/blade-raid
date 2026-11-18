@@ -30,7 +30,7 @@ function weaponFrame(ctx, hand, angDeg) {
 //  플레이어 : 검귀 카엘
 // ============================================================
 const RIG_PLAYER = {
-  scale: 1.1, thigh: 30, shin: 31, torso: 37, neck: 6, headR: 15.5, uArm: 22, fArm: 21,
+  scale: 1.1, thigh: 33, shin: 34, torso: 36, neck: 6, headR: 15.5, uArm: 22, fArm: 21,
   shDrop: 5, shOff: 3, footH: 3, wWaist: 11, wChest: 13, wlen: 88,
   pal: {
     ol: '#120f18',
@@ -267,9 +267,9 @@ function drawPlayer(ctx, J, pal, ent, opt) {
   if (det) { ctx.fillStyle = pal.bracer[2]; ctx.beginPath(); ctx.arc(J.hand1.x - 1.2, J.hand1.y - 1.6, 2.4, 0, TAU); ctx.fill(); ctx.strokeStyle = ol; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(J.hand1.x + 0.6, J.hand1.y + 0.8, 3.2, 0.2, 2.2); ctx.stroke(); }
 }
 
-function drawPlayerHead(ctx, J, pal, ow, opt) {
+function drawPlayerHead(ctx, J, pal, ow, opt, sc = 1.24) {
   const ol = pal.ol, h = J.head, det = !opt.ghost;
-  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(J.headRot); ctx.scale(1.24, 1.24);
+  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(J.headRot); ctx.scale(sc, sc);
   // 뒷머리 : 뒤로 뻗친 굵은 가닥
   olPoly(ctx, [-1, -15.5, -8.5, -18.5, -8, -13.5, -17.5, -16.5, -13.5, -9.5, -23, -8, -15.5, -3.5, -22.5, 2.5, -14, 2.5, -17, 9, -9.5, 6.5, -8, 12.5, -1.5, 7.5], pal.hair[1], ol, ow);
   if (det) { ctx.fillStyle = pal.hair[0]; ctx.beginPath(); polyPath(ctx, [-12.5, -2, -22.5, 2.5, -14, 2.5, -17, 9, -9.5, 6.5, -8, 12.5, -1.5, 7.5, -5, 1]); ctx.fill(); }
