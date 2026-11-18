@@ -68,6 +68,24 @@ const Vfx = {
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   },
 
+  // ---------- 분위기 : 빛줄기 + 바닥에 깔리는 안개 (테마 색) ----------
+  atmo(ctx, camX, r) {
+    if (!this.on || Opt.get().fx === false) return;
+    const th = r.def && r.def.theme, C = (typeof AMBIENT !== 'undefined' && (AMBIENT[th] || AMBIENT.lair)) || null;
+    const col = (C && C.cols && C.cols[0]) || '180,200,255', t = Game.time, span = W + 700;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 4; i++) {                                                     // 비스듬한 빛줄기
+      const x = (((i * 413 - camX * 0.28 + t * (i % 2 ? 0.1 : -0.08)) % span) + span) % span - 350, w = 70 + (i * 37) % 60, a = 0.05 + 0.025 * Math.sin(t * 0.012 + i * 2);
+      const g = ctx.createLinearGradient(0, 0, 0, 440); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + w, 0); ctx.lineTo(x + w - 150, 440); ctx.lineTo(x - 150 - w * 0.4, 440); ctx.closePath(); ctx.fill();
+    }
+    for (let i = 0; i < 6; i++) {                                                     // 바닥 안개
+      const x = (((i * 290 - camX * 0.5 + t * 0.35 * (i % 2 ? 1 : 0.6)) % span) + span) % span - 350, y = GROUND_Y + 26 + Math.sin(t * 0.01 + i) * 12;
+      drawGlow(ctx, x, y, 300, col, 0.045, 1, 0.28);
+    }
+    ctx.restore();
+  },
+
   tick() {
     if (this.ghost > 0) this.ghost--; if (this.chroma > 0) this.chroma--; this.pulse = Math.max(0, this.pulse - 0.05);
     const G = Game.combo; if (!G) return;

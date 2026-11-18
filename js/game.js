@@ -531,6 +531,7 @@ const Game = {
     }
     ctx.translate(this.shx, this.shy);
     r.drawBack(ctx, camX);
+    Vfx.atmo(ctx, camX, r);
     if (this.dim > 0.01) { ctx.fillStyle = `rgba(0,0,0,${this.dim})`; ctx.fillRect(-40, -40, W + 80, H + 80); }
 
     ctx.save();
