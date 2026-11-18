@@ -130,6 +130,8 @@ const Game = {
 
   updateTitle() {
     const tp = this.titleP;
+    // 타이틀의 주인공은 항상 새 기본 모습(견습 검사복) + 장착한 검으로 보여 준다
+    if (tp.adef !== ARMORS[0] || tp.wdef !== Gear.w()) tp.setGear(Gear.w(), ARMORS[0]);
     tp.px = tp.x; tp.pz = tp.z;
     tp.stepAnim(); tp.updateChains();
     tp.bladeGlow = 0.5 + Math.sin(this.time * 0.05) * 0.3;
