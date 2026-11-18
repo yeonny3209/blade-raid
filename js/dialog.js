@@ -157,6 +157,7 @@ class Actor {
       b.setGear(weaponDef(o.w || C.w || 'w0'), armorDef(o.look || C.look || 'a0'));
       b.scale = o.scale || C.scale || 1; b.isPlayer = false;
       b.reset(x, y); b.setState('cine'); b.facing = this.facing;
+      if (NPC_DEFS[kind]) b.npc = NPC_DEFS[kind];                                // 인물 도감에 있으면 고유한 얼굴 · 옷으로 그린다
     }
     this.body.x = x; this.body.y = y;
   }

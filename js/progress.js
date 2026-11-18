@@ -14,7 +14,7 @@ const Prog = {
   lv() { return (Save.data && Save.data.lv) || 1; },
   xp() { return (Save.data && Save.data.xp) || 0; },
   need(L) { return Math.round(40 * Math.pow(L, 1.6)); },
-  earned() { const L = this.lv(); return (L - 1) + Math.floor(L / 10); },
+  earned() { const L = this.lv(); return (L - 1) + Math.floor(L / 5); },
 
   // ---------- 경험치 ----------
   xpFor(e) {

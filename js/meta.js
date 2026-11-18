@@ -5,7 +5,7 @@
 
 // ---------- 설정 ----------
 const Opt = {
-  defaults: { master: 0.9, music: 0.5, sfx: 1, shake: 1, dmg: true, vib: true, voice: true },
+  defaults: { master: 0.9, music: 0.5, sfx: 1, shake: 1, dmg: true, fx: true, vib: true, voice: true },
   get() { return (Save.data && Save.data.opt) || this.defaults; },
   apply() {
     const o = this.get();

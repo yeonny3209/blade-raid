@@ -265,6 +265,7 @@ const Game = {
       this.room.update();
     }
     FX.update();
+    Vfx.tick();
 
     // 콤보
     if (this.combo.t > 0) { this.combo.t--; if (this.combo.t <= 0) { this.combo.n = 0; this.combo.dmg = 0; } }
@@ -557,6 +558,7 @@ const Game = {
 
     r.drawFront(ctx, camX);
     ctx.restore();
+    Vfx.post(ctx);                                                              // 후처리 : 빛번짐 · 대비 · 강타 잔상
     WS.overlay(ctx);
     Story.drawScreen(ctx);
 

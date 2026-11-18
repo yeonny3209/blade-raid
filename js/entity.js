@@ -287,6 +287,7 @@ function applyHit(att, tgt, hit, o = {}) {
     Game.onPlayerHit(dmg, tgt, hit);
     if (hit.mp) att.mp = Math.min(att.mpMax, att.mp + hit.mp);
   }
+  if (typeof Vfx !== 'undefined') Vfx.onHit(att, tgt, hit, { X, Y, dir, ipw, crit, dmg, stop, back, counter, hz, killed: !tgt.isPlayer && (tgt.hp <= 0 || tgt.dying || tgt.dead) });
   return dmg;
 }
 

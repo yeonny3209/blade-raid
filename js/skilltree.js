@@ -169,6 +169,33 @@ const SK_AWK = {
 };
 for (const a of SK_ARM_KEYS) { const A = SK_AWK[a]; skn('aw_' + a, a, 0, 0, 'a', 1, A.name, A.g, null, { awk: a, fixed: A.pos, tips: A.tips, d: A.d }); }
 
+// ---------- 확장 별 (skilltree_x.js) : 갈래마다 18개 ----------
+Object.assign(SK_STAT, SK_STAT_X);
+const SK_XTIP = { p: ['p8', 'p9'], s: ['sr'], w: ['w8', 'w9'], v: ['v8', 'v9'] };
+const SK_XEDGES = [];
+for (const a of SK_ARM_KEYS) {
+  const X = SK_X[a], id = k => 'x_' + a + '_' + k;
+  const put = (k, r, off, type, def, lv) => {
+    const keyed = typeof def[2] === 'string';
+    skn(id(k), a, r, off, type, keyed ? 1 : def[3], def[0], def[1], keyed ? null : def[2], Object.assign({ xp: true, lv }, keyed ? { key: def[2], d: def[3] } : def[4] ? { d: def[4] } : {}));
+  };
+  put('hub', 5.1, 0, 'n', X.hub, 25);
+  for (const t of SK_XTIP[a]) SK_XEDGES.push([t, id('hub')]);
+  [['a', -30, 5.7], ['b', 0, 5.9], ['c', 30, 5.7]].forEach(([ln, off, r0]) => {
+    for (let i = 0; i < 4; i++) {
+      const last = i === 3, o = last ? off * 0.87 : off;
+      put(ln + (i + 1), r0 + i * 0.95, o, last ? 'k' : 's', X[ln][i], 28 + i * 4 + (last ? 4 : 0));
+      SK_XEDGES.push([i ? id(ln + i) : id('hub'), id(ln + (i + 1))]);
+    }
+  });
+  put('x1', 6.35, -15, 's', X.x1, 30); put('x2', 6.35, 15, 's', X.x2, 30);
+  SK_XEDGES.push([id('a1'), id('x1')], [id('b1'), id('x1')], [id('b1'), id('x2')], [id('c1'), id('x2')]);
+  put('br1', 8.3, -14, 'n', X.br1, 38); put('br2', 8.3, 14, 'n', X.br2, 38);
+  SK_XEDGES.push([id('a3'), id('br1')], [id('b3'), id('br1')], [id('b3'), id('br2')], [id('c3'), id('br2')]);
+  put('crown', 10.0, 0, 'k', X.crown, 55);
+  SK_XEDGES.push([id('a4'), id('crown')], [id('b4'), id('crown')], [id('c4'), id('crown')]);
+}
+
 const SK_EDGES = [
   ['core', 'p1'], ['core', 's1'], ['core', 'w1'], ['core', 'v1'],
   ['s1', 'sq'], ['s1', 'se'], ['s1', 'st'], ['s1', 'sf'], ['sq', 'sh'], ['se', 'sh'], ['se', 'sl'], ['st', 'sl'], ['st', 'sb'], ['sf', 'sb'],
@@ -180,6 +207,7 @@ for (const a of ['p', 'w', 'v']) {
   const E = [[1, 2], [1, 3], [2, 4], [3, 4], [2, 5], [3, 6], [4, 7], [5, 7], [6, 7], [5, 8], [7, 8], [7, 9], [6, 9]];
   for (const [i, j] of E) SK_EDGES.push([a + i, a + j]);
 }
+for (const e of SK_XEDGES) SK_EDGES.push(e);
 const SKN_BY = Object.fromEntries(SKN.map(n => [n.id, n]));
 const SK_ADJ = Object.fromEntries(SKN.map(n => [n.id, []]));
 for (const [a, b] of SK_EDGES) { SK_ADJ[a].push(b); SK_ADJ[b].push(a); }
@@ -226,13 +254,17 @@ Object.assign(Prog, {
   refundCost() { return 1000; },
   linked(n) { return n.type === 'core' || SK_ADJ[n.id].some(id => this.r(id) > 0); },
   exTaken(n) { if (!n.ex) return null; return SKN.find(o => o.ex === n.ex && o.id !== n.id && this.r(o.id) > 0) || null; },
-  armMax(a) { let m = 0; const seen = {}; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk) { if (n.ex) { if (seen[n.ex]) continue; seen[n.ex] = 1; } m += n.max; } return m; },
+  armMax(a) { let m = 0; const seen = {}; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk && !n.xp) { if (n.ex) { if (seen[n.ex]) continue; seen[n.ex] = 1; } m += n.max; } return m; },
   armSpent(a) { let s = 0; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk) s += this.r(n.id); return s; },
+  // 전직 : 첫 별을 밝힌 갈래 (예전 저장에는 값이 없으니 가장 많이 쓴 갈래로 본다)
+  job() { const d = Save.data; if (!d) return null; if (d.job && SK_JOB[d.job]) return d.job; let best = null, bs = 0; for (const a of SK_ARM_KEYS) { const q = this.armSpent(a); if (q > bs) { bs = q; best = a; } } return best; },
+  jobTier() { const a = this.job(); if (!a) return 0; if (this.r('x_' + a + '_crown') > 0) return 3; let c = 0; for (const n of SKN) if (n.xp && n.arm === a && this.r(n.id) > 0) c++; return c >= SK_JOB_T2 ? 2 : 1; },
+  jobName(a = this.job(), t = this.jobTier()) { return a && t > 0 ? SK_JOB[a].tier[t - 1] : SK_JOB.p.base; },
   // 각성 조건 : 갈래의 별을 하나도 빠짐없이 1랭크 이상 밝혔는가 (택일 오의는 하나만)
-  armNodes(a) { const out = [], seen = {}; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk) { if (n.ex) { if (seen[n.ex]) continue; seen[n.ex] = 1; } out.push(n); } return out; },
+  armNodes(a) { const out = [], seen = {}; for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk && !n.xp) { if (n.ex) { if (seen[n.ex]) continue; seen[n.ex] = 1; } out.push(n); } return out; },
   armOpen(a) { return this.armNodes(a).every(n => this.r(n.id) > 0 || (n.ex && this.exTaken(n))); },
   armOpenCount(a) { return this.armNodes(a).filter(n => this.r(n.id) > 0 || (n.ex && this.exTaken(n))).length; },
-  armDone(a) { for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk && this.r(n.id) < n.max && !(n.ex && this.exTaken(n))) return false; return true; },
+  armDone(a) { for (const n of SKN) if (n.arm === a && !n.bridge && !n.awk && !n.xp && this.r(n.id) < n.max && !(n.ex && this.exTaken(n))) return false; return true; },
 
   // 배울 수 있는지 + 안 되는 이유
   check(n) {
@@ -244,6 +276,7 @@ Object.assign(Prog, {
     }
     const r = this.r(n.id);
     if (r >= n.max) return { ok: false, why: '최대 랭크', max: true };
+    if (n.xp && this.job() !== n.arm) return { ok: false, why: this.job() ? `「${SK_ARMS[n.arm].short}」으로 전직해야 배울 수 있습니다 (지금은 ${this.jobName()})` : `「${SK_ARMS[n.arm].short}」의 별을 먼저 하나 밝혀 전직해야 합니다` };
     if (!this.linked(n)) return { ok: false, why: '밝혀진 별과 이어져 있어야 합니다' };
     if (n.req && !this.r(n.req)) return { ok: false, why: `먼저 「${SKN_BY[n.req].name}」${jo(SKN_BY[n.req].name, '을', '를').slice(-1)} 배워야 합니다` };
     const ex = this.exTaken(n); if (ex) return { ok: false, why: `「${ex.name}」${jo(ex.name, '과', '와').slice(-1)} 함께 배울 수 없습니다 (택일)` };
@@ -254,7 +287,9 @@ Object.assign(Prog, {
   learn(n) {
     if (!this.check(n).ok) return false;
     if (n.awk) { const d = Save.data; (d.awk || (d.awk = {}))[n.awk] = 1; if (!d.awkSel) d.awkSel = n.awk; Save.save(); this.refresh(); return true; }
-    const t = this.sk(); t[n.id] = (t[n.id] || 0) + 1; Save.save(); this.refresh();
+    const t = this.sk(); t[n.id] = (t[n.id] || 0) + 1;
+    if (!Save.data.job) Save.data.job = this.job() || n.arm;                          // 첫 별 → 전직
+    Save.save(); this.refresh();
     return true;
   },
   // 한 랭크 되돌리기 : 끄면 다른 별이 끊어지는 경우는 안 된다
@@ -276,12 +311,13 @@ Object.assign(Prog, {
     if (!this.canRefund(n).ok) return false;
     const t = this.sk(); Save.data.gold -= this.refundCost();
     if (--t[n.id] <= 0) delete t[n.id];
+    if (this.spent() === 0) { Save.data.job = null; Save.data.jobSeen = 0; } else Save.data.jobSeen = Math.min(Save.data.jobSeen || 0, this.jobTier());
     Save.save(); this.refresh(); return true;
   },
   reset() {
     const c = this.resetCost();
     if (!this.spent() || (Save.data.gold || 0) < c) return false;
-    Save.data.gold -= c; Save.data.sk = {}; Save.data.awk = {}; Save.data.awkSel = null; Save.save(); this.refresh();
+    Save.data.gold -= c; Save.data.sk = {}; Save.data.awk = {}; Save.data.awkSel = null; Save.data.job = null; Save.data.jobSeen = 0; Save.save(); this.refresh();
     return true;
   },
   refresh() { this._v++; const p = Game.player; if (p && p.setGear) p.setGear(); },
@@ -290,10 +326,11 @@ Object.assign(Prog, {
   st() {
     const t = (Save.data && Save.data.sk) || null;
     if (this._st && this._stRef === t && this._stV === this._v) return this._st;
-    const S = {}, K = {}, D = {};
+    const S = {}, K = {}, D = {}, job = this.job();
     for (const n of SKN) {
       const r = this.r(n.id); if (!r || n.type === 'core') continue;
-      if (n.fx) for (const k in n.fx) S[k] = (S[k] || 0) + n.fx[k] * r;
+      const eff = (n.arm === job || n.bridge || n.xp) ? 1 : 0.7;                    // 전직하지 않은 갈래의 별은 70%
+      if (n.fx) for (const k in n.fx) S[k] = (S[k] || 0) + n.fx[k] * r * eff;
       if (n.key) K[n.key] = 1;
     }
     const O = {}; for (const a of SK_ARM_KEYS) { D[a] = this.armDone(a); O[a] = this.armOpen(a); }
@@ -301,6 +338,7 @@ Object.assign(Prog, {
     if (D.s) S.cdAll = (S.cdAll || 0) + 0.05;
     if (D.w) S.wsk = (S.wsk || 0) + 0.1;
     if (D.v) S.hp = (S.hp || 0) + 0.08;
+    if (job) { const jt = this.jobTier(); for (let i = 0; i < jt; i++) for (const k in SK_JOB[job].b[i]) S[k] = (S[k] || 0) + SK_JOB[job].b[i][k]; }
     this._st = { S, K, D, O }; this._stRef = t; this._stV = this._v;
     return this._st;
   },
@@ -354,6 +392,14 @@ Object.assign(Prog, {
     if (backOrCounter) m *= 1 + this.v('back');
     if (tgt && tgt.awkBreak > 0) m *= 1.35;                                    // 파천멸검 : 방어가 무너진 적
     if (this.has('rage') && p.hp < p.hpMax * 0.5) m *= 1.3;
+    // ---- 확장 별 ----
+    const bs = this.v('boss'); if (bs && tgt && (tgt.isBoss || tgt.elite)) m *= 1 + bs;
+    if (this.has('giant') && tgt && (tgt.isBoss || tgt.elite)) m *= 1.25;
+    if (this.has('ember') && p.hp >= p.hpMax * 0.9) m *= 1.15;
+    if (this.has('opener') && tgt && tgt.hpMax && tgt.hp >= tgt.hpMax * 0.999) m *= 1.35;
+    if (c === 'basic' && p.adrT > 0) m *= 1.25;
+    if (this.has('overflow') && (SK_SKILL[c] || c === 'tree') && p.mp >= p.mpMax * 0.7) m *= 1.15;
+    if (p.nukeT > 0 && (SK_SKILL[c] || c === 'tree')) m *= 1.4;
     return m;
   },
   critAdd(p, hit) {
@@ -361,11 +407,20 @@ Object.assign(Prog, {
     if (SK_SKILL[c]) a += this.v('skCrit');
     if (c === 'wsk') a += this.v('wCrit');
     if (p.eyeT > 0) a += 0.15;
+    if (p.eye2T > 0) a += 0.25;
     return a;
   },
   // 받는 피해 (마나 방패)
   takeDmg(p, dmg) {
     if (p.awkBuffT > 0) dmg *= 0.4;                                            // 불사성광
+    if (this.has('lastStand') && p.hp < p.hpMax * 0.3) dmg *= 0.75;
+    if (this.has('bulwark')) { if (p.bulT > 0) dmg *= 0.7; p.bulT = 60; }
+    if (p.barrier > 0) {                                                       // 수호 결계 : 보호막이 먼저 맞는다
+      const ab = Math.min(p.barrier, dmg); p.barrier -= ab; dmg -= ab; p.barrierGone = 0;
+      FX.add('world', new Ring(p.x, sy(p.y, p.z + 70), 26, 84, 14, { col: '130,255,190', w: 5 })); Sfx.play('ring', 0.3, 1.9);
+      if (p.barrier <= 0) { p.barrier = 0; FX.add('world', new Flash(p.x, sy(p.y, p.z + 70), 16, 150, 18, '170,255,210', 0.7)); }
+      if (dmg <= 0) return 0;
+    }
     if (!this.has('mshield') || !(p.mp > 0) || !p.hpMax) return dmg;
     let part = dmg * 0.25, cost = part / p.hpMax * p.mpMax;
     if (cost > p.mp) { part *= p.mp / cost; cost = p.mp; }
@@ -399,6 +454,10 @@ Object.assign(Prog, {
       p.eyeT = 240;
       FX.add('top', new Label(p.x, sy(p.y, p.z) - 170, '심 안', { col: ['#ffffff', '#e27aff'], size: 22, life: 40 }));
     }
+    if (SK_SKILL[k] && this.has('echoSk')) { p.mp = Math.min(p.mpMax, p.mp + p.mpMax * 0.06); FX.add('world', new Mote(p.x, sy(p.y, p.z + 90), 0, -1.4, { col: '120,200,255', life: 26, r: 6, grav: 0 })); }
+    if (SK_SKILL[k] && this.has('nuke5')) { p.nkN = (p.nkN || 0) + 1; if (p.nkN % 5 === 0) { p.nukeT = 240; FX.add('top', new Label(p.x, sy(p.y, p.z) - 170, '오 의 연 타', { col: ['#ffffff', '#7ab8ff'], size: 24, life: 50 })); FX.add('ground', new Ring(p.x, sy(p.y, 0), 20, 220, 20, { col: '130,190,255', w: 10 })); } }
+    if ((k === 's5' || k === 's6') && this.has('echoW')) for (const o in p.cd) if (o !== k && p.cd[o] > 0) p.cd[o] = Math.max(0, p.cd[o] - 2);
+    if ((k === 's5' || k === 's6') && this.has('eye2')) { p.eye2T = 480; FX.add('top', new Label(p.x, sy(p.y, p.z) - 190, '천 리 안', { col: ['#ffffff', '#d890ff'], size: 22, life: 40 })); }
     const x0 = p.x, y0 = p.y, d = p.facing;
     if (k === 's1' && this.has('quake')) Gear.later(7, () => {
       const gy = sy(p.y, 0);
@@ -432,6 +491,7 @@ Object.assign(Prog, {
   },
   // 적을 쓰러뜨렸을 때
   onKill(p, e) {
+    if (this.has('adren')) p.adrT = 240;
     const h = this.v('kill'); if (h) Gear.heal(p, p.hpMax * h * (e.isBoss ? 5 : 1), true);
     const c = this.v('killCd'); if (c) for (const k in SK_SKILL) if (p.cd[k] > 0) p.cd[k] = Math.max(0, p.cd[k] - c);
   },
@@ -441,6 +501,14 @@ Object.assign(Prog, {
     if (p.awkBuffT > 0) { p.awkBuffT--; if (p.hp > 0 && Game.frame % 60 === 0) Gear.heal(p, p.hpMax * 0.02, true); }
     if (p.mpBoostT > 0) { p.mpBoostT--; p.mp = Math.min(p.mpMax, p.mp + p.mpMax * 0.004); }
     if (p.eyeT > 0) p.eyeT--;
+    if (p.eye2T > 0) p.eye2T--;
+    if (p.adrT > 0) p.adrT--;
+    if (p.nukeT > 0) p.nukeT--;
+    if (p.bulT > 0) p.bulT--;
+    if (this.has('barrier') && p.hp > 0) {                                      // 수호 결계 : 5초 동안 맞지 않으면 보호막
+      if (!(p.barrier > 0) && p.sinceHit > 300 && (p.barrierGone = (p.barrierGone || 0) + 1) > 0) { p.barrier = p.hpMax * 0.08; FX.add('world', new Ring(p.x, sy(p.y, p.z + 70), 20, 120, 20, { col: '130,255,190', w: 6 })); Sfx.play('ring', 0.3, 1.4); }
+      if (p.barrier > 0 && Game.frame % 8 === 0) FX.add('world', new Mote(p.x + rand(-22, 22), sy(p.y, rand(30, 130)), 0, -0.4, { col: '130,255,190', life: 22, r: 3.5, grav: 0 }));
+    }
     if (p.hp <= 0 || p.state === 'dead') return;
     const rg = this.v('regen');
     if (rg && p.sinceHit > 180 && p.hp < p.hpMax && Game.frame % 60 === 0) {

@@ -152,6 +152,7 @@ const Opts = {
     { k: 'sfx', label: '효과음', type: 'slider', max: 1 },
     { k: 'shake', label: '화면 흔들림', type: 'slider', max: 1.5 },
     { k: 'dmg', label: '데미지 숫자 표시', type: 'toggle' },
+    { k: 'fx', label: '화면 빛번짐 · 후처리 (느리면 끄기)', type: 'toggle' },
     { k: 'vib', label: '진동 (휴대폰 · 패드)', type: 'toggle' },
     { k: 'voice', label: '몬스터 목소리', type: 'toggle' },
     { k: 'diff', label: '난이도', type: 'diff' },
