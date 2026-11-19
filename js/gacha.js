@@ -420,3 +420,35 @@ const GachaUI = {
 };
 // 별 그리기
 function gcStar(ctx, x, y, r) { ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; ctx[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); }
+
+// ============================================================
+//  개발자 명령어 (시험용) — 브라우저 콘솔(F12)에서 쓴다
+//    성화(1600)     성화 1,600 받기          Dev.sh(n)  도 같다
+//    천장(79)       천장 카운트를 79 로 (다음 소환에 한정 검 확정)
+//    Dev.gold(n)    골드 n 받기              Dev.reset()  소환 기록 · 성화 · 한정 검 지우기
+//  주소 끝에 ?dev=1 을 붙이면 소환 화면에 「성화 +1,600」 버튼이 생긴다 (모바일용)
+// ============================================================
+const Dev = {
+  sh(n = GACHA.COST10) { Gacha.d().sh += Math.round(n); Save.save(); return `성화 ${fmt(Gacha.sh())}`; },
+  pity(n = GACHA.PITY - 1) { Gacha.d().pity = clamp(Math.round(n), 0, GACHA.PITY - 1); Save.save(); return `천장 ${Gacha.d().pity} / ${GACHA.PITY}`; },
+  gold(n = 100000) { Save.data.gold = (Save.data.gold || 0) + Math.round(n); Save.save(); return `골드 ${fmt(Save.data.gold)}`; },
+  reset() {
+    const o = Save.data.owned; if (o && o.w) o.w = o.w.filter(id => id !== GACHA.BANNER);
+    if (Save.data.eq && Save.data.eq.w === GACHA.BANNER) Save.data.eq.w = 'w0';
+    Save.data.gc = { sh: 0, pity: 0, pulls: 0, brk: {} }; Save.save(); return '소환 기록을 지웠습니다';
+  },
+};
+window.Dev = Dev; window.성화 = n => Dev.sh(n); window.천장 = n => Dev.pity(n);
+GachaUI.devOn = /[?&]dev=1\b/.test(location.search);
+GachaUI.devRect = () => ({ x: 40, y: 92, w: 220, h: 32 });
+{
+  const _d = GachaUI.draw, _p = GachaUI.pDown;
+  GachaUI.draw = function (ctx) {
+    _d.call(this, ctx);
+    if (this.devOn && !this.res) { const r = this.devRect(); ctx.fillStyle = 'rgba(20,60,30,0.9)'; roundRect(ctx, r.x, r.y, r.w, r.h, 8); ctx.fill(); ctx.strokeStyle = '#7dffa0'; ctx.lineWidth = 2; ctx.stroke(); UI.text(ctx, `개발자 : 성화 +${fmt(GACHA.COST10)}`, r.x + r.w / 2, r.y + 22, { size: 15, align: 'center', fill: '#7dffa0', stroke: 3 }); }
+  };
+  GachaUI.pDown = function (x, y) {
+    if (this.devOn && !this.res && inR(x, y, this.devRect())) { Dev.sh(GACHA.COST10); Sfx.play('coin', 0.8, 1.2); this.flash(`성화 +${fmt(GACHA.COST10)}`, '#7dffa0'); return; }
+    _p.call(this, x, y);
+  };
+}
