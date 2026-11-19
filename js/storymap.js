@@ -43,8 +43,8 @@ const StoryMap = {
   },
   tabRect(i) { return { x: 24 + i * 92, y: 84, w: 86, h: 40 }; },
   startRect() { return { x: 900, y: 532, w: 340, h: 58 }; },
-  BTNS: [['camp', '등불'], ['shop', '상점'], ['gacha', '소환'], ['tree', '스킬 트리'], ['tower', '무한의 탑'], ['codex', '도감 · 업적'], ['options', '설정'], ['diff', '난이도']],
-  btnRect(i) { return { x: 20 + i * 156, y: 636, w: 148, h: 60 }; },
+  BTNS: [['camp', '등불'], ['shop', '상점'], ['gacha', '소환'], ['hub', '성장 · 보상'], ['tree', '스킬 트리'], ['tower', '무한의 탑'], ['codex', '도감 · 업적'], ['options', '설정'], ['diff', '난이도']],
+  btnRect(i) { return { x: 20 + i * 139, y: 636, w: 132, h: 60 }; },
   fragRect() { return { x: W - 500, y: 18, w: 150, h: 40 }; },
   btnOpen(k) { return k === 'camp' ? Story.isOpen('hub') : k === 'shop' ? Story.isOpen('shop') : k === 'tree' ? Story.isOpen('tree') : k === 'tower' ? Story.isOpen('tower') : true; },
   lockText: { camp: '제1장을 마치면 거점 「등불」이 열립니다', shop: '프롤로그를 마치면 상점이 열립니다', tree: '제1장을 마치면 거점 · 스킬 트리가 열립니다', tower: '제2장을 마치면 무한의 탑이 열립니다' },
@@ -71,7 +71,7 @@ const StoryMap = {
       else if (q.a === 'up') this.setMap(this.m - 1);
       else if (q.a === 'down') this.setMap(this.m + 1);
       else if (q.a === 'attack' || q.a === 'confirm' || q.a === 'jump') { this.go(); return; }
-      else if (['shop', 'gacha', 'tree', 'tower', 'codex', 'options', 'diff'].includes(q.a)) { this.btn(q.a); if (Game.state !== 'smap') return; }
+      else if (['shop', 'gacha', 'hub', 'tree', 'tower', 'codex', 'options', 'diff'].includes(q.a)) { this.btn(q.a); if (Game.state !== 'smap') return; }
     }
   },
   pickModal(i) { const M = this.modal; this.modal = null; Sfx.play('select'); if (M.cb) M.cb(i); },
@@ -101,6 +101,7 @@ const StoryMap = {
     if (!this.btnOpen(k)) { this.say(this.lockText[k]); return; }
     if (k === 'camp') { Sfx.play('select'); Game.toCamp(); }
     else if (k === 'shop') { Sfx.play('select'); Game.toShop(); }
+    else if (k === 'hub') { Sfx.play('select'); Game.toHub(); }
     else if (k === 'gacha') { Sfx.play('select'); Game.toGacha(); }
     else if (k === 'tree') { Sfx.play('select'); Game.toTree(); }
     else if (k === 'codex') { Sfx.play('select'); Game.toCodex(); }
@@ -186,6 +187,7 @@ const StoryMap = {
       else if (!open) sub = '잠김';
       else if (k === 'tree' && Prog.free()) sub = `포인트 ${Prog.free()}`;
       else if (k === 'codex' && Ach.claimable()) sub = `보상 ${Ach.claimable()}`;
+      else if (k === 'hub' && SX.claimable()) sub = `받을 보상 ${SX.claimable()}`;
       else if (k === 'tower' && Save.data.tower.best) sub = `최고 ${Save.data.tower.best}층`;
       UI.text(ctx, lab, r.x + r.w / 2, r.y + (sub ? 22 : 31), { size: 19, align: 'center', fill: open ? '#e8ecf8' : '#6a6a7a', stroke: 3 });
       if (sub && k !== 'diff') UI.text(ctx, sub, r.x + r.w / 2, r.y + 44, { size: 12, align: 'center', font: FONT_B, weight: 700, fill: open ? '#ffd890' : '#5a5a6a', stroke: 2 });

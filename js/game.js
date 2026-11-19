@@ -63,11 +63,12 @@ const Game = {
 
   scene() {
     const s = this.state;
-    return s === 'options' ? Opts : s === 'codex' ? Codex : s === 'gacha' ? GachaUI : s === 'tree' ? TreeUI
+    return s === 'options' ? Opts : s === 'codex' ? Codex : s === 'gacha' ? GachaUI : s === 'hub' ? HubUI : s === 'tree' ? TreeUI
       : s === 'talk' ? (Choice.on ? Choice : Talk) : s === 'cine' ? Cine : s === 'smap' ? StoryMap : s === 'camp' ? Camp : s === 'album' ? Album : s === 'sres' ? StoryRes : null;
   },
   toTree() { this.state = 'tree'; TreeUI.enter(); Touch.release(); Input.clear(); },
   openOptions(from) { this.state = 'options'; Opts.enter(from); Touch.release(); Input.clear(); },
+  toHub() { this.state = 'hub'; HubUI.enter(); Touch.release(); Input.clear(); },
   toGacha() { this.state = 'gacha'; GachaUI.enter(); Touch.release(); Input.clear(); },
   toCodex() { this.state = 'codex'; Codex.enter(); Touch.release(); Input.clear(); },
   toCamp() { this.state = 'camp'; Camp.enter(); Touch.release(); Input.clear(); },
@@ -114,6 +115,7 @@ const Game = {
       case 'options': Opts.update(); break;
       case 'codex': Codex.update(); break;
       case 'gacha': GachaUI.update(); break;
+      case 'hub': HubUI.update(); break;
       case 'tree': TreeUI.update(); break;
       case 'paused': Pause.update(); if (this.state !== 'paused') break; if (Input.take('pause')) { this.state = this.pausedFrom; Sfx.play('ui'); } else if (Input.take('options')) { this.openOptions('paused'); break; } Input.queue = Input.queue.filter(q => q.a === 'pause'); break;
       case 'result': if (Input.take('share')) Share.save(); this.resT++; if (this.resT > 100 && (Input.take('confirm') || Input.take('attack'))) { Sfx.play('select'); this.toLobby(); } Input.clear(); break;
@@ -519,6 +521,7 @@ const Game = {
     if (this.state === 'title') { UI.drawTitle(ctx); return; }
     if (this.state === 'lobby') { Lobby.draw(ctx); Touch.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'options') { Opts.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
+    if (this.state === 'hub') { HubUI.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'gacha') { GachaUI.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'codex') { Codex.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
     if (this.state === 'tree') { TreeUI.draw(ctx); if (Touch.on && innerHeight > innerWidth) Touch.drawRotate(ctx); return; }
