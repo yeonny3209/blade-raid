@@ -155,14 +155,16 @@ const Opts = {
     { k: 'fx', label: '화면 빛번짐 · 후처리 (느리면 끄기)', type: 'toggle' },
     { k: 'vib', label: '진동 (휴대폰 · 패드)', type: 'toggle' },
     { k: 'voice', label: '몬스터 목소리', type: 'toggle' },
+    { k: 'camp', label: '등불 (거점)', type: 'go' },
+    { k: 'codex', label: '도감 · 업적', type: 'go' },
     { k: 'diff', label: '난이도', type: 'diff' },
     { k: 'nick', label: '닉네임', type: 'nick' },
     { k: 'backup', label: '세이브 백업', type: 'backup' },
     { k: 'back', label: '돌아가기', type: 'back' },
   ],
-  RY: 160, RH: 46,
-  rowRect(i) { return { x: 300, y: this.RY + i * this.RH, w: 680, h: 40 }; },
-  track(i) { const r = this.rowRect(i); return { x: r.x + 340, y: r.y + 8, w: 250, h: 24 }; },
+  RY: 136, RH: 37,
+  rowRect(i) { return { x: 300, y: this.RY + i * this.RH, w: 680, h: 33 }; },
+  track(i) { const r = this.rowRect(i); return { x: r.x + 340, y: r.y + 4, w: 250, h: 24 }; },
 
   enter(from) { this.from = from || 'lobby'; this.sel = 0; this.drag = -1; },
   leave() { Opt.apply(); Save.save(); Sfx.play('select', 0.7); if (this.from === 'paused') { Game.state = 'paused'; } else Game.state = this.from; if (this.from === 'lobby') Lobby.t = 0; },
@@ -175,8 +177,15 @@ const Opts = {
     else if (r.type === 'toggle') { this.setVal(r, !o[r.k]); Sfx.play('ui', 0.6, o[r.k] ? 1.3 : 0.8); }
     else if (r.type === 'diff') { Diff.cycle(d || 1); Sfx.play('ui', 0.6, 1.2); }
   },
-  act(i) { const r = this.rows[i]; if (r.type === 'back') this.leave(); else if (r.type === 'toggle' || r.type === 'diff') this.adjust(i, 1); else if (r.type === 'nick') Nick.ask(); else if (r.type === 'backup') { if (this.from === 'lobby' || this.from === 'smap') Backup.ask(); else { Sfx.play('ui', 0.6, 0.5); this.msg = '세이브 백업은 지도 화면의 설정에서 할 수 있습니다'; this.msgT = 120; } } },
+  act(i) { const r = this.rows[i]; if (r.type === 'back') this.leave(); else if (r.type === 'toggle' || r.type === 'diff') this.adjust(i, 1); else if (r.type === 'go') this.go(r.k); else if (r.type === 'nick') Nick.ask(); else if (r.type === 'backup') { if (this.from === 'lobby' || this.from === 'smap') Backup.ask(); else { Sfx.play('ui', 0.6, 0.5); this.msg = '세이브 백업은 지도 화면의 설정에서 할 수 있습니다'; this.msgT = 120; } } },
 
+  // 등불 · 도감 · 업적 : 지도 화면의 설정에서만 연다 (전투 중에는 불가)
+  go(k) {
+    if (this.from !== 'smap' && this.from !== 'lobby') { Sfx.play('ui', 0.6, 0.5); this.msg = '지도 화면의 설정에서 열 수 있습니다'; this.msgT = 120; return; }
+    if (!StoryMap.btnOpen(k)) { Sfx.play('ui', 0.6, 0.5); this.msg = StoryMap.lockText[k]; this.msgT = 130; return; }
+    Opt.apply(); Save.save(); Sfx.play('select');
+    if (k === 'camp') Game.toCamp(); else Game.toCodex();
+  },
   update() {
     if (this.msgT > 0) this.msgT--;
     if (Input.take('pause')) { this.leave(); return; }
@@ -211,8 +220,8 @@ const Opts = {
 
   draw(ctx) {
     scrim(ctx);
-    UI.text(ctx, '설  정', W / 2, 80, { size: 40, align: 'center', fill: '#ffe9a6', stroke: 6 });
-    Shop.panel(ctx, 280, 140, 720, this.rows.length * this.RH + 30);
+    UI.text(ctx, '설  정', W / 2, 84, { size: 40, align: 'center', fill: '#ffe9a6', stroke: 6 });
+    Shop.panel(ctx, 280, 120, 720, this.rows.length * this.RH + 30);
     const o = Opt.get();
     this.rows.forEach((r, i) => {
       const rr = this.rowRect(i), on = i === this.sel;
@@ -239,6 +248,10 @@ const Opts = {
         const d = Diff.cur();
         UI.text(ctx, `◀  ${d.name}  ▶`, rr.x + rr.w - 150, rr.y + 21, { size: 19, align: 'center', fill: `rgb(${d.col})`, stroke: 4 });
         UI.text(ctx, d.desc, rr.x + 190, rr.y + 21, { size: 12, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
+      } else if (r.type === 'go') {
+        const open = StoryMap.btnOpen(r.k), n = r.k === 'codex' ? Ach.claimable() : 0;
+        UI.text(ctx, !open ? '잠김' : n ? `보상 ${n}  ▶` : '열기  ▶', rr.x + rr.w - 150, rr.y + 21, { size: 18, align: 'center', fill: !open ? '#6a7494' : n ? '#ffd890' : '#9ac8ff', stroke: 4 });
+        UI.text(ctx, r.k === 'camp' ? '거점 · 상점 · 스킬 트리로 가는 곳' : '몬스터 · 보스 도감과 업적 보상', rr.x + 190, rr.y + 21, { size: 12, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
       } else if (r.type === 'backup') {
         UI.text(ctx, '코드로 내보내기 · 불러오기', rr.x + rr.w - 150, rr.y + 21, { size: 15, align: 'center', fill: '#9ac8ff', stroke: 3 });
         UI.text(ctx, '웹 ↔ 앱 · 다른 기기로 옮기기', rr.x + 190, rr.y + 21, { size: 12, font: FONT_B, weight: 700, fill: '#8a94b4', stroke: 3 });
