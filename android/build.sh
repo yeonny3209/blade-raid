@@ -20,7 +20,7 @@ rm -rf "$OUT"; mkdir -p "$OUT/res" "$OUT/classes" "$OUT/dex" "$OUT/assets/www" "
 
 echo "[1/6] 게임 파일을 assets 에 복사"
 cp "$ROOT/index.html" "$ROOT/manifest.json" "$OUT/assets/www/"
-cp -r "$ROOT/js" "$ROOT/icons" "$ROOT/fonts" "$OUT/assets/www/"
+cp -r "$ROOT/js" "$ROOT/icons" "$ROOT/fonts" "$ROOT/img" "$OUT/assets/www/"
 # 앱 안에서는 서비스 워커가 필요 없음 (파일이 이미 기기에 있음)
 
 echo "[2/6] 리소스 컴파일"
@@ -32,7 +32,7 @@ echo "[3/6] 리소스 링크 + 매니페스트"
   --manifest "$HERE/AndroidManifest.xml" \
   --java "$OUT/gen" \
   --min-sdk-version 23 --target-sdk-version 34 \
-  --version-code 18 --version-name 3.15 \
+  --version-code 19 --version-name 3.16 \
   "$OUT/res.zip"
 
 echo "[4/6] 자바 컴파일 → DEX"
