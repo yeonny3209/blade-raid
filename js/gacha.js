@@ -205,8 +205,8 @@ const GachaUI = {
     // 배너 : 한정 검 키아트 (둥실 떠 있다). 이미지를 못 불러오면 검 든 주인공
     if (GACHA_ART.ok) {
       const bob = Math.sin(t * 0.04) * 8;
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 380, 440 + bob, 300, col, 0.28 + Math.sin(t * 0.05) * 0.05); ctx.restore();
-      this.drawArt(ctx, 380, 440 + bob, 640, 1);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, 380, 445 + bob, 300, col, 0.28 + Math.sin(t * 0.05) * 0.05); ctx.restore();
+      this.drawArt(ctx, 380, 445 + bob, 450, 1);
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(380, 690, 150 - bob * 2, 14, 0, 0, TAU); ctx.fill();
     } else {
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.ellipse(360, 568, 130, 24, 0, 0, TAU); ctx.fill();
@@ -277,7 +277,7 @@ const GachaUI = {
   drawArt(ctx, cx, cy, w, a = 1, rot = 0) {
     if (!GACHA_ART.ok) return false;
     const sh = 580, sw = 768, h = w * sh / sw;
-    ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, cy); ctx.rotate(rot);
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, cy); ctx.rotate(rot - Math.PI / 2);          // 원본은 가로 그림 : 칼끝이 위로 가도록 세운다
     if (GACHA_ART.cv) ctx.drawImage(GACHA_ART.cv, -w / 2, -h / 2, w, h);
     else { ctx.globalCompositeOperation = 'screen'; ctx.drawImage(GACHA_ART.img, 0, 360, sw, sh, -w / 2, -h / 2, w, h); }
     ctx.restore(); return true;
@@ -357,7 +357,7 @@ const GachaUI = {
     const ang = -Math.PI / 2 + (1 - e) * TAU * 2.2, sc = 2.3 + (1 - e) * 1.0;
     if (t > 14) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, cx, lerp(sy0, sy1, e), 230, '255,214,120', 0.5 * Math.min(1, e + 0.3)); ctx.restore();
-      if (GACHA_ART.ok) this.drawArt(ctx, cx, lerp(sy0, sy1, e) + 10, 640 + (1 - e) * 260, Math.min(1, (t - 14) / 10), (1 - e) * 0.6 - 0.05);
+      if (GACHA_ART.ok) this.drawArt(ctx, cx, lerp(sy0, sy1, e) + 10, 470 + (1 - e) * 200, Math.min(1, (t - 14) / 10), (1 - e) * 0.6 - 0.05);
       else this.drawSword(ctx, cx, lerp(sy0, sy1, e), sc, ang, rt, Math.min(1, (t - 14) / 10));
     }
     // 검이 멈추는 순간 : 두 번째 섬광 + 베기 고리
@@ -404,7 +404,7 @@ const GachaUI = {
         UI.text(ctx, o.name, x + cw / 2, y + ch * 0.7, { size: 15 * m, align: 'center', fill: '#fff', stroke: 4 });
         UI.text(ctx, `+${fmt(o.gold)} G`, x + cw / 2, y + ch * 0.82, { size: 15 * m, font: FONT_B, weight: 800, align: 'center', fill: '#ffe9a6', stroke: 4 });
       } else {
-        const art = this.drawArt(ctx, x + cw / 2, y + ch * 0.4, cw * 0.92, 1), ny = art ? 0.64 : 0.5, ty = art ? 0.78 : 0.68, ly = art ? 0.9 : 0.82;
+        const art = this.drawArt(ctx, x + cw / 2, y + ch * 0.4, ch * 0.42, 1), ny = art ? 0.64 : 0.5, ty = art ? 0.78 : 0.68, ly = art ? 0.9 : 0.82;
         UI.text(ctx, o.name, x + cw / 2, y + ch * ny, { size: res.length === 1 ? 26 : 17, align: 'center', fill: '#fffbe8', stroke: 5 });
         const tx = o.kind === 'new' ? '새로 획득!' : o.kind === 'brk' ? `돌파 ${o.n} / ${GACHA.MAXBRK}` : `최대 돌파 · 성화 +${o.sh}`;
         UI.text(ctx, tx, x + cw / 2, y + ch * ty, { size: res.length === 1 ? 22 : 15, align: 'center', fill: o.kind === 'new' ? '#7dffa0' : '#ffd24a', stroke: 4 });

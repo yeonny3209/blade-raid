@@ -902,6 +902,7 @@ const TreeUI = {
     if (this.sel === n.id) this.tryLearn();                                    // 이미 고른 별을 한 번 더 누르면 배운다
     else this.select(n);
   },
+  pPinch(f, x, y) { if (this.cine || !inR(x, y, this.BR)) return; this.drag = null; this.zoomAt(f, x, y); },        // 두 손가락 벌리기 / 오므리기
   wheel(dy) { if (this.cine) return; const x = inR(Ptr.x, Ptr.y, this.BR) ? Ptr.x : this.bcx(), y = inR(Ptr.x, Ptr.y, this.BR) ? Ptr.y : this.bcy(); this.zoomAt(dy > 0 ? 0.88 : 1.14, x, y); },
   focusArm(a) {
     const A = SK_ARMS[a], ns = SKN.filter(n => n.arm === a && !n.bridge);

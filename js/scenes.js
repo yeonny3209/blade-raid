@@ -114,13 +114,27 @@ const Backup = {
 // ---------- 포인터 (마우스·터치 공용) : 상점 외의 장면들이 쓴다 ----------
 const Ptr = {
   down: false, x: 0, y: 0, last: 0,
+  tp: new Map(), pinch: null,            // 터치 중인 손가락들 / 두 손가락 확대·축소 상태
   init() {
     for (const t of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']) {
       addEventListener(t, e => {
         const S = Game.scene && Game.scene();
         if (Nick.open || Backup.open) return;
-        if (!S) { if (t !== 'pointermove') this.down = false; return; }
+        if (!S) { if (t !== 'pointermove') this.down = false; this.tp.clear(); this.pinch = null; return; }
         const [x, y] = Touch.toLogical(e);
+        if (e.pointerType === 'touch' && S.pPinch) {                    // 두 손가락 : 장면이 pPinch(배율, 중심x, 중심y) 를 지원하면 확대·축소
+          if (t === 'pointerdown') this.tp.set(e.pointerId, [x, y]);
+          else if (this.tp.has(e.pointerId) && t === 'pointermove') this.tp.set(e.pointerId, [x, y]);
+          if (this.tp.size >= 2) {
+            const [a, b] = [...this.tp.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+            if (!this.pinch) { this.pinch = { d }; S.pUp && S.pUp(-9999, -9999); this.down = false; }   // 진행 중이던 끌기는 취소
+            else if (t === 'pointermove') { S.pPinch(d / this.pinch.d, mx, my); this.pinch.d = d; }
+            if (t === 'pointerup' || t === 'pointercancel') this.tp.delete(e.pointerId);
+            return;
+          }
+          if (t === 'pointerup' || t === 'pointercancel') { this.tp.delete(e.pointerId); if (this.pinch) { if (this.tp.size === 0) this.pinch = null; return; } }
+          else if (this.pinch) return;                                   // 한 손가락만 남아도 확대가 끝날 때까지는 끌기로 보지 않는다
+        }
         this.x = x; this.y = y; this.last = performance.now();
         if (t === 'pointerdown') { this.down = true; S.pDown && S.pDown(x, y); }
         else if (t === 'pointermove') S.pMove && S.pMove(x, y, this.down);
