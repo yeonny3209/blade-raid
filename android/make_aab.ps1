@@ -1,4 +1,4 @@
-# 더블클릭이 아니라 PowerShell 에서 실행 : 비밀번호를 물어본 뒤 dist\BladeRaid.aab 를 만든다
+﻿# 더블클릭이 아니라 PowerShell 에서 실행 : 비밀번호를 물어본 뒤 dist\BladeRaid.aab 를 만든다
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
