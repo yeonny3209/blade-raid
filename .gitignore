@@ -7,3 +7,7 @@ node_modules/
 android/build/
 android/release.keystore
 dist/*.idsig
+android/upload.keystore
+android/build_aab/
+android/tools/
+dist/*.aab

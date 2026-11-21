@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.bladeraid.game"
-    android:versionCode="16"
-    android:versionName="3.13">
+    package="com.bladeraid.game">
+    <!-- versionCode / versionName / min·targetSdk 는 build.sh · build_aab.sh 의 aapt2 옵션으로 넣는다 (매니페스트에 적으면 옵션이 무시된다) -->
 
-    <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <!-- 게임 파일이 앱 안에 들어있어 인터넷 권한이 필요 없음 -->
 
