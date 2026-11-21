@@ -278,7 +278,7 @@ class FPet {
 const Raid = {
   run: null,
   bossKey() {
-    const ks = Object.keys(BOSS_DEFS).filter(k => !BOSS_DEFS[k].dexKey);
+    const ks = Object.keys(BOSS_DEFS).filter(k => !BOSS_DEFS[k].dexKey && DUNGEONS.some(d => d.boss === k));      // 스토리 전용 보스는 제외
     return ks[SX.week() % ks.length];
   },
   def() {
@@ -426,7 +426,7 @@ const HubUI = {
     else if (this.tab === 1) { const n = PASS.claimAll(); this.say(n ? `보상 ${n}개를 받았습니다` : '받을 보상이 없습니다'); }
     else if (this.tab === 2) this.craft();
     else if (this.tab === 3) this.hatch();
-    else this.raidGo();
+    else this.say('레이드 · 탑은 버튼을 직접 눌러 시작합니다');                   // Enter 한 번에 도전권이 나가지 않게
   },
   claimAtt() {
     const x = SX.roll(); if (x.att) return;
