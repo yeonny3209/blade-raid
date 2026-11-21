@@ -229,7 +229,7 @@ const GachaUI = {
     // 오른쪽 : 정보 패널
     const px = 700, py = 140, pw = 540;
     ctx.fillStyle = 'rgba(12,10,18,0.72)'; roundRect(ctx, px, py, pw, 440, 14); ctx.fill(); ctx.strokeStyle = 'rgba(201,165,92,0.5)'; ctx.lineWidth = 1.6; ctx.stroke();
-    UI.text(ctx, '성화검 여명', px + 24, py + 36, { size: 22, fill: '#ffe9a6', stroke: 4 });
+    UI.text(ctx, '성화검: 여명', px + 24, py + 36, { size: 22, fill: '#ffe9a6', stroke: 4 });
     const own = Gacha.owned(GACHA.BANNER), b = Gacha.brk(GACHA.BANNER);
     UI.text(ctx, own ? `보유 중  ·  돌파 ${b} / ${GACHA.MAXBRK}` : '미보유', px + pw - 24, py + 36, { size: 15, align: 'right', fill: own ? '#7dffa0' : '#9aa4c0', stroke: 3 });
     for (let i = 0; i < GACHA.MAXBRK; i++) { ctx.fillStyle = i < b ? '#ffd24a' : 'rgba(255,255,255,0.16)'; gcStar(ctx, px + pw - 40 - (GACHA.MAXBRK - 1 - i) * 24, py + 58, 8); }
@@ -364,7 +364,7 @@ const GachaUI = {
     if (rt >= 168 && rt < 176) { ctx.fillStyle = `rgba(255,250,235,${(1 - Math.abs(rt - 172) / 4) * 0.7})`; ctx.fillRect(0, 0, W, H); }
     if (rt >= 170) {
       const q = (rt - 170) / 40; if (q < 1) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(255,236,170,${1 - q})`; ctx.lineWidth = 10 * (1 - q) + 2; ctx.beginPath(); ctx.arc(cx, cy, 60 + q * 420, -0.9, 0.9 + Math.PI * 0.9); ctx.stroke(); ctx.restore(); }
-      const nm = '성화검 여명', k = Math.min(nm.length, Math.floor((rt - 170) / 4));
+      const nm = '성화검: 여명', k = Math.min(nm.length, Math.floor((rt - 170) / 4));
       UI.text(ctx, 'UR', cx, 122, { size: 70, align: 'center', fill: '#ffd870', stroke: 9, italic: true });
       UI.text(ctx, nm.slice(0, k), cx, 592, { size: 54, align: 'center', fill: '#fffbe8', stroke: 8, italic: true });
       if (rt > 200) UI.text(ctx, '밤의 끝에서 타오르는 성스러운 불', cx, 630, { size: 17, font: FONT_B, weight: 700, align: 'center', fill: `rgba(255,214,120,${Math.min(1, (rt - 200) / 20)})`, stroke: 4 });
